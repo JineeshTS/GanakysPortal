@@ -158,3 +158,7 @@ async def require_ca(
             detail="CA access required",
         )
     return current_user
+
+
+# Alias for require_hr (more descriptive name)
+require_hr_or_admin = require_hr

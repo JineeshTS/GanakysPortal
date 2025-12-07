@@ -6,6 +6,16 @@ from app.models.employee import Employee, EmployeeContact, EmployeeIdentity, Emp
 from app.models.department import Department, Designation
 from app.models.employee_document import EmployeeDocument, DocumentType
 from app.models.edms import Folder, FolderPermissionRecord, FolderPermission, Document, DocumentVersion, DocumentStatus
+from app.models.onboarding import (
+    OnboardingTemplate,
+    OnboardingTemplateItem,
+    OnboardingChecklist,
+    OnboardingTask,
+    OnboardingComment,
+    OnboardingStatus,
+    TaskStatus,
+    TaskCategory,
+)
 
 __all__ = [
     "User",
@@ -25,4 +35,13 @@ __all__ = [
     "Document",
     "DocumentVersion",
     "DocumentStatus",
+    # Onboarding
+    "OnboardingTemplate",
+    "OnboardingTemplateItem",
+    "OnboardingChecklist",
+    "OnboardingTask",
+    "OnboardingComment",
+    "OnboardingStatus",
+    "TaskStatus",
+    "TaskCategory",
 ]
