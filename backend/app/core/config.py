@@ -67,6 +67,8 @@ class Settings(BaseSettings):
 
     # File Storage
     UPLOAD_DIR: str = "/var/data/gana-portal"
+    EDMS_UPLOAD_DIR: str = "/var/data/gana-portal/edms"
+    EMPLOYEE_DOCS_DIR: str = "/var/data/gana-portal/employee-docs"
     MAX_UPLOAD_SIZE_MB: int = 50
     ALLOWED_EXTENSIONS: List[str] = [
         "pdf", "doc", "docx", "xls", "xlsx", "csv",

@@ -25,6 +25,7 @@ from app.models.base import BaseModel
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.department import Department, Designation
+    from app.models.employee_document import EmployeeDocument
 
 
 class Gender(str, enum.Enum):
@@ -149,6 +150,11 @@ class Employee(BaseModel):
         "EmployeeEmployment",
         back_populates="employee",
         uselist=False,
+        cascade="all, delete-orphan",
+    )
+    documents: Mapped[List["EmployeeDocument"]] = relationship(
+        "EmployeeDocument",
+        back_populates="employee",
         cascade="all, delete-orphan",
     )
 

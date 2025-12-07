@@ -3,7 +3,7 @@ API v1 router combining all endpoint routers.
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, employees, health
+from app.api.v1.endpoints import auth, users, employees, employee_documents, health, folders, documents
 
 api_router = APIRouter()
 
@@ -33,4 +33,25 @@ api_router.include_router(
     employees.router,
     prefix="/employees",
     tags=["employees"],
+)
+
+# Employee documents (nested under employees)
+api_router.include_router(
+    employee_documents.router,
+    prefix="/employees",
+    tags=["employee-documents"],
+)
+
+# EDMS - Folder management
+api_router.include_router(
+    folders.router,
+    prefix="/edms/folders",
+    tags=["edms-folders"],
+)
+
+# EDMS - Document management
+api_router.include_router(
+    documents.router,
+    prefix="/edms/documents",
+    tags=["edms-documents"],
 )
