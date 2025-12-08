@@ -16,6 +16,15 @@ from app.models.onboarding import (
     TaskStatus,
     TaskCategory,
 )
+from app.models.leave import (
+    LeaveType,
+    LeaveBalance,
+    LeaveApplication,
+    LeaveApprovalHistory,
+    Holiday,
+    LeaveStatus,
+    LeaveAccrualType,
+)
 
 __all__ = [
     "User",
@@ -44,4 +53,12 @@ __all__ = [
     "OnboardingStatus",
     "TaskStatus",
     "TaskCategory",
+    # Leave
+    "LeaveType",
+    "LeaveBalance",
+    "LeaveApplication",
+    "LeaveApprovalHistory",
+    "Holiday",
+    "LeaveStatus",
+    "LeaveAccrualType",
 ]
