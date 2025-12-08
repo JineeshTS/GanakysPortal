@@ -25,6 +25,15 @@ from app.models.leave import (
     LeaveStatus,
     LeaveAccrualType,
 )
+from app.models.timesheet import (
+    Project,
+    ProjectTask,
+    Timesheet,
+    TimesheetEntry,
+    TimesheetApprovalHistory,
+    TimesheetStatus,
+    EntryType,
+)
 
 __all__ = [
     "User",
@@ -61,4 +70,12 @@ __all__ = [
     "Holiday",
     "LeaveStatus",
     "LeaveAccrualType",
+    # Timesheet
+    "Project",
+    "ProjectTask",
+    "Timesheet",
+    "TimesheetEntry",
+    "TimesheetApprovalHistory",
+    "TimesheetStatus",
+    "EntryType",
 ]
