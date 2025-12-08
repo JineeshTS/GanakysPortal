@@ -34,6 +34,21 @@ from app.models.timesheet import (
     TimesheetStatus,
     EntryType,
 )
+from app.models.payroll import (
+    SalaryComponent,
+    SalaryStructure,
+    SalaryStructureComponent,
+    EmployeeSalary,
+    PayrollRun,
+    Payslip,
+    LoanAdvance,
+    LoanRepayment,
+    ComponentType,
+    CalculationType,
+    PayrollStatus,
+    LoanType,
+    LoanStatus,
+)
 
 __all__ = [
     "User",
@@ -78,4 +93,18 @@ __all__ = [
     "TimesheetApprovalHistory",
     "TimesheetStatus",
     "EntryType",
+    # Payroll
+    "SalaryComponent",
+    "SalaryStructure",
+    "SalaryStructureComponent",
+    "EmployeeSalary",
+    "PayrollRun",
+    "Payslip",
+    "LoanAdvance",
+    "LoanRepayment",
+    "ComponentType",
+    "CalculationType",
+    "PayrollStatus",
+    "LoanType",
+    "LoanStatus",
 ]

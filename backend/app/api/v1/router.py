@@ -3,7 +3,7 @@ API v1 router combining all endpoint routers.
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, employees, employee_documents, health, folders, documents, onboarding, leave, timesheet
+from app.api.v1.endpoints import auth, users, employees, employee_documents, health, folders, documents, onboarding, leave, timesheet, payroll
 
 api_router = APIRouter()
 
@@ -75,4 +75,11 @@ api_router.include_router(
     timesheet.router,
     prefix="/timesheet",
     tags=["timesheet"],
+)
+
+# Payroll Processing
+api_router.include_router(
+    payroll.router,
+    prefix="/payroll",
+    tags=["payroll"],
 )
