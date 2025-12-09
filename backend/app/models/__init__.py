@@ -67,6 +67,14 @@ from app.models.statutory import (
     DisbursementStatus,
     TransferType,
 )
+from app.models.ai import (
+    AIRequest,
+    AIFeedback,
+    AIPromptTemplate,
+    DocumentExtractionResult,
+    AIRequestType,
+    AIModel,
+)
 
 __all__ = [
     "User",
@@ -142,4 +150,11 @@ __all__ = [
     "FilingStatus",
     "DisbursementStatus",
     "TransferType",
+    # AI
+    "AIRequest",
+    "AIFeedback",
+    "AIPromptTemplate",
+    "DocumentExtractionResult",
+    "AIRequestType",
+    "AIModel",
 ]
