@@ -3,7 +3,7 @@ API v1 router combining all endpoint routers.
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, employees, employee_documents, health, folders, documents, onboarding, leave, timesheet, payroll, statutory, ai, accounting, currency, customer, vendor, bank, gst
+from app.api.v1.endpoints import auth, users, employees, employee_documents, health, folders, documents, onboarding, leave, timesheet, payroll, statutory, ai, accounting, currency, customer, vendor, bank, gst, tds
 
 api_router = APIRouter()
 
@@ -138,4 +138,11 @@ api_router.include_router(
     gst.router,
     prefix="/gst",
     tags=["gst-compliance"],
+)
+
+# TDS Compliance
+api_router.include_router(
+    tds.router,
+    prefix="/tds",
+    tags=["tds-compliance"],
 )

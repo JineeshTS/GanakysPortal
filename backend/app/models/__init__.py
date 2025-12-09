@@ -146,6 +146,16 @@ from app.models.gst import (
     GSTInvoiceType,
     HSNCodeType,
 )
+from app.models.tds import (
+    TDSDeduction,
+    TDSChallan,
+    TDSCertificate,
+    TDS26QReturn,
+    TDSThreshold,
+    TDSDepositStatus,
+    TDSCertificateStatus,
+    TDS26QStatus,
+)
 
 __all__ = [
     "User",
@@ -293,4 +303,13 @@ __all__ = [
     "GSTReturnStatus",
     "GSTInvoiceType",
     "HSNCodeType",
+    # TDS
+    "TDSDeduction",
+    "TDSChallan",
+    "TDSCertificate",
+    "TDS26QReturn",
+    "TDSThreshold",
+    "TDSDepositStatus",
+    "TDSCertificateStatus",
+    "TDS26QStatus",
 ]
