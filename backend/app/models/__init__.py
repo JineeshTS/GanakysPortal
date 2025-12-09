@@ -75,6 +75,18 @@ from app.models.ai import (
     AIRequestType,
     AIModel,
 )
+from app.models.accounting import (
+    AccountGroup,
+    Account,
+    AccountingPeriod,
+    JournalEntry,
+    JournalEntryLine,
+    AccountBalance,
+    AccountGroupType,
+    AccountType,
+    JournalEntryStatus,
+    ReferenceType,
+)
 
 __all__ = [
     "User",
@@ -157,4 +169,15 @@ __all__ = [
     "DocumentExtractionResult",
     "AIRequestType",
     "AIModel",
+    # Accounting
+    "AccountGroup",
+    "Account",
+    "AccountingPeriod",
+    "JournalEntry",
+    "JournalEntryLine",
+    "AccountBalance",
+    "AccountGroupType",
+    "AccountType",
+    "JournalEntryStatus",
+    "ReferenceType",
 ]
