@@ -93,6 +93,19 @@ from app.models.currency import (
     ForexTransaction,
     ExchangeRateSource,
 )
+from app.models.customer import (
+    Customer,
+    Invoice,
+    InvoiceLineItem,
+    PaymentReceipt,
+    PaymentReceiptAllocation,
+    CustomerType,
+    InvoiceType,
+    InvoiceStatus,
+    SupplyType,
+    PaymentStatus,
+    PaymentMode,
+)
 
 __all__ = [
     "User",
@@ -191,4 +204,16 @@ __all__ = [
     "ExchangeRate",
     "ForexTransaction",
     "ExchangeRateSource",
+    # Customer/AR
+    "Customer",
+    "Invoice",
+    "InvoiceLineItem",
+    "PaymentReceipt",
+    "PaymentReceiptAllocation",
+    "CustomerType",
+    "InvoiceType",
+    "InvoiceStatus",
+    "SupplyType",
+    "PaymentStatus",
+    "PaymentMode",
 ]
