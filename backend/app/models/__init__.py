@@ -134,6 +134,18 @@ from app.models.bank import (
     PettyCashEntryType,
     CashFlowCategory,
 )
+from app.models.gst import (
+    GSTReturn,
+    GSTR1Data,
+    GSTR3BSummary,
+    HSNSACCode,
+    HSNSummary,
+    ITCReconciliation,
+    GSTReturnType,
+    GSTReturnStatus,
+    GSTInvoiceType,
+    HSNCodeType,
+)
 
 __all__ = [
     "User",
@@ -270,4 +282,15 @@ __all__ = [
     "TransactionType",
     "PettyCashEntryType",
     "CashFlowCategory",
+    # GST
+    "GSTReturn",
+    "GSTR1Data",
+    "GSTR3BSummary",
+    "HSNSACCode",
+    "HSNSummary",
+    "ITCReconciliation",
+    "GSTReturnType",
+    "GSTReturnStatus",
+    "GSTInvoiceType",
+    "HSNCodeType",
 ]
