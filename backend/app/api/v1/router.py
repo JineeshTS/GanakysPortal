@@ -3,7 +3,7 @@ API v1 router combining all endpoint routers.
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, employees, employee_documents, health, folders, documents, onboarding, leave, timesheet, payroll, statutory, ai, accounting, currency, customer, vendor
+from app.api.v1.endpoints import auth, users, employees, employee_documents, health, folders, documents, onboarding, leave, timesheet, payroll, statutory, ai, accounting, currency, customer, vendor, bank
 
 api_router = APIRouter()
 
@@ -124,4 +124,11 @@ api_router.include_router(
     vendor.router,
     prefix="/ap",
     tags=["accounts-payable"],
+)
+
+# Bank & Cash Management
+api_router.include_router(
+    bank.router,
+    prefix="/bank",
+    tags=["bank-management"],
 )
