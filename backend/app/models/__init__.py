@@ -49,6 +49,24 @@ from app.models.payroll import (
     LoanType,
     LoanStatus,
 )
+from app.models.statutory import (
+    CompanyProfile,
+    CompanyStatutory,
+    CompanyBankAccount,
+    AuthorizedSignatory,
+    PFFiling,
+    PFFilingDetail,
+    ESIFiling,
+    ESIFilingDetail,
+    TDSChallan,
+    TDSFiling,
+    TDSFilingDetail,
+    SalaryDisbursement,
+    SalaryDisbursementDetail,
+    FilingStatus,
+    DisbursementStatus,
+    TransferType,
+)
 
 __all__ = [
     "User",
@@ -107,4 +125,21 @@ __all__ = [
     "PayrollStatus",
     "LoanType",
     "LoanStatus",
+    # Statutory
+    "CompanyProfile",
+    "CompanyStatutory",
+    "CompanyBankAccount",
+    "AuthorizedSignatory",
+    "PFFiling",
+    "PFFilingDetail",
+    "ESIFiling",
+    "ESIFilingDetail",
+    "TDSChallan",
+    "TDSFiling",
+    "TDSFilingDetail",
+    "SalaryDisbursement",
+    "SalaryDisbursementDetail",
+    "FilingStatus",
+    "DisbursementStatus",
+    "TransferType",
 ]
