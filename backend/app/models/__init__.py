@@ -106,6 +106,18 @@ from app.models.customer import (
     PaymentStatus,
     PaymentMode,
 )
+from app.models.vendor import (
+    Vendor,
+    VendorBill,
+    VendorBillLineItem,
+    VendorPayment,
+    VendorPaymentAllocation,
+    VendorType,
+    TDSSection,
+    BillStatus,
+    VendorPaymentStatus,
+    PaymentMode as VendorPaymentMode,
+)
 
 __all__ = [
     "User",
@@ -216,4 +228,15 @@ __all__ = [
     "SupplyType",
     "PaymentStatus",
     "PaymentMode",
+    # Vendor/AP
+    "Vendor",
+    "VendorBill",
+    "VendorBillLineItem",
+    "VendorPayment",
+    "VendorPaymentAllocation",
+    "VendorType",
+    "TDSSection",
+    "BillStatus",
+    "VendorPaymentStatus",
+    "VendorPaymentMode",
 ]
