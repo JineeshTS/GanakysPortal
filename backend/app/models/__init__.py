@@ -87,6 +87,12 @@ from app.models.accounting import (
     JournalEntryStatus,
     ReferenceType,
 )
+from app.models.currency import (
+    Currency,
+    ExchangeRate,
+    ForexTransaction,
+    ExchangeRateSource,
+)
 
 __all__ = [
     "User",
@@ -180,4 +186,9 @@ __all__ = [
     "AccountType",
     "JournalEntryStatus",
     "ReferenceType",
+    # Currency
+    "Currency",
+    "ExchangeRate",
+    "ForexTransaction",
+    "ExchangeRateSource",
 ]
