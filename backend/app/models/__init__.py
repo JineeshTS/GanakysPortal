@@ -156,6 +156,14 @@ from app.models.tds import (
     TDSCertificateStatus,
     TDS26QStatus,
 )
+from app.models.reports import (
+    SavedReport,
+    ReportSchedule,
+    ReportTemplate,
+    ReportType,
+    ReportFormat,
+    ReportScheduleFrequency,
+)
 
 __all__ = [
     "User",
@@ -312,4 +320,11 @@ __all__ = [
     "TDSDepositStatus",
     "TDSCertificateStatus",
     "TDS26QStatus",
+    # Reports
+    "SavedReport",
+    "ReportSchedule",
+    "ReportTemplate",
+    "ReportType",
+    "ReportFormat",
+    "ReportScheduleFrequency",
 ]
