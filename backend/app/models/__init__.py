@@ -175,6 +175,18 @@ from app.models.crm import (
     ActivityType,
     ActivityOutcome,
 )
+from app.models.ai_assistant import (
+    AIConversation,
+    AIMessage,
+    AIAction,
+    AIInsight as AIAssistantInsight,
+    DailyBriefing,
+    QueryIntent,
+    QueryModule,
+    ActionStatus,
+    InsightType,
+    InsightPriority,
+)
 
 __all__ = [
     "User",
@@ -348,4 +360,15 @@ __all__ = [
     "LeadPriority",
     "ActivityType",
     "ActivityOutcome",
+    # AI Assistant
+    "AIConversation",
+    "AIMessage",
+    "AIAction",
+    "AIAssistantInsight",
+    "DailyBriefing",
+    "QueryIntent",
+    "QueryModule",
+    "ActionStatus",
+    "InsightType",
+    "InsightPriority",
 ]
