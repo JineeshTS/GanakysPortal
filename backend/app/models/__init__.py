@@ -164,6 +164,17 @@ from app.models.reports import (
     ReportFormat,
     ReportScheduleFrequency,
 )
+from app.models.crm import (
+    Lead,
+    LeadActivity,
+    LeadStageHistory,
+    AIFollowupSuggestion,
+    LeadSource,
+    LeadStage,
+    LeadPriority,
+    ActivityType,
+    ActivityOutcome,
+)
 
 __all__ = [
     "User",
@@ -327,4 +338,14 @@ __all__ = [
     "ReportType",
     "ReportFormat",
     "ReportScheduleFrequency",
+    # CRM
+    "Lead",
+    "LeadActivity",
+    "LeadStageHistory",
+    "AIFollowupSuggestion",
+    "LeadSource",
+    "LeadStage",
+    "LeadPriority",
+    "ActivityType",
+    "ActivityOutcome",
 ]
