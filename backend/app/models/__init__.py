@@ -187,6 +187,23 @@ from app.models.ai_assistant import (
     InsightType,
     InsightPriority,
 )
+from app.models.project import (
+    Project as ProjectManagement,
+    Milestone,
+    Task as ProjectTask21,
+    ProjectMember,
+    TaskComment,
+    TaskStatusHistory,
+    ProjectType,
+    ProjectStatus,
+    ProjectPriority,
+    BillingType,
+    HealthStatus,
+    MilestoneStatus,
+    TaskStatus as ProjectTaskStatus,
+    TaskPriority as ProjectTaskPriority,
+    TaskType as ProjectTaskType,
+)
 
 __all__ = [
     "User",
@@ -371,4 +388,20 @@ __all__ = [
     "ActionStatus",
     "InsightType",
     "InsightPriority",
+    # Project Management
+    "ProjectManagement",
+    "Milestone",
+    "ProjectTask21",
+    "ProjectMember",
+    "TaskComment",
+    "TaskStatusHistory",
+    "ProjectType",
+    "ProjectStatus",
+    "ProjectPriority",
+    "BillingType",
+    "HealthStatus",
+    "MilestoneStatus",
+    "ProjectTaskStatus",
+    "ProjectTaskPriority",
+    "ProjectTaskType",
 ]
