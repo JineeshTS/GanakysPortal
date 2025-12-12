@@ -204,6 +204,15 @@ from app.models.project import (
     TaskPriority as ProjectTaskPriority,
     TaskType as ProjectTaskType,
 )
+from app.models.resource import (
+    ResourceAllocation,
+    EmployeeCapacity,
+    UtilizationRecord,
+    CapacityForecast,
+    ResourceRequest,
+    AllocationStatus,
+    UtilizationTarget,
+)
 
 __all__ = [
     "User",
@@ -404,4 +413,12 @@ __all__ = [
     "ProjectTaskStatus",
     "ProjectTaskPriority",
     "ProjectTaskType",
+    # Resource Management
+    "ResourceAllocation",
+    "EmployeeCapacity",
+    "UtilizationRecord",
+    "CapacityForecast",
+    "ResourceRequest",
+    "AllocationStatus",
+    "UtilizationTarget",
 ]
