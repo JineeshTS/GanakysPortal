@@ -213,6 +213,18 @@ from app.models.resource import (
     AllocationStatus,
     UtilizationTarget,
 )
+from app.models.billing import (
+    BillingRate,
+    TimesheetBillingRecord,
+    MilestoneBilling,
+    ProjectCostRecord,
+    ProjectRevenueRecord,
+    ProjectProfitabilitySnapshot,
+    CustomerProfitabilitySummary,
+    BillingAlert,
+    RateType,
+    BillingStatus,
+)
 
 __all__ = [
     "User",
@@ -421,4 +433,15 @@ __all__ = [
     "ResourceRequest",
     "AllocationStatus",
     "UtilizationTarget",
+    # Project Billing
+    "BillingRate",
+    "TimesheetBillingRecord",
+    "MilestoneBilling",
+    "ProjectCostRecord",
+    "ProjectRevenueRecord",
+    "ProjectProfitabilitySnapshot",
+    "CustomerProfitabilitySummary",
+    "BillingAlert",
+    "RateType",
+    "BillingStatus",
 ]

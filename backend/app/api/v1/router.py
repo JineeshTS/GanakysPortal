@@ -3,7 +3,7 @@ API v1 router combining all endpoint routers.
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, employees, employee_documents, health, folders, documents, onboarding, leave, timesheet, payroll, statutory, ai, accounting, currency, customer, vendor, bank, gst, tds, reports, crm, ai_assistant, project, resource
+from app.api.v1.endpoints import auth, users, employees, employee_documents, health, folders, documents, onboarding, leave, timesheet, payroll, statutory, ai, accounting, currency, customer, vendor, bank, gst, tds, reports, crm, ai_assistant, project, resource, billing
 
 api_router = APIRouter()
 
@@ -180,4 +180,11 @@ api_router.include_router(
     resource.router,
     prefix="/resources",
     tags=["resource-management"],
+)
+
+# Project Billing
+api_router.include_router(
+    billing.router,
+    prefix="/billing",
+    tags=["project-billing"],
 )
