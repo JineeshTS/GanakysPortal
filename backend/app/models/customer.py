@@ -15,6 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 
+from app.core.types import EncryptedString
 from app.models.base import BaseModel
 
 
@@ -101,7 +102,7 @@ class Customer(BaseModel):
     # Tax details
     is_domestic: Mapped[bool] = mapped_column(Boolean, default=True)
     gstin: Mapped[Optional[str]] = mapped_column(String(15), nullable=True)
-    pan: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    pan: Mapped[Optional[str]] = mapped_column(EncryptedString(500), nullable=True)
     tax_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # For foreign customers
 
     # Financial

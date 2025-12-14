@@ -9,7 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_current_user
+from app.api.deps import get_db, get_current_user, require_accountant
 from app.models.user import User
 from app.models.accounting import AccountType, JournalEntryStatus, ReferenceType
 from app.schemas.accounting import (
@@ -41,7 +41,7 @@ router = APIRouter()
 @router.get("/groups", response_model=list[AccountGroupTreeResponse])
 async def get_account_groups_tree(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get chart of accounts as tree structure."""
     groups = await AccountingService.get_account_groups_tree(db)
@@ -52,7 +52,7 @@ async def get_account_groups_tree(
 async def create_account_group(
     data: AccountGroupCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Create account group."""
     group = await AccountingService.create_account_group(db, **data.model_dump())
@@ -64,7 +64,7 @@ async def create_account_group(
 async def get_account_group(
     group_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get account group by ID."""
     group = await AccountingService.get_account_group(db, group_id)
@@ -86,7 +86,7 @@ async def list_accounts(
     page: int = Query(1, ge=1),
     size: int = Query(100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """List accounts with filters."""
     accounts, total = await AccountingService.get_accounts(
@@ -104,7 +104,7 @@ async def list_accounts(
 async def create_account(
     data: AccountCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Create account."""
     # Check if code already exists
@@ -124,7 +124,7 @@ async def create_account(
 async def get_account(
     account_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get account by ID."""
     account = await AccountingService.get_account(db, account_id)
@@ -141,7 +141,7 @@ async def update_account(
     account_id: UUID,
     data: AccountUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Update account."""
     account = await AccountingService.get_account(db, account_id)
@@ -170,7 +170,7 @@ async def get_account_ledger(
     from_date: date = Query(...),
     to_date: date = Query(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get account ledger for a date range."""
     try:
@@ -191,7 +191,7 @@ async def get_account_ledger(
 async def list_periods(
     financial_year: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """List accounting periods."""
     periods = await AccountingService.get_periods(db, financial_year)
@@ -201,7 +201,7 @@ async def list_periods(
 @router.get("/periods/current", response_model=AccountingPeriodResponse)
 async def get_current_period(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get current accounting period."""
     period = await AccountingService.get_current_period(db)
@@ -217,7 +217,7 @@ async def get_current_period(
 async def create_financial_year(
     data: FinancialYearCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Create all periods for a financial year."""
     # Check if FY already exists
@@ -239,7 +239,7 @@ async def create_financial_year(
 async def close_period(
     period_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Close an accounting period."""
     from sqlalchemy import select
@@ -279,7 +279,7 @@ async def list_journal_entries(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """List journal entries with filters."""
     entries, total = await AccountingService.get_journal_entries(
@@ -299,7 +299,7 @@ async def list_journal_entries(
 async def create_journal_entry(
     data: JournalEntryCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Create journal entry."""
     try:
@@ -329,7 +329,7 @@ async def create_journal_entry(
 async def get_journal_entry(
     entry_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get journal entry with lines."""
     entry = await AccountingService.get_journal_entry(db, entry_id)
@@ -345,7 +345,7 @@ async def get_journal_entry(
 async def post_journal_entry(
     entry_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Post a draft journal entry."""
     entry = await AccountingService.get_journal_entry(db, entry_id)
@@ -373,7 +373,7 @@ async def reverse_journal_entry(
     reversal_date: date = Query(...),
     narration: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Reverse a posted journal entry."""
     entry = await AccountingService.get_journal_entry(db, entry_id)
@@ -406,7 +406,7 @@ async def reverse_journal_entry(
 async def get_trial_balance(
     as_of_date: date = Query(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Generate trial balance as of date."""
     try:
@@ -424,7 +424,7 @@ async def get_trial_balance(
 @router.post("/setup/seed-chart-of-accounts", status_code=status.HTTP_201_CREATED)
 async def seed_chart_of_accounts(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Seed default chart of accounts (run once)."""
     # Check if already seeded

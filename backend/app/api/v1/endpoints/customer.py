@@ -9,7 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_current_user
+from app.api.deps import get_db, get_current_user, require_accountant
 from app.models.user import User
 from app.models.customer import InvoiceStatus, InvoiceType, PaymentStatus
 from app.schemas.customer import (
@@ -51,7 +51,7 @@ async def list_customers(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """List customers with filters."""
     customers, total = await CustomerService.get_customers(
@@ -64,7 +64,7 @@ async def list_customers(
 async def create_customer(
     data: CustomerCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Create a new customer."""
     customer = await CustomerService.create_customer(db, **data.model_dump())
@@ -76,7 +76,7 @@ async def create_customer(
 async def get_customer(
     customer_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get customer with outstanding balance."""
     customer = await CustomerService.get_customer(db, customer_id)
@@ -98,7 +98,7 @@ async def update_customer(
     customer_id: UUID,
     data: CustomerUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Update customer."""
     customer = await CustomerService.get_customer(db, customer_id)
@@ -127,7 +127,7 @@ async def list_invoices(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """List invoices with filters."""
     invoices, total = await InvoiceService.get_invoices(
@@ -147,7 +147,7 @@ async def list_invoices(
 async def create_invoice(
     data: InvoiceCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Create a new invoice."""
     try:
@@ -174,7 +174,7 @@ async def create_invoice(
 async def get_invoice(
     invoice_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get invoice with line items."""
     invoice = await InvoiceService.get_invoice(db, invoice_id)
@@ -190,7 +190,7 @@ async def get_invoice(
 async def finalize_invoice(
     invoice_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Finalize a draft invoice."""
     invoice = await InvoiceService.get_invoice(db, invoice_id)
@@ -217,7 +217,7 @@ async def cancel_invoice(
     invoice_id: UUID,
     data: InvoiceCancelRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Cancel an invoice."""
     invoice = await InvoiceService.get_invoice(db, invoice_id)
@@ -252,7 +252,7 @@ async def list_payment_receipts(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """List payment receipts."""
     from sqlalchemy import select
@@ -280,7 +280,7 @@ async def list_payment_receipts(
 async def create_payment_receipt(
     data: PaymentReceiptCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Create a payment receipt."""
     try:
@@ -305,7 +305,7 @@ async def create_payment_receipt(
 async def get_payment_receipt(
     receipt_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get payment receipt with allocations."""
     receipt = await PaymentReceiptService.get_payment_receipt(db, receipt_id)
@@ -322,7 +322,7 @@ async def allocate_payment(
     receipt_id: UUID,
     data: PaymentAllocationRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Allocate payment to invoices."""
     receipt = await PaymentReceiptService.get_payment_receipt(db, receipt_id)
@@ -351,7 +351,7 @@ async def allocate_payment(
 async def confirm_payment(
     receipt_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Confirm a pending payment receipt."""
     receipt = await PaymentReceiptService.get_payment_receipt(db, receipt_id)
@@ -380,7 +380,7 @@ async def confirm_payment(
 @router.get("/dashboard", response_model=ARDashboardStats)
 async def get_ar_dashboard(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get AR dashboard statistics."""
     stats = await ARReportService.get_dashboard_stats(db)
@@ -391,7 +391,7 @@ async def get_ar_dashboard(
 async def get_aging_report(
     as_of_date: Optional[date] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get customer aging report."""
     report_date = as_of_date or date.today()
@@ -404,7 +404,7 @@ async def get_aging_report(
 @router.post("/utils/amount-to-words", response_model=AmountInWordsResponse)
 async def convert_amount_to_words(
     data: AmountInWordsRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Convert amount to words."""
     words = amount_to_words(data.amount, data.currency)

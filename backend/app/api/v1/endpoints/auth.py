@@ -94,7 +94,7 @@ async def login(
     # Reset failed attempts on successful login
     user.failed_login_attempts = 0
     user.locked_until = None
-    await db.commit()
+    # Auto-commit handles persistence on successful response
 
     # Generate tokens
     access_token = create_access_token(
@@ -225,7 +225,7 @@ async def change_password(
     # Update password
     current_user.password_hash = get_password_hash(request.new_password)
     current_user.password_changed_at = datetime.now(timezone.utc)
-    await db.commit()
+    # Auto-commit handles persistence on successful response
 
     return {"message": "Password changed successfully"}
 
@@ -305,7 +305,7 @@ async def reset_password(
     user.password_changed_at = datetime.now(timezone.utc)
     user.failed_login_attempts = 0
     user.locked_until = None
-    await db.commit()
+    # Auto-commit handles persistence on successful response
 
     return {"message": "Password reset successfully"}
 

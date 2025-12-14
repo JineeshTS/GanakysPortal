@@ -9,7 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_current_user, get_db, require_accountant
 from app.models.user import User
 from app.models.vendor import VendorType, BillStatus, TDSSection
 from app.schemas.vendor import (
@@ -48,7 +48,7 @@ router = APIRouter()
 async def create_vendor(
     vendor_data: VendorCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Create a new vendor"""
     vendor = await VendorService.create_vendor(db, vendor_data, current_user.id)
@@ -64,7 +64,7 @@ async def list_vendors(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """List vendors with filters"""
     vendors, total = await VendorService.get_vendors(
@@ -89,7 +89,7 @@ async def list_vendors(
 async def get_vendor(
     vendor_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get vendor by ID"""
     vendor = await VendorService.get_vendor(db, vendor_id)
@@ -103,7 +103,7 @@ async def update_vendor(
     vendor_id: UUID,
     vendor_data: VendorUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Update vendor"""
     vendor = await VendorService.update_vendor(db, vendor_id, vendor_data, current_user.id)
@@ -116,7 +116,7 @@ async def update_vendor(
 async def get_vendor_outstanding(
     vendor_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get vendor outstanding summary"""
     try:
@@ -129,7 +129,7 @@ async def get_vendor_outstanding(
 async def get_bills_for_payment(
     vendor_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get unpaid bills for a vendor (for payment allocation)"""
     return await VendorPaymentService.get_bills_for_payment(db, vendor_id)
@@ -141,7 +141,7 @@ async def get_bills_for_payment(
 async def create_bill(
     bill_data: VendorBillCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Create a new vendor bill"""
     try:
@@ -172,7 +172,7 @@ async def list_bills(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """List vendor bills with filters"""
     bills, total = await VendorBillService.get_bills(
@@ -213,7 +213,7 @@ async def list_bills(
 async def get_bill(
     bill_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get vendor bill by ID with line items"""
     bill = await VendorBillService.get_bill(db, bill_id, include_items=True)
@@ -226,7 +226,7 @@ async def get_bill(
 async def approve_bill(
     bill_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Approve a vendor bill"""
     try:
@@ -241,7 +241,7 @@ async def cancel_bill(
     bill_id: UUID,
     reason: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Cancel a vendor bill"""
     try:
@@ -257,7 +257,7 @@ async def cancel_bill(
 async def create_payment(
     payment_data: VendorPaymentCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Create a vendor payment"""
     try:
@@ -271,7 +271,7 @@ async def create_payment(
 async def get_payment(
     payment_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get vendor payment by ID"""
     payment = await VendorPaymentService.get_payment(db, payment_id)
@@ -322,7 +322,7 @@ async def allocate_payment(
     payment_id: UUID,
     allocations: List[VendorPaymentAllocationCreate],
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Allocate payment to bills"""
     try:
@@ -338,7 +338,7 @@ async def allocate_payment(
 async def confirm_payment(
     payment_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Confirm a payment and update bill balances"""
     try:
@@ -353,7 +353,7 @@ async def confirm_payment(
 @router.get("/dashboard", response_model=APDashboardStats)
 async def get_ap_dashboard(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get AP dashboard statistics"""
     return await APReportService.get_dashboard_stats(db)
@@ -363,7 +363,7 @@ async def get_ap_dashboard(
 async def get_aging_report(
     as_of_date: Optional[date] = Query(None, description="Report as of date (default: today)"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get AP aging report"""
     return await APReportService.get_aging_report(db, as_of_date)
@@ -374,7 +374,7 @@ async def get_tds_summary(
     from_date: date = Query(..., description="Start date"),
     to_date: date = Query(..., description="End date"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get TDS deducted summary by section"""
     return await APReportService.get_tds_summary(db, from_date, to_date)
@@ -384,7 +384,7 @@ async def get_tds_summary(
 
 @router.get("/tds-sections", response_model=dict)
 async def get_tds_sections(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_accountant),
 ):
     """Get TDS sections with rates"""
     from app.models.vendor import TDS_RATES

@@ -20,6 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.types import EncryptedString
 from app.models.base import BaseModel
 
 if TYPE_CHECKING:
@@ -257,14 +258,14 @@ class EmployeeIdentity(BaseModel):
 
     # Identity documents (stored encrypted)
     pan_number: Mapped[Optional[str]] = mapped_column(
-        String(500), nullable=True
-    )  # Encrypted
+        EncryptedString(500), nullable=True
+    )
     aadhaar_number: Mapped[Optional[str]] = mapped_column(
-        String(500), nullable=True
-    )  # Encrypted
+        EncryptedString(500), nullable=True
+    )
     passport_number: Mapped[Optional[str]] = mapped_column(
-        String(500), nullable=True
-    )  # Encrypted
+        EncryptedString(500), nullable=True
+    )
     passport_expiry: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     driving_license: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     voter_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
@@ -299,8 +300,8 @@ class EmployeeBank(BaseModel):
     bank_name: Mapped[str] = mapped_column(String(100), nullable=False)
     branch_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     account_number: Mapped[str] = mapped_column(
-        String(500), nullable=False
-    )  # Encrypted
+        EncryptedString(500), nullable=False
+    )
     ifsc_code: Mapped[str] = mapped_column(String(20), nullable=False)
     account_type: Mapped[str] = mapped_column(
         String(20), default="savings", nullable=False

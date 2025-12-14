@@ -26,6 +26,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
+from app.core.types import EncryptedString
 from app.models.base import Base
 
 
@@ -128,7 +129,7 @@ class Vendor(Base):
     # Tax Information
     is_domestic = Column(Boolean, default=True)
     gstin = Column(String(15))  # GST Identification Number
-    pan = Column(String(10))  # PAN for TDS
+    pan = Column(EncryptedString(500))  # PAN for TDS (encrypted)
     tan = Column(String(10))  # TAN if applicable
     cin = Column(String(21))  # Company Identification Number
 
