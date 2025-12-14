@@ -25,6 +25,7 @@ from app.schemas.edms import (
 )
 from app.api.deps import get_current_user
 from app.services.edms import DocumentService, FolderService
+from app.services.file_storage import FileStorageService
 
 router = APIRouter()
 
@@ -165,8 +166,17 @@ async def download_document(
         file_path = document.file_path
         file_name = document.file_name
 
+    # Validate file path to prevent directory traversal attacks
+    try:
+        validated_path = FileStorageService.validate_path(file_path)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid file path",
+        )
+
     return FileResponse(
-        path=file_path,
+        path=str(validated_path),
         filename=file_name,
         media_type=document.mime_type,
     )

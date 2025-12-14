@@ -1,11 +1,19 @@
 """
 Application configuration settings.
 """
+import logging
+import warnings
 from functools import lru_cache
 from typing import List, Optional
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Default values that indicate unconfigured secrets
+_INSECURE_DEFAULTS = [
+    "your-super-secret-key-change-in-production",
+    "your-32-byte-encryption-key-here",
+]
 
 
 class Settings(BaseSettings):
@@ -15,7 +23,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore",
+        extra="ignore",  # Allow unknown env vars for flexibility
     )
 
     # Application
@@ -101,6 +109,50 @@ class Settings(BaseSettings):
         default="your-32-byte-encryption-key-here",
         description="AES-256 encryption key for sensitive data",
     )
+
+    @model_validator(mode="after")
+    def validate_security_settings(self) -> "Settings":
+        """
+        Validate security-critical settings.
+
+        - In production: Raise error if default secrets are used
+        - In development: Log warning if default secrets are used
+        """
+        insecure_fields = []
+
+        if self.SECRET_KEY in _INSECURE_DEFAULTS:
+            insecure_fields.append("SECRET_KEY")
+
+        if self.ENCRYPTION_KEY in _INSECURE_DEFAULTS:
+            insecure_fields.append("ENCRYPTION_KEY")
+
+        if insecure_fields:
+            if self.ENVIRONMENT == "production":
+                raise ValueError(
+                    f"CRITICAL: Insecure default values detected for: {', '.join(insecure_fields)}. "
+                    f"These MUST be changed in production. Generate secure keys with: "
+                    f"python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+                )
+            else:
+                # Development/staging: warn but allow
+                warnings.warn(
+                    f"WARNING: Using default values for: {', '.join(insecure_fields)}. "
+                    f"This is acceptable for development but MUST be changed for production.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        return self
+
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production environment."""
+        return self.ENVIRONMENT == "production"
+
+    @property
+    def is_development(self) -> bool:
+        """Check if running in development environment."""
+        return self.ENVIRONMENT in ("development", "dev", "local")
 
 
 @lru_cache

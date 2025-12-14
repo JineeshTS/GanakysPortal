@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.logging import get_logger
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -31,6 +32,9 @@ from app.schemas.auth import (
 )
 from app.schemas.user import UserResponse
 from app.api.deps import get_current_user
+from app.services.email import EmailService
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -247,9 +251,16 @@ async def forgot_password(
     # Generate reset token
     reset_token = generate_password_reset_token(user.email)
 
-    # TODO: Send email with reset token
-    # For now, just log it (in production, send email)
-    print(f"Password reset token for {user.email}: {reset_token}")
+    # Send password reset email
+    email_sent = await EmailService.send_password_reset_email(
+        to_email=user.email,
+        reset_token=reset_token,
+        user_name=user.full_name,
+    )
+
+    if not email_sent:
+        logger.error(f"Failed to send password reset email to {user.email}")
+        # Still return success to prevent email enumeration
 
     return {"message": "If the email exists, a reset link has been sent"}
 

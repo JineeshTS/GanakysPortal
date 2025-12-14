@@ -128,6 +128,48 @@ class FileStorageService:
         return str(file_path.relative_to(cls.get_base_path()))
 
     @classmethod
+    def validate_path(cls, file_path: str, allowed_base: Optional[Path] = None) -> Path:
+        """
+        Validate that a file path is within allowed directory.
+
+        Prevents path traversal attacks by ensuring the resolved path
+        stays within the allowed base directory.
+
+        Args:
+            file_path: The file path to validate (can be relative or absolute)
+            allowed_base: The allowed base directory (defaults to UPLOAD_DIR)
+
+        Returns:
+            The validated absolute Path
+
+        Raises:
+            ValueError: If path traversal attempt is detected
+        """
+        if allowed_base is None:
+            allowed_base = cls.get_base_path()
+
+        # Resolve to absolute path (resolves .., symlinks, etc.)
+        base_resolved = allowed_base.resolve()
+
+        # Handle both absolute and relative paths
+        if os.path.isabs(file_path):
+            target_path = Path(file_path)
+        else:
+            target_path = allowed_base / file_path
+
+        target_resolved = target_path.resolve()
+
+        # Check if resolved path is within allowed base
+        try:
+            target_resolved.relative_to(base_resolved)
+        except ValueError:
+            raise ValueError(
+                f"Path traversal attempt detected: path escapes allowed directory"
+            )
+
+        return target_resolved
+
+    @classmethod
     async def get_file(cls, relative_path: str) -> Optional[Path]:
         """
         Get file path for download.
@@ -137,8 +179,13 @@ class FileStorageService:
 
         Returns:
             Full file path if exists, None otherwise
+
+        Raises:
+            ValueError: If path traversal attempt is detected
         """
-        full_path = cls.get_base_path() / relative_path
+        # Validate path to prevent directory traversal
+        full_path = cls.validate_path(relative_path)
+
         if await aiofiles.os.path.exists(full_path):
             return full_path
         return None
