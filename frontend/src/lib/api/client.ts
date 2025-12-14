@@ -58,12 +58,12 @@ async function request<T>(
     headers,
   });
 
-  // Handle 401 - redirect to login
+  // Handle 401 - clear tokens and throw error
+  // AuthContext handles redirect to login page
   if (response.status === 401) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
-      window.location.href = '/login';
     }
     throw new ApiError('Unauthorized', 401);
   }
