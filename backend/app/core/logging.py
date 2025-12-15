@@ -9,6 +9,24 @@ from typing import Optional
 from app.core.config import settings
 
 
+class RequestIDFilter(logging.Filter):
+    """
+    Logging filter that adds request ID to log records.
+
+    This allows correlating log entries with specific HTTP requests.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Add request_id to log record."""
+        # Import here to avoid circular imports
+        try:
+            from app.core.middleware import get_request_id
+            record.request_id = get_request_id() or "-"
+        except ImportError:
+            record.request_id = "-"
+        return True
+
+
 def setup_logging(
     log_level: Optional[str] = None,
     json_format: bool = False,
@@ -29,17 +47,18 @@ def setup_logging(
 
     level = getattr(logging, log_level.upper(), logging.INFO)
 
-    # Create formatter
+    # Create formatter with request ID
     if json_format:
         # JSON format for production (easier to parse)
         format_str = (
             '{"timestamp": "%(asctime)s", "level": "%(levelname)s", '
-            '"logger": "%(name)s", "message": "%(message)s"}'
+            '"request_id": "%(request_id)s", "logger": "%(name)s", '
+            '"message": "%(message)s"}'
         )
     else:
         # Human-readable format for development
         format_str = (
-            "%(asctime)s | %(levelname)-8s | %(name)s:%(lineno)d | %(message)s"
+            "%(asctime)s | %(levelname)-8s | %(request_id)s | %(name)s:%(lineno)d | %(message)s"
         )
 
     formatter = logging.Formatter(format_str, datefmt="%Y-%m-%d %H:%M:%S")
@@ -51,10 +70,15 @@ def setup_logging(
     # Remove existing handlers to avoid duplicates
     root_logger.handlers.clear()
 
+    # Add request ID filter
+    request_id_filter = RequestIDFilter()
+    root_logger.addFilter(request_id_filter)
+
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(level)
     console_handler.setFormatter(formatter)
+    console_handler.addFilter(request_id_filter)
     root_logger.addHandler(console_handler)
 
     # Suppress noisy loggers

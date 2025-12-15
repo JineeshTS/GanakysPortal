@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.database import init_db, close_db
 from app.core.redis import close_redis
 from app.core.logging import get_logger
+from app.core.middleware import RequestIDMiddleware
 from app.api.v1.router import api_router
 
 # Get logger for this module
@@ -62,8 +63,13 @@ app.add_middleware(
         "Accept",
         "Origin",
         "X-Requested-With",
+        "X-Request-ID",
     ],
+    expose_headers=["X-Request-ID"],
 )
+
+# Add request ID middleware for request tracing
+app.add_middleware(RequestIDMiddleware)
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)

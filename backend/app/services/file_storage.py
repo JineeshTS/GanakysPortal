@@ -200,12 +200,19 @@ class FileStorageService:
 
         Returns:
             True if deleted, False if not found
+
+        Raises:
+            ValueError: If path traversal attempt is detected
         """
-        full_path = cls.get_base_path() / relative_path
+        # Validate path to prevent directory traversal
+        full_path = cls.validate_path(relative_path)
         try:
             if await aiofiles.os.path.exists(full_path):
                 await aiofiles.os.remove(full_path)
                 return True
+        except ValueError:
+            # Path traversal attempt - propagate the error
+            raise
         except Exception:
             pass
         return False
