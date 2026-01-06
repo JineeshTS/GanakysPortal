@@ -94,7 +94,7 @@ async def get_vendor(
     """Get vendor by ID"""
     vendor = await VendorService.get_vendor(db, vendor_id)
     if not vendor:
-        raise HTTPException(status_code=404, detail="Vendor not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor not found")
     return vendor
 
 
@@ -108,7 +108,7 @@ async def update_vendor(
     """Update vendor"""
     vendor = await VendorService.update_vendor(db, vendor_id, vendor_data, current_user.id)
     if not vendor:
-        raise HTTPException(status_code=404, detail="Vendor not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor not found")
     return vendor
 
 
@@ -122,7 +122,7 @@ async def get_vendor_outstanding(
     try:
         return await VendorService.get_vendor_outstanding(db, vendor_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.get("/vendors/{vendor_id}/bills-for-payment", response_model=List[BillForPayment])
@@ -152,14 +152,14 @@ async def create_bill(
             )
             if duplicate:
                 raise HTTPException(
-                    status_code=400,
+                    status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Duplicate bill: {duplicate.bill_number} already exists with same vendor bill number"
                 )
 
         bill = await VendorBillService.create_bill(db, bill_data, current_user.id)
         return bill
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/bills", response_model=dict)
@@ -218,7 +218,7 @@ async def get_bill(
     """Get vendor bill by ID with line items"""
     bill = await VendorBillService.get_bill(db, bill_id, include_items=True)
     if not bill:
-        raise HTTPException(status_code=404, detail="Bill not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bill not found")
     return bill
 
 
@@ -233,7 +233,7 @@ async def approve_bill(
         bill = await VendorBillService.approve_bill(db, bill_id, current_user.id)
         return bill
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/bills/{bill_id}/cancel", response_model=VendorBillResponse)
@@ -248,7 +248,7 @@ async def cancel_bill(
         bill = await VendorBillService.cancel_bill(db, bill_id, current_user.id, reason)
         return bill
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 # ==================== Vendor Payment Endpoints ====================
@@ -264,7 +264,7 @@ async def create_payment(
         payment = await VendorPaymentService.create_payment(db, payment_data, current_user.id)
         return payment
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/payments/{payment_id}", response_model=VendorPaymentDetailedResponse)
@@ -276,7 +276,7 @@ async def get_payment(
     """Get vendor payment by ID"""
     payment = await VendorPaymentService.get_payment(db, payment_id)
     if not payment:
-        raise HTTPException(status_code=404, detail="Payment not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found")
 
     # Build detailed response with allocations
     allocations = []
@@ -331,7 +331,7 @@ async def allocate_payment(
         )
         return payment
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/payments/{payment_id}/confirm", response_model=VendorPaymentResponse)
@@ -345,7 +345,7 @@ async def confirm_payment(
         payment = await VendorPaymentService.confirm_payment(db, payment_id, current_user.id)
         return payment
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 # ==================== AP Dashboard & Reports ====================

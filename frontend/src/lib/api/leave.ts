@@ -65,24 +65,7 @@ export const leaveApi = {
       formData.append('reason', data.reason);
       formData.append('attachment', data.attachment);
 
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/leave/requests`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to apply leave');
-      }
-
-      return response.json();
+      return api.uploadFormData<LeaveRequest>('/leave/requests', formData);
     }
 
     return api.post<LeaveRequest>('/leave/requests', data);

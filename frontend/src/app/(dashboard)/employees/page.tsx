@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import employeesApi from '@/lib/api/employees';
 import type { Employee, Department, Designation, EmploymentStatus } from '@/types/employee';
+import { getInitials } from '@/lib/format';
 
 const statusColors: Record<EmploymentStatus, string> = {
   active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
@@ -114,10 +115,6 @@ export default function EmployeesPage() {
     setSelectedDesignation('');
     setSelectedStatus('');
     setCurrentPage(1);
-  };
-
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
   const totalPages = Math.ceil(total / pageSize);

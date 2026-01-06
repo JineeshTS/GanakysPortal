@@ -28,6 +28,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import accountingApi from '@/lib/api/accounting';
 import type { Invoice, InvoiceStatus } from '@/types/accounting';
+import { formatCurrency, formatDate } from '@/lib/format';
 
 const statusColors: Record<InvoiceStatus, string> = {
   draft: 'bg-gray-100 text-gray-800',
@@ -93,22 +94,6 @@ export default function InvoicesPage() {
     } catch (error) {
       console.error('Failed to download invoice:', error);
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
   };
 
   const totalPages = Math.ceil(total / pageSize);

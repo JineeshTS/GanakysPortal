@@ -88,24 +88,10 @@ export const employeesApi = {
     formData.append('document_type', documentType);
     if (description) formData.append('description', description);
 
-    const token = localStorage.getItem('access_token');
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/employees/${employeeId}/documents`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      }
+    return api.uploadFormData<EmployeeDocument>(
+      `/employees/${employeeId}/documents`,
+      formData
     );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to upload document');
-    }
-
-    return response.json();
   },
 
   deleteDocument: async (employeeId: string, documentId: string): Promise<void> => {

@@ -7,11 +7,13 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.api.deps import get_db, get_current_user, require_accountant
 from app.models.user import User
-from app.models.accounting import AccountType, JournalEntryStatus, ReferenceType
+from app.models.accounting import AccountType, JournalEntryStatus, ReferenceType, AccountingPeriod, AccountGroup
 from app.schemas.accounting import (
     AccountGroupCreate,
     AccountGroupUpdate,
@@ -33,6 +35,7 @@ from app.schemas.accounting import (
 )
 from app.services.accounting import AccountingService
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 
@@ -179,6 +182,7 @@ async def get_account_ledger(
         )
         return ledger
     except ValueError as e:
+        logger.error(f"Failed to get account ledger for account {account_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
@@ -242,9 +246,6 @@ async def close_period(
     current_user: User = Depends(require_accountant),
 ):
     """Close an accounting period."""
-    from sqlalchemy import select
-    from app.models.accounting import AccountingPeriod
-
     result = await db.execute(
         select(AccountingPeriod).where(AccountingPeriod.id == period_id)
     )
@@ -319,6 +320,7 @@ async def create_journal_entry(
         return entry
     except ValueError as e:
         await db.rollback()
+        logger.error(f"Failed to create journal entry: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -361,6 +363,7 @@ async def post_journal_entry(
         return posted
     except ValueError as e:
         await db.rollback()
+        logger.error(f"Failed to post journal entry {entry_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -394,6 +397,7 @@ async def reverse_journal_entry(
         return reversal
     except ValueError as e:
         await db.rollback()
+        logger.error(f"Failed to reverse journal entry {entry_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -413,6 +417,7 @@ async def get_trial_balance(
         tb = await AccountingService.get_trial_balance(db, as_of_date)
         return tb
     except ValueError as e:
+        logger.error(f"Failed to generate trial balance for {as_of_date}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -428,9 +433,6 @@ async def seed_chart_of_accounts(
 ):
     """Seed default chart of accounts (run once)."""
     # Check if already seeded
-    from sqlalchemy import select
-    from app.models.accounting import AccountGroup
-
     result = await db.execute(select(AccountGroup).limit(1))
     if result.scalar_one_or_none():
         raise HTTPException(

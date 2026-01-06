@@ -3,13 +3,21 @@ AI ERP Assistant API Endpoints - Phase 20
 REST API for conversational AI, queries, and insights
 """
 from datetime import date
+from decimal import Decimal
 from typing import Optional, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.models.ai_assistant import AIConversation, QueryModule
+from app.models.bank import BankAccount
+from app.models.crm import Lead, LeadStage
+from app.models.customer import Invoice, InvoiceStatus
+from app.models.employee import Employee
+from app.models.leave import LeaveApplication, LeaveStatus
 from app.models.user import User
 from app.schemas.ai_assistant import (
     AIQueryRequest, AIQueryResponse,
@@ -18,7 +26,6 @@ from app.schemas.ai_assistant import (
     DailyBriefingResponse, AIAssistantDashboard,
     SAMPLE_QUERIES,
 )
-from app.models.ai_assistant import QueryModule
 from app.services.ai_assistant import (
     ConversationService, InsightService, DailyBriefingService,
 )
@@ -124,9 +131,6 @@ async def delete_conversation(
     current_user: User = Depends(get_current_user),
 ):
     """Delete a conversation."""
-    from app.models.ai_assistant import AIConversation
-    from sqlalchemy import delete
-
     # Verify ownership
     service = ConversationService(db)
     conversation = await service.get_conversation_with_messages(conversation_id)
@@ -313,14 +317,6 @@ async def get_quick_stats(
 
     Returns key metrics based on user role.
     """
-    from sqlalchemy import select, func
-    from app.models.employee import Employee
-    from app.models.leave import LeaveApplication, LeaveStatus
-    from app.models.customer import Invoice, InvoiceStatus
-    from app.models.bank import BankAccount
-    from app.models.crm import Lead, LeadStage
-    from decimal import Decimal
-
     stats = {}
     today = date.today()
 

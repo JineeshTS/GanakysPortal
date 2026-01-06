@@ -2,14 +2,21 @@
 Project Billing Endpoints - Phase 23
 REST API for T&M billing, milestone billing, and profitability
 """
-from datetime import date
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Optional, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.api.deps import get_current_user, get_db
+from app.models.billing import MilestoneBilling, TimesheetBillingRecord, BillingStatus
+from app.models.customer import Customer
+from app.models.project import Project, BillingType, Milestone, ProjectStatus, MilestoneStatus
+from app.models.timesheet import TimesheetEntry
 from app.models.user import User
 from app.services.billing import (
     BillingRateService, TMBillingService, MilestoneBillingService,
@@ -25,6 +32,7 @@ from app.schemas.billing import (
     BillingAlertResponse, BillingAlertsSummary,
 )
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 
@@ -96,6 +104,7 @@ async def get_unbilled_hours(
         summary = await service.get_unbilled_hours(project_id, from_date, to_date)
         return summary
     except ValueError as e:
+        logger.error(f"Failed to get unbilled hours for project {project_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
@@ -115,6 +124,7 @@ async def preview_tm_invoice(
         preview = await service.preview_tm_invoice(project_id, request)
         return preview
     except ValueError as e:
+        logger.error(f"Failed to preview T&M invoice for project {project_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
@@ -137,6 +147,7 @@ async def generate_tm_invoice(
             "message": "Invoice generated successfully"
         }
     except ValueError as e:
+        logger.error(f"Failed to generate T&M invoice for project {project_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
@@ -190,6 +201,7 @@ async def get_billable_milestones(
         summary = await service.get_billable_milestones(project_id)
         return summary
     except ValueError as e:
+        logger.error(f"Failed to get billable milestones for project {project_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
@@ -212,6 +224,7 @@ async def generate_milestone_invoice(
             "message": "Invoice generated successfully"
         }
     except ValueError as e:
+        logger.error(f"Failed to generate milestone invoice for milestone {milestone_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
@@ -225,10 +238,6 @@ async def approve_milestone_for_billing(
     current_user: User = Depends(get_current_user)
 ):
     """Approve a milestone for billing"""
-    from app.models.billing import MilestoneBilling
-    from sqlalchemy import select
-    from datetime import datetime
-
     query = select(MilestoneBilling).where(MilestoneBilling.milestone_id == milestone_id)
     result = await db.execute(query)
     billing = result.scalar_one_or_none()
@@ -264,6 +273,7 @@ async def get_project_profitability(
         report = await service.get_project_profitability(project_id, from_date, to_date)
         return report
     except ValueError as e:
+        logger.error(f"Failed to get project profitability for project {project_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
@@ -292,10 +302,6 @@ async def get_customer_profitability(
     current_user: User = Depends(get_current_user)
 ):
     """Get customer profitability report"""
-    from app.models.customer import Customer
-    from app.models.project import Project
-    from sqlalchemy import select
-
     # Get customer
     cust_query = select(Customer).where(Customer.id == customer_id)
     result = await db.execute(cust_query)
@@ -320,8 +326,6 @@ async def get_customer_profitability(
     total_cost = Decimal("0")
     project_breakdown = []
 
-    from decimal import Decimal
-
     for project in projects:
         try:
             report = await service.get_project_profitability(project.id, from_date, to_date)
@@ -338,7 +342,8 @@ async def get_customer_profitability(
                 "profit": float(report.gross_profit),
                 "margin": float(report.gross_margin_percent)
             })
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to get profitability for project {project.id}: {e}")
             continue
 
     gross_profit = total_invoiced - total_cost
@@ -377,11 +382,6 @@ async def get_project_billing_summary(
     current_user: User = Depends(get_current_user)
 ):
     """Get comprehensive billing summary for a project"""
-    from app.models.project import Project, BillingType
-    from app.models.billing import TimesheetBillingRecord, MilestoneBilling, BillingStatus
-    from app.models.timesheet import TimesheetEntry
-    from sqlalchemy import select, func
-
     # Get project
     proj_query = select(Project).where(Project.id == project_id)
     result = await db.execute(proj_query)
@@ -404,8 +404,6 @@ async def get_project_billing_summary(
     result = await db.execute(hours_query)
     hours = result.one()
 
-    from decimal import Decimal
-
     total_hours = hours.total or Decimal("0")
     billable_hours = hours.billable or Decimal("0")
 
@@ -424,8 +422,6 @@ async def get_project_billing_summary(
     unbilled_hours = billable_hours - billed_hours
 
     # Get milestone billing
-    from app.models.project import Milestone
-
     milestone_query = (
         select(
             func.count(Milestone.id).label("total"),

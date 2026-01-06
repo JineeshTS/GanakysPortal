@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { getInitials } from '@/lib/format';
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -25,14 +26,6 @@ interface HeaderProps {
 
 export function Header({ onToggleSidebar, isSidebarCollapsed }: HeaderProps) {
   const { user, logout } = useAuth();
-
-  const getInitials = (name?: string) => {
-    if (!name) return 'U';
-    const parts = name.split(' ');
-    return parts.length > 1
-      ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-      : name.substring(0, 2).toUpperCase();
-  };
 
   const getRoleLabel = (role?: string) => {
     switch (role) {

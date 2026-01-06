@@ -9,6 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.bank import BankAccountType, StatementStatus, MatchStatus, BankStatementLine
@@ -44,6 +45,7 @@ from app.services.bank import (
     BankDashboardService,
 )
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 
@@ -91,7 +93,7 @@ async def get_bank_account(
     """Get bank account by ID"""
     account = await BankAccountService.get_bank_account(db, account_id)
     if not account:
-        raise HTTPException(status_code=404, detail="Bank account not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bank account not found")
     return account
 
 
@@ -107,7 +109,7 @@ async def update_bank_account(
         db, account_id, account_data, current_user.id
     )
     if not account:
-        raise HTTPException(status_code=404, detail="Bank account not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bank account not found")
     return account
 
 
@@ -185,7 +187,7 @@ async def get_bank_statement(
     """Get bank statement with lines"""
     statement = await BankStatementService.get_statement(db, statement_id, include_lines=True)
     if not statement:
-        raise HTTPException(status_code=404, detail="Statement not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Statement not found")
     return statement
 
 
@@ -201,7 +203,8 @@ async def get_reconciliation_summary(
     try:
         return await ReconciliationService.get_reconciliation_summary(db, statement_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        logger.error(f"Failed to get reconciliation summary for statement {statement_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.post("/statements/{statement_id}/auto-match", response_model=dict)
@@ -215,7 +218,8 @@ async def auto_match_statement(
         matched_count = await ReconciliationService.auto_match_statement(db, statement_id)
         return {"matched_count": matched_count}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Failed to auto-match statement {statement_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/statements/{statement_id}/lines/{line_id}/potential-matches", response_model=List[dict])
@@ -228,11 +232,11 @@ async def get_potential_matches(
     """Get potential matches for a statement line"""
     statement = await BankStatementService.get_statement(db, statement_id, include_lines=True)
     if not statement:
-        raise HTTPException(status_code=404, detail="Statement not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Statement not found")
 
     line = next((l for l in statement.lines if l.id == line_id), None)
     if not line:
-        raise HTTPException(status_code=404, detail="Statement line not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Statement line not found")
 
     matches = await ReconciliationService.find_potential_matches(
         db, line, statement.bank_account_id
@@ -262,7 +266,8 @@ async def match_statement_line(
         await ReconciliationService.update_statement_counts(db, statement_id)
         return line
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Failed to match statement line {line_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/statements/{statement_id}/lines/{line_id}/unmatch", response_model=BankStatementLineResponse)
@@ -278,7 +283,8 @@ async def unmatch_statement_line(
         await ReconciliationService.update_statement_counts(db, statement_id)
         return line
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Failed to unmatch statement line {line_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/statements/{statement_id}/lines/{line_id}/exclude", response_model=BankStatementLineResponse)
@@ -292,7 +298,7 @@ async def exclude_statement_line(
     """Exclude a statement line from reconciliation"""
     line = await db.get(BankStatementLine, line_id)
     if not line:
-        raise HTTPException(status_code=404, detail="Statement line not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Statement line not found")
 
     from app.models.bank import BankStatementLine
 
@@ -341,7 +347,7 @@ async def get_petty_cash_fund(
     """Get petty cash fund by ID"""
     fund = await PettyCashService.get_fund(db, fund_id)
     if not fund:
-        raise HTTPException(status_code=404, detail="Petty cash fund not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Petty cash fund not found")
     return fund
 
 
@@ -355,7 +361,8 @@ async def get_petty_cash_summary(
     try:
         return await PettyCashService.get_fund_summary(db, fund_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        logger.error(f"Failed to get petty cash fund summary for {fund_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.post("/petty-cash/entries", response_model=PettyCashEntryResponse, status_code=status.HTTP_201_CREATED)
@@ -369,7 +376,8 @@ async def create_petty_cash_entry(
         entry = await PettyCashService.create_entry(db, entry_data, current_user.id)
         return entry
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Failed to create petty cash entry: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/petty-cash/funds/{fund_id}/entries", response_model=dict)
