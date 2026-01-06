@@ -9,6 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.vendor import TDSSection
@@ -37,6 +38,7 @@ from app.services.tds import (
     TDSReportService,
 )
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 
@@ -53,7 +55,8 @@ async def create_tds_deduction(
         deduction = await TDSService.create_deduction(db, deduction_data, current_user.id)
         return deduction
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Failed to create TDS deduction: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/deductions", response_model=dict)
@@ -112,7 +115,7 @@ async def get_tds_deduction(
     """Get TDS deduction by ID"""
     deduction = await TDSService.get_deduction(db, deduction_id)
     if not deduction:
-        raise HTTPException(status_code=404, detail="TDS deduction not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TDS deduction not found")
     return deduction
 
 
@@ -129,7 +132,8 @@ async def create_tds_challan(
         challan = await TDSChallanService.create_challan(db, challan_data, current_user.id)
         return challan
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Failed to create TDS challan: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/challans", response_model=dict)
@@ -181,7 +185,8 @@ async def generate_tds_certificate(
         )
         return certificate
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Failed to generate TDS certificate: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/certificates", response_model=dict)
@@ -225,7 +230,7 @@ async def issue_tds_certificate(
 
     certificate = await db.get(TDSCertificate, certificate_id)
     if not certificate:
-        raise HTTPException(status_code=404, detail="Certificate not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Certificate not found")
 
     certificate.status = TDSCertificateStatus.ISSUED
     certificate.issued_date = date.today()
@@ -250,7 +255,8 @@ async def create_26q_return(
         tds_return = await TDS26QService.create_return(db, return_data, current_user.id)
         return tds_return
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Failed to create TDS 26Q return: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/26q/returns/{return_id}/generate", response_model=TDS26QReturnResponse)
@@ -264,7 +270,8 @@ async def generate_26q_data(
         tds_return = await TDS26QService.generate_26q_data(db, return_id)
         return tds_return
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Failed to generate 26Q data for return {return_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/26q/returns/{return_id}", response_model=TDS26QReturnResponse)
@@ -278,7 +285,7 @@ async def get_26q_return(
 
     tds_return = await db.get(TDS26QReturn, return_id)
     if not tds_return:
-        raise HTTPException(status_code=404, detail="Return not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Return not found")
     return tds_return
 
 
@@ -296,7 +303,7 @@ async def mark_26q_filed(
 
     tds_return = await db.get(TDS26QReturn, return_id)
     if not tds_return:
-        raise HTTPException(status_code=404, detail="Return not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Return not found")
 
     tds_return.status = TDS26QStatus.FILED
     tds_return.provisional_receipt_number = provisional_receipt_number

@@ -88,6 +88,97 @@ async function request<T>(
   return data as T;
 }
 
+/**
+ * Upload FormData with proper auth and error handling
+ * Use this for file uploads that require multipart/form-data
+ */
+async function uploadFormData<T>(
+  endpoint: string,
+  formData: FormData
+): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const token = await getAuthToken();
+
+  const headers: HeadersInit = {};
+  if (token) {
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
+  // Don't set Content-Type header - browser will set it with boundary for FormData
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  // Handle 401 - clear tokens and throw error
+  if (response.status === 401) {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+    }
+    throw new ApiError('Unauthorized', 401);
+  }
+
+  // Parse response
+  let data;
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    data = await response.json();
+  } else {
+    data = await response.text();
+  }
+
+  // Handle errors
+  if (!response.ok) {
+    const message = typeof data === 'object' && data?.detail
+      ? data.detail
+      : 'An error occurred';
+    throw new ApiError(message, response.status, data);
+  }
+
+  return data as T;
+}
+
+/**
+ * Download blob (e.g., PDF, Excel files) with proper auth and error handling
+ */
+async function downloadBlob(endpoint: string): Promise<Blob> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const token = await getAuthToken();
+
+  const headers: HeadersInit = {};
+  if (token) {
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, { headers });
+
+  // Handle 401 - clear tokens and throw error
+  if (response.status === 401) {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+    }
+    throw new ApiError('Unauthorized', 401);
+  }
+
+  // Handle errors
+  if (!response.ok) {
+    // Try to parse error message
+    let message = 'Failed to download file';
+    try {
+      const data = await response.json();
+      message = data?.detail || message;
+    } catch {
+      // If not JSON, use default message
+    }
+    throw new ApiError(message, response.status);
+  }
+
+  return response.blob();
+}
+
 export const api = {
   get: <T>(endpoint: string, options?: RequestOptions) =>
     request<T>(endpoint, { ...options, method: 'GET' }),
@@ -115,6 +206,10 @@ export const api = {
 
   delete: <T>(endpoint: string, options?: RequestOptions) =>
     request<T>(endpoint, { ...options, method: 'DELETE' }),
+
+  // Special methods for file handling
+  uploadFormData,
+  downloadBlob,
 };
 
 export { ApiError };

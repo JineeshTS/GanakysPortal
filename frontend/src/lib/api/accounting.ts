@@ -102,13 +102,7 @@ export const accountingApi = {
   },
 
   downloadInvoice: async (id: string): Promise<Blob> => {
-    const token = localStorage.getItem('access_token');
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/accounting/invoices/${id}/download`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (!response.ok) throw new Error('Failed to download invoice');
-    return response.blob();
+    return api.downloadBlob(`/accounting/invoices/${id}/download`);
   },
 
   // Bills

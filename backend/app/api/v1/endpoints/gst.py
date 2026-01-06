@@ -9,6 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.gst import GSTReturnType, GSTReturnStatus, HSNCodeType
@@ -38,6 +39,7 @@ from app.services.gst import (
     GSTDashboardService,
 )
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 
@@ -64,7 +66,7 @@ async def get_hsn_sac(
     """Get HSN/SAC code details"""
     hsn_code = await HSNSACService.get_code(db, code)
     if not hsn_code:
-        raise HTTPException(status_code=404, detail="HSN/SAC code not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="HSN/SAC code not found")
     return hsn_code
 
 
@@ -98,7 +100,7 @@ async def create_gst_return(
     )
     if existing:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Return already exists for this period: {existing.return_period}"
         )
 
@@ -115,7 +117,7 @@ async def get_gst_return(
     """Get GST return by ID"""
     gst_return = await GSTReturnService.get_return(db, return_id)
     if not gst_return:
-        raise HTTPException(status_code=404, detail="GST return not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="GST return not found")
     return gst_return
 
 
@@ -134,7 +136,7 @@ async def get_gstr1_by_period(
         db, gstin, GSTReturnType.GSTR1, month, year
     )
     if not gst_return:
-        raise HTTPException(status_code=404, detail="GSTR-1 not found for this period")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="GSTR-1 not found for this period")
     return gst_return
 
 
@@ -149,7 +151,8 @@ async def generate_gstr1(
         gst_return = await GSTR1Service.generate_gstr1(db, return_id, current_user.id)
         return gst_return
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Failed to generate GSTR-1 for return {return_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/gstr1/{return_id}/summary", response_model=GSTR1Summary)
@@ -162,7 +165,8 @@ async def get_gstr1_summary(
     try:
         return await GSTR1Service.get_gstr1_summary(db, return_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        logger.error(f"Failed to get GSTR-1 summary for return {return_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.get("/gstr1/{return_id}/invoices", response_model=List[GSTR1InvoiceResponse])
@@ -258,7 +262,7 @@ async def get_gstr3b_by_period(
         db, gstin, GSTReturnType.GSTR3B, month, year
     )
     if not gst_return:
-        raise HTTPException(status_code=404, detail="GSTR-3B not found for this period")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="GSTR-3B not found for this period")
     return gst_return
 
 
@@ -273,7 +277,8 @@ async def generate_gstr3b(
         gst_return = await GSTR3BService.generate_gstr3b(db, return_id, current_user.id)
         return gst_return
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Failed to generate GSTR-3B for return {return_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/gstr3b/{return_id}/summary", response_model=GSTR3BSummaryData)
@@ -292,7 +297,7 @@ async def get_gstr3b_summary(
     summary = result.scalar_one_or_none()
 
     if not summary:
-        raise HTTPException(status_code=404, detail="GSTR-3B summary not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="GSTR-3B summary not found")
 
     return GSTR3BSummaryData.model_validate(summary)
 
@@ -307,7 +312,8 @@ async def get_gst_payment_challan(
     try:
         return await GSTR3BService.get_payment_challan(db, return_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        logger.error(f"Failed to get payment challan for return {return_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 # ==================== GST Dashboard ====================
@@ -333,7 +339,7 @@ async def validate_gst_return(
     """Validate GST return"""
     gst_return = await GSTReturnService.get_return(db, return_id)
     if not gst_return:
-        raise HTTPException(status_code=404, detail="GST return not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="GST return not found")
 
     # Perform validation (simplified)
     errors = []
@@ -367,7 +373,7 @@ async def mark_return_filed(
     """Mark GST return as filed"""
     gst_return = await GSTReturnService.get_return(db, return_id)
     if not gst_return:
-        raise HTTPException(status_code=404, detail="GST return not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="GST return not found")
 
     gst_return.status = GSTReturnStatus.FILED
     gst_return.arn = arn
