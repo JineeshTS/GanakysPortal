@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-005",
+    "agent_name": "DevOps Architect",
+    "created_at": "2026-01-08T10:49:00Z",
+    "version": "1.0"
+  },
+  "infrastructure": {
+    "provider": "Hostinger VPS KVM2",
+    "specs": {"cpu": "4 vCPU", "ram": "4GB", "storage": "200GB NVMe SSD", "bandwidth": "8TB"},
+    "os": "Ubuntu 22.04 LTS",
+    "domain": "portal.ganakys.com"
+  },
+  "containerization": {
+    "runtime": "Docker 24.x",
+    "orchestration": "Docker Compose (production-ready for Kubernetes)",
+    "registry": "Docker Hub (private)",
+    "base_images": {
+      "frontend": "node:20-alpine",
+      "backend": "python:3.11-slim",
+      "nginx": "nginx:alpine"
+    }
+  },
+  "docker_compose_services": {
+    "nginx": {"image": "nginx:alpine", "ports": ["80:80", "443:443"], "depends_on": ["frontend", "backend"]},
+    "frontend": {"build": "./frontend", "ports": ["3000"], "env": ["NEXT_PUBLIC_API_URL"]},
+    "backend": {"build": "./backend", "ports": ["8000"], "env": ["DATABASE_URL", "REDIS_URL", "JWT_SECRET"]},
+    "celery_worker": {"build": "./backend", "command": "celery -A app.celery worker", "depends_on": ["redis", "postgres"]},
+    "celery_beat": {"build": "./backend", "command": "celery -A app.celery beat", "depends_on": ["redis"]},
+    "postgres": {"image": "postgres:16-alpine", "ports": ["5432"], "volumes": ["postgres_data:/var/lib/postgresql/data"]},
+    "redis": {"image": "redis:7-alpine", "ports": ["6379"], "volumes": ["redis_data:/data"]},
+    "minio": {"image": "minio/minio", "ports": ["9000", "9001"], "volumes": ["minio_data:/data"]}
+  },
+  "ci_cd": {
+    "platform": "GitHub Actions",
+    "workflows": {
+      "lint": "Run on every PR - ESLint, Black, Ruff",
+      "test": "Run on every PR - pytest, Jest",
+      "build": "Build Docker images on main branch",
+      "deploy": "Deploy to VPS on release tag"
+    },
+    "deployment_strategy": "Rolling deployment with health checks"
+  },
+  "backup_strategy": {
+    "database": {"frequency": "Daily at 2 AM IST", "retention": "30 days", "storage": "S3/MinIO"},
+    "files": {"frequency": "Daily at 3 AM IST", "retention": "30 days", "storage": "S3/MinIO"},
+    "method": "pg_dump for Postgres, rsync for files"
+  },
+  "monitoring": {
+    "health_endpoints": ["/health", "/health/detailed"],
+    "metrics": "Prometheus (future)",
+    "logging": "Structured JSON logs to stdout",
+    "alerting": "Email alerts on critical errors"
+  },
+  "ssl_tls": {
+    "provider": "Let's Encrypt",
+    "auto_renewal": "Certbot with cron",
+    "min_tls_version": "TLS 1.2"
+  },
+  "environment_variables": {
+    "common": ["APP_ENV", "LOG_LEVEL", "DEBUG"],
+    "database": ["DATABASE_URL", "DATABASE_POOL_SIZE"],
+    "redis": ["REDIS_URL"],
+    "auth": ["JWT_SECRET", "JWT_ALGORITHM", "ACCESS_TOKEN_EXPIRE"],
+    "storage": ["MINIO_ENDPOINT", "MINIO_ACCESS_KEY", "MINIO_SECRET_KEY"],
+    "ai": ["ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "OPENAI_API_KEY"],
+    "email": ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD"]
+  }
+}

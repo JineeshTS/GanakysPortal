@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# GanaPortal Commit Message Hook
+# Validates conventional commit format
+
+npx --no -- commitlint --edit ${1}

@@ -1,0 +1,229 @@
+{
+  "metadata": {
+    "agent_id": "REQ-001",
+    "agent_name": "Requirements Parser",
+    "source_file": "/var/ganaportal/docs/REQUIREMENTS-V4-FINAL.md",
+    "source_lines": 2390,
+    "parsed_at": "2026-01-08T10:00:00Z",
+    "version": "4.0 FINAL"
+  },
+  "project": {
+    "name": "GanaPortal",
+    "type": "AI-First ERP System",
+    "client": "Ganakys Codilla Apps (OPC) Private Limited",
+    "cin": "U72900KA2024OPC188083",
+    "domain": "IT Services & SaaS Company",
+    "location": "Karnataka, India",
+    "target_url": "portal.ganakys.com",
+    "current_scale": 5,
+    "target_scale_2027": 15,
+    "target_scale_2030": 50
+  },
+  "build_statistics": {
+    "modules": 23,
+    "database_tables": 127,
+    "api_endpoints": 267,
+    "frontend_screens": 68,
+    "user_roles": 5,
+    "compliance_rules": 47
+  },
+  "technology_stack": {
+    "frontend": {
+      "framework": {"name": "Next.js", "version": "14.1.x"},
+      "language": {"name": "TypeScript", "version": "5.3.x"},
+      "styling": {"name": "Tailwind CSS", "version": "3.4.x"},
+      "components": {"name": "shadcn/ui", "version": "latest"},
+      "state": {"name": "TanStack Query", "version": "5.17.x"},
+      "tables": {"name": "TanStack Table", "version": "8.11.x"},
+      "forms": {"name": "React Hook Form", "version": "7.49.x"},
+      "validation": {"name": "Zod", "version": "3.22.x"},
+      "charts": {"name": "Recharts", "version": "2.10.x"},
+      "icons": {"name": "Lucide React", "version": "0.303.x"},
+      "date": {"name": "date-fns", "version": "3.2.x"},
+      "pdf": {"name": "react-pdf", "version": "7.x"}
+    },
+    "backend": {
+      "framework": {"name": "FastAPI", "version": "0.109.x"},
+      "language": {"name": "Python", "version": "3.11+"},
+      "orm": {"name": "SQLAlchemy", "version": "2.0.x"},
+      "validation": {"name": "Pydantic", "version": "2.5.x"},
+      "migrations": {"name": "Alembic", "version": "1.13.x"},
+      "auth": {"name": "PyJWT", "version": "2.8.x"},
+      "password": {"name": "bcrypt", "version": "4.1.x"},
+      "task_queue": {"name": "Celery", "version": "5.3.x"},
+      "pdf_gen": {"name": "WeasyPrint", "version": "60.x"},
+      "excel": {"name": "openpyxl", "version": "3.1.x"}
+    },
+    "database": {
+      "primary": {"name": "PostgreSQL", "version": "16"},
+      "cache": {"name": "Redis", "version": "7"},
+      "search": {"name": "PostgreSQL FTS"},
+      "file_storage": {"path": "/var/data/ganaportal/"}
+    },
+    "ai": {
+      "fallback_chain": [
+        {"priority": 1, "provider": "Claude", "model": "claude-3-5-sonnet-20241022"},
+        {"priority": 2, "provider": "Gemini", "model": "gemini-1.5-pro"},
+        {"priority": 3, "provider": "OpenAI", "model": "gpt-4-turbo"},
+        {"priority": 4, "provider": "Together AI", "model": "Qwen/Qwen3-Coder-480B"}
+      ]
+    }
+  },
+  "user_roles": [
+    {"id": "admin", "name": "ADMIN", "description": "Company owner/founder with full system access"},
+    {"id": "hr", "name": "HR_MANAGER", "description": "Human Resources manager"},
+    {"id": "accountant", "name": "ACCOUNTANT", "description": "Finance/Accounts team member"},
+    {"id": "employee", "name": "EMPLOYEE", "description": "Regular employee (self-service)"},
+    {"id": "external_ca", "name": "EXTERNAL_CA", "description": "External Chartered Accountant for verification"}
+  ],
+  "ai_confidence_thresholds": {
+    "high": {"range": ">=95%", "action": "Auto-execute"},
+    "medium": {"range": "70-94%", "action": "Queue for review"},
+    "low": {"range": "<70%", "action": "Flag for manual"}
+  },
+  "modules": [
+    {"id": 1, "name": "Infrastructure & DevOps"},
+    {"id": 2, "name": "Authentication & Users"},
+    {"id": 3, "name": "Employee Management (HRMS)"},
+    {"id": 4, "name": "Enterprise Document Management (EDMS)"},
+    {"id": 5, "name": "Employee Onboarding"},
+    {"id": 6, "name": "Leave Management"},
+    {"id": 7, "name": "Timesheet Management"},
+    {"id": 8, "name": "Payroll System"},
+    {"id": 9, "name": "Statutory - PF"},
+    {"id": 10, "name": "Statutory - ESI"},
+    {"id": 11, "name": "Statutory - PT"},
+    {"id": 12, "name": "Statutory - TDS"},
+    {"id": 13, "name": "Chart of Accounts & GL"},
+    {"id": 14, "name": "Multi-Currency"},
+    {"id": 15, "name": "Customers & AR"},
+    {"id": 16, "name": "Vendors & AP"},
+    {"id": 17, "name": "Banking"},
+    {"id": 18, "name": "GST Compliance"},
+    {"id": 19, "name": "TDS on Vendors"},
+    {"id": 20, "name": "CRM"},
+    {"id": 21, "name": "Projects"},
+    {"id": 22, "name": "AI Services"},
+    {"id": 23, "name": "Reports"}
+  ],
+  "database_tables": {
+    "total": 127,
+    "by_category": {
+      "auth_users": 3,
+      "organization": 6,
+      "employees": 9,
+      "documents": 4,
+      "onboarding": 2,
+      "leave": 5,
+      "timesheet": 3,
+      "payroll": 15,
+      "statutory": 8,
+      "accounting": 12,
+      "currency": 3,
+      "customers_ar": 8,
+      "vendors_ap": 8,
+      "banking": 7,
+      "gst": 6,
+      "tds_vendors": 4,
+      "crm": 5,
+      "projects": 9,
+      "ai": 7,
+      "compliance": 3
+    }
+  },
+  "api_endpoints": {
+    "total": 267,
+    "by_category": {
+      "auth": 9,
+      "users": 7,
+      "organization": 12,
+      "employees": 18,
+      "documents": 16,
+      "onboarding": 8,
+      "leave": 14,
+      "timesheet": 10,
+      "payroll": 20,
+      "statutory": 16,
+      "accounting": 22,
+      "customers_ar": 18,
+      "vendors_ap": 18,
+      "banking": 14,
+      "gst": 12,
+      "tds_vendors": 8,
+      "reports": 12,
+      "crm": 10,
+      "projects": 16,
+      "ai": 10,
+      "settings": 8
+    }
+  },
+  "frontend_screens": {
+    "total": 68,
+    "by_category": {
+      "auth": 4,
+      "dashboards": 5,
+      "employees": 8,
+      "onboarding": 3,
+      "documents": 4,
+      "leave": 5,
+      "timesheet": 4,
+      "payroll": 7,
+      "statutory": 4,
+      "accounting": 6,
+      "customers_invoicing": 5,
+      "vendors_bills": 5,
+      "banking": 3,
+      "reports": 4,
+      "settings": 1
+    }
+  },
+  "india_compliance": {
+    "pf": {
+      "employee_rate_percent": 12,
+      "eps_rate_percent": 8.33,
+      "eps_cap_rupees": 1250,
+      "eps_wage_cap_rupees": 15000,
+      "admin_charges_percent": 0.5,
+      "due_date": "15th of following month"
+    },
+    "esi": {
+      "employee_rate_percent": 0.75,
+      "employer_rate_percent": 3.25,
+      "wage_limit_rupees": 21000,
+      "due_date": "15th of following month"
+    },
+    "pt_karnataka": {
+      "threshold_rupees": 15000,
+      "monthly_amount_rupees": 200,
+      "february_amount_rupees": 300,
+      "annual_total_rupees": 2500
+    },
+    "tds_salary_new_regime": {
+      "standard_deduction_rupees": 75000,
+      "slabs": [
+        {"upto": 300000, "rate_percent": 0},
+        {"from": 300001, "to": 700000, "rate_percent": 5},
+        {"from": 700001, "to": 1000000, "rate_percent": 10},
+        {"from": 1000001, "to": 1200000, "rate_percent": 15},
+        {"from": 1200001, "to": 1500000, "rate_percent": 20},
+        {"above": 1500000, "rate_percent": 30}
+      ],
+      "cess_percent": 4
+    },
+    "gst": {
+      "it_services_rate_percent": 18,
+      "cgst_percent": 9,
+      "sgst_percent": 9,
+      "igst_percent": 18,
+      "gstr1_due": "11th of following month",
+      "gstr3b_due": "20th of following month"
+    }
+  },
+  "nfr": {
+    "api_response_p95_ms": 500,
+    "page_load_seconds": 3,
+    "backend_coverage_percent": 80,
+    "frontend_coverage_percent": 60,
+    "uptime_percent": 99.5
+  }
+}

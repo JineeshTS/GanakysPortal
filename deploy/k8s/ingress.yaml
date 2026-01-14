@@ -1,0 +1,74 @@
+# DEP-005: GanaPortal Kubernetes Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ganaportal-ingress
+  namespace: ganaportal
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+spec:
+  tls:
+    - hosts:
+        - portal.ganakys.com
+        - api.portal.ganakys.com
+      secretName: ganaportal-tls
+  rules:
+    # Frontend
+    - host: portal.ganakys.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ganaportal-frontend
+                port:
+                  number: 3000
+          # API calls from frontend
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: ganaportal-backend
+                port:
+                  number: 8000
+    # API subdomain
+    - host: api.portal.ganakys.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ganaportal-backend
+                port:
+                  number: 8000
+
+---
+# Certificate issuer
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ganaportal-tls
+  namespace: ganaportal
+spec:
+  secretName: ganaportal-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - portal.ganakys.com
+    - api.portal.ganakys.com

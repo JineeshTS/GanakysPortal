@@ -1,0 +1,447 @@
+{
+  "metadata": {
+    "agent_id": "REQ-011",
+    "agent_name": "API Specification Writer",
+    "source_files": [
+      "/var/ganaportal/artifacts/requirements/functional_requirements.json",
+      "/var/ganaportal/artifacts/requirements/data_entities.json"
+    ],
+    "created_at": "2026-01-08T10:25:00Z",
+    "version": "1.0",
+    "openapi_version": "3.1.0"
+  },
+  "api_overview": {
+    "base_url": "https://portal.ganakys.com/api/v1",
+    "total_endpoints": 267,
+    "authentication": "Bearer JWT Token",
+    "content_type": "application/json",
+    "rate_limiting": {
+      "default": "100 requests/minute",
+      "ai_endpoints": "20 requests/minute"
+    }
+  },
+  "endpoint_categories": [
+    {
+      "category": "Authentication",
+      "prefix": "/auth",
+      "endpoints": [
+        {"method": "POST", "path": "/auth/login", "description": "User login with email/password", "roles": ["*"], "request": {"email": "string", "password": "string"}, "response": {"access_token": "string", "refresh_token": "string", "user": "object"}},
+        {"method": "POST", "path": "/auth/logout", "description": "User logout and token invalidation", "roles": ["*"], "request": {}, "response": {"message": "string"}},
+        {"method": "POST", "path": "/auth/refresh", "description": "Refresh access token", "roles": ["*"], "request": {"refresh_token": "string"}, "response": {"access_token": "string"}},
+        {"method": "POST", "path": "/auth/forgot-password", "description": "Request password reset email", "roles": ["*"], "request": {"email": "string"}, "response": {"message": "string"}},
+        {"method": "POST", "path": "/auth/reset-password", "description": "Reset password with token", "roles": ["*"], "request": {"token": "string", "password": "string"}, "response": {"message": "string"}},
+        {"method": "GET", "path": "/auth/me", "description": "Get current user profile", "roles": ["*"], "request": {}, "response": {"user": "object"}}
+      ]
+    },
+    {
+      "category": "Users",
+      "prefix": "/users",
+      "endpoints": [
+        {"method": "GET", "path": "/users", "description": "List all users with pagination", "roles": ["ADMIN"], "query_params": ["page", "limit", "search", "role"]},
+        {"method": "POST", "path": "/users", "description": "Create new user", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/users/{id}", "description": "Get user by ID", "roles": ["ADMIN", "SELF"]},
+        {"method": "PUT", "path": "/users/{id}", "description": "Update user", "roles": ["ADMIN", "SELF"]},
+        {"method": "DELETE", "path": "/users/{id}", "description": "Soft delete user", "roles": ["ADMIN"]},
+        {"method": "PUT", "path": "/users/{id}/role", "description": "Change user role", "roles": ["ADMIN"]},
+        {"method": "PUT", "path": "/users/{id}/status", "description": "Activate/deactivate user", "roles": ["ADMIN"]}
+      ]
+    },
+    {
+      "category": "Employees",
+      "prefix": "/employees",
+      "endpoints": [
+        {"method": "GET", "path": "/employees", "description": "List employees with filters", "roles": ["ADMIN", "HR_MANAGER"], "query_params": ["page", "limit", "status", "department", "search"]},
+        {"method": "POST", "path": "/employees", "description": "Create new employee", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/employees/{id}", "description": "Get employee details", "roles": ["ADMIN", "HR_MANAGER", "SELF"]},
+        {"method": "PUT", "path": "/employees/{id}", "description": "Update employee", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "DELETE", "path": "/employees/{id}", "description": "Soft delete employee", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/employees/{id}/documents", "description": "Get employee documents", "roles": ["ADMIN", "HR_MANAGER", "SELF"]},
+        {"method": "POST", "path": "/employees/{id}/documents", "description": "Upload employee document", "roles": ["ADMIN", "HR_MANAGER", "SELF"]},
+        {"method": "GET", "path": "/employees/{id}/statutory", "description": "Get statutory details", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT"]},
+        {"method": "PUT", "path": "/employees/{id}/statutory", "description": "Update statutory details", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/employees/{id}/salary-structure", "description": "Get salary structure", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT"]},
+        {"method": "PUT", "path": "/employees/{id}/salary-structure", "description": "Update salary structure", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/employees/{id}/bank-details", "description": "Get bank details", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT"]},
+        {"method": "PUT", "path": "/employees/{id}/bank-details", "description": "Update bank details", "roles": ["ADMIN", "HR_MANAGER"]}
+      ]
+    },
+    {
+      "category": "Onboarding",
+      "prefix": "/onboarding",
+      "endpoints": [
+        {"method": "GET", "path": "/onboarding", "description": "List onboarding workflows", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "POST", "path": "/onboarding", "description": "Create onboarding for employee", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/onboarding/{id}", "description": "Get onboarding details", "roles": ["ADMIN", "HR_MANAGER", "SELF"]},
+        {"method": "PUT", "path": "/onboarding/{id}", "description": "Update onboarding", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/onboarding/{id}/tasks", "description": "Get onboarding tasks", "roles": ["ADMIN", "HR_MANAGER", "SELF"]},
+        {"method": "PUT", "path": "/onboarding/{id}/tasks/{taskId}", "description": "Update task status", "roles": ["ADMIN", "HR_MANAGER", "SELF"]},
+        {"method": "POST", "path": "/onboarding/{id}/complete", "description": "Mark onboarding complete", "roles": ["ADMIN", "HR_MANAGER"]}
+      ]
+    },
+    {
+      "category": "Leave Management",
+      "prefix": "/leave",
+      "endpoints": [
+        {"method": "GET", "path": "/leave/types", "description": "Get leave types", "roles": ["*"]},
+        {"method": "POST", "path": "/leave/types", "description": "Create leave type", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/leave/policies", "description": "Get leave policies", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "POST", "path": "/leave/policies", "description": "Create leave policy", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/leave/balance/{employeeId}", "description": "Get leave balance", "roles": ["ADMIN", "HR_MANAGER", "SELF"]},
+        {"method": "GET", "path": "/leave/applications", "description": "List leave applications", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "POST", "path": "/leave/applications", "description": "Apply for leave", "roles": ["*"]},
+        {"method": "GET", "path": "/leave/applications/{id}", "description": "Get application details", "roles": ["ADMIN", "HR_MANAGER", "SELF"]},
+        {"method": "PUT", "path": "/leave/applications/{id}/approve", "description": "Approve leave", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "PUT", "path": "/leave/applications/{id}/reject", "description": "Reject leave", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "PUT", "path": "/leave/applications/{id}/cancel", "description": "Cancel leave", "roles": ["ADMIN", "HR_MANAGER", "SELF"]},
+        {"method": "GET", "path": "/leave/calendar", "description": "Get leave calendar", "roles": ["*"]},
+        {"method": "GET", "path": "/leave/holidays", "description": "Get company holidays", "roles": ["*"]}
+      ]
+    },
+    {
+      "category": "Timesheet",
+      "prefix": "/timesheet",
+      "endpoints": [
+        {"method": "GET", "path": "/timesheet", "description": "Get timesheets with filters", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "POST", "path": "/timesheet", "description": "Create timesheet entry", "roles": ["*"]},
+        {"method": "GET", "path": "/timesheet/{id}", "description": "Get timesheet details", "roles": ["ADMIN", "HR_MANAGER", "SELF"]},
+        {"method": "PUT", "path": "/timesheet/{id}", "description": "Update timesheet", "roles": ["SELF"]},
+        {"method": "POST", "path": "/timesheet/{id}/submit", "description": "Submit for approval", "roles": ["SELF"]},
+        {"method": "PUT", "path": "/timesheet/{id}/approve", "description": "Approve timesheet", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "PUT", "path": "/timesheet/{id}/reject", "description": "Reject timesheet", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/timesheet/weekly/{employeeId}", "description": "Get weekly summary", "roles": ["ADMIN", "HR_MANAGER", "SELF"]}
+      ]
+    },
+    {
+      "category": "Payroll",
+      "prefix": "/payroll",
+      "endpoints": [
+        {"method": "GET", "path": "/payroll/runs", "description": "List payroll runs", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/payroll/runs", "description": "Create payroll run", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/payroll/runs/{id}", "description": "Get payroll run details", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/payroll/runs/{id}/calculate", "description": "Calculate payroll", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/payroll/runs/{id}/approve", "description": "Approve payroll", "roles": ["ADMIN"]},
+        {"method": "POST", "path": "/payroll/runs/{id}/process", "description": "Process payments", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/payroll/payslips", "description": "List payslips", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/payroll/payslips/{id}", "description": "Get payslip details", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT", "SELF"]},
+        {"method": "GET", "path": "/payroll/payslips/{id}/pdf", "description": "Download payslip PDF", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT", "SELF"]},
+        {"method": "GET", "path": "/payroll/salary-components", "description": "Get salary components", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/payroll/salary-components", "description": "Create salary component", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "Statutory Compliance",
+      "prefix": "/statutory",
+      "endpoints": [
+        {"method": "GET", "path": "/statutory/pf/returns", "description": "List PF returns", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/statutory/pf/returns", "description": "Generate PF return", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/statutory/pf/returns/{id}/ecr", "description": "Download ECR file", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/statutory/esi/returns", "description": "List ESI returns", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/statutory/esi/returns", "description": "Generate ESI return", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/statutory/pt/returns", "description": "List PT returns", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/statutory/pt/returns", "description": "Generate PT return", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/statutory/tds/returns", "description": "List TDS returns", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/statutory/tds/returns", "description": "Generate TDS return", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/statutory/tds/returns/{id}/fvu", "description": "Download FVU file", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/statutory/form16", "description": "List Form 16", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/statutory/form16/{employeeId}", "description": "Get employee Form 16", "roles": ["ADMIN", "ACCOUNTANT", "SELF"]},
+        {"method": "POST", "path": "/statutory/form16/generate", "description": "Generate Form 16", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "Accounting - Chart of Accounts",
+      "prefix": "/accounting/coa",
+      "endpoints": [
+        {"method": "GET", "path": "/accounting/coa", "description": "Get chart of accounts", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "POST", "path": "/accounting/coa", "description": "Create account", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/accounting/coa/{id}", "description": "Get account details", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "PUT", "path": "/accounting/coa/{id}", "description": "Update account", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "DELETE", "path": "/accounting/coa/{id}", "description": "Delete account", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/accounting/coa/tree", "description": "Get accounts hierarchy", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]}
+      ]
+    },
+    {
+      "category": "Accounting - Journal Entries",
+      "prefix": "/accounting/journal",
+      "endpoints": [
+        {"method": "GET", "path": "/accounting/journal", "description": "List journal entries", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "POST", "path": "/accounting/journal", "description": "Create journal entry", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/accounting/journal/{id}", "description": "Get journal entry", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "PUT", "path": "/accounting/journal/{id}", "description": "Update journal entry", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/accounting/journal/{id}/post", "description": "Post journal entry", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/accounting/journal/{id}/reverse", "description": "Reverse journal entry", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "Customers (AR)",
+      "prefix": "/customers",
+      "endpoints": [
+        {"method": "GET", "path": "/customers", "description": "List customers", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/customers", "description": "Create customer", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/customers/{id}", "description": "Get customer details", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "PUT", "path": "/customers/{id}", "description": "Update customer", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "DELETE", "path": "/customers/{id}", "description": "Delete customer", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/customers/{id}/invoices", "description": "Get customer invoices", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/customers/{id}/payments", "description": "Get customer payments", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/customers/{id}/statement", "description": "Get customer statement", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/customers/{id}/aging", "description": "Get AR aging", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "Invoices",
+      "prefix": "/invoices",
+      "endpoints": [
+        {"method": "GET", "path": "/invoices", "description": "List invoices", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/invoices", "description": "Create invoice", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/invoices/{id}", "description": "Get invoice details", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "PUT", "path": "/invoices/{id}", "description": "Update invoice", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "DELETE", "path": "/invoices/{id}", "description": "Delete draft invoice", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/invoices/{id}/finalize", "description": "Finalize invoice", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/invoices/{id}/pdf", "description": "Download invoice PDF", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/invoices/{id}/send", "description": "Email invoice", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/invoices/{id}/record-payment", "description": "Record payment", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "Vendors (AP)",
+      "prefix": "/vendors",
+      "endpoints": [
+        {"method": "GET", "path": "/vendors", "description": "List vendors", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/vendors", "description": "Create vendor", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/vendors/{id}", "description": "Get vendor details", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "PUT", "path": "/vendors/{id}", "description": "Update vendor", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "DELETE", "path": "/vendors/{id}", "description": "Delete vendor", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/vendors/{id}/bills", "description": "Get vendor bills", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/vendors/{id}/payments", "description": "Get vendor payments", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/vendors/{id}/tds-summary", "description": "Get TDS summary", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "Bills",
+      "prefix": "/bills",
+      "endpoints": [
+        {"method": "GET", "path": "/bills", "description": "List bills", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/bills", "description": "Create bill", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/bills/{id}", "description": "Get bill details", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "PUT", "path": "/bills/{id}", "description": "Update bill", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "DELETE", "path": "/bills/{id}", "description": "Delete draft bill", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/bills/{id}/approve", "description": "Approve bill", "roles": ["ADMIN"]},
+        {"method": "POST", "path": "/bills/{id}/record-payment", "description": "Record payment", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "Banking",
+      "prefix": "/banking",
+      "endpoints": [
+        {"method": "GET", "path": "/banking/accounts", "description": "List bank accounts", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/banking/accounts", "description": "Create bank account", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/banking/accounts/{id}", "description": "Get account details", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "PUT", "path": "/banking/accounts/{id}", "description": "Update bank account", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/banking/accounts/{id}/transactions", "description": "Get transactions", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/banking/accounts/{id}/import", "description": "Import bank statement", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/banking/reconciliation", "description": "Get unreconciled items", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/banking/reconciliation/match", "description": "Match transactions", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/banking/reconciliation/create", "description": "Create from bank txn", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "GST",
+      "prefix": "/gst",
+      "endpoints": [
+        {"method": "GET", "path": "/gst/returns", "description": "List GST returns", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "POST", "path": "/gst/returns/gstr1", "description": "Generate GSTR-1", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/gst/returns/gstr3b", "description": "Generate GSTR-3B", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/gst/returns/{id}", "description": "Get return details", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "GET", "path": "/gst/returns/{id}/json", "description": "Download JSON", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/gst/returns/{id}/file", "description": "Mark as filed", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/gst/hsn-summary", "description": "Get HSN summary", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/gst/reconcile", "description": "Reconcile with GSTR-2A", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/gst/input-credit", "description": "Get ITC summary", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "TDS (Vendors)",
+      "prefix": "/tds",
+      "endpoints": [
+        {"method": "GET", "path": "/tds/sections", "description": "Get TDS sections", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/tds/deductions", "description": "List TDS deductions", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/tds/deductions", "description": "Record TDS deduction", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/tds/challans", "description": "List TDS challans", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/tds/challans", "description": "Create challan", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/tds/challans/{id}/pay", "description": "Mark challan paid", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/tds/certificates", "description": "List TDS certificates", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/tds/certificates/generate", "description": "Generate certificate", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "CRM",
+      "prefix": "/crm",
+      "endpoints": [
+        {"method": "GET", "path": "/crm/leads", "description": "List leads", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "POST", "path": "/crm/leads", "description": "Create lead", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/crm/leads/{id}", "description": "Get lead details", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "PUT", "path": "/crm/leads/{id}", "description": "Update lead", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "POST", "path": "/crm/leads/{id}/convert", "description": "Convert to customer", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/crm/pipeline", "description": "Get sales pipeline", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/crm/activities", "description": "List activities", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "POST", "path": "/crm/activities", "description": "Log activity", "roles": ["ADMIN", "HR_MANAGER"]}
+      ]
+    },
+    {
+      "category": "Projects",
+      "prefix": "/projects",
+      "endpoints": [
+        {"method": "GET", "path": "/projects", "description": "List projects", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "POST", "path": "/projects", "description": "Create project", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/projects/{id}", "description": "Get project details", "roles": ["ADMIN", "HR_MANAGER", "EMPLOYEE"]},
+        {"method": "PUT", "path": "/projects/{id}", "description": "Update project", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "DELETE", "path": "/projects/{id}", "description": "Delete project", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/projects/{id}/tasks", "description": "Get project tasks", "roles": ["ADMIN", "HR_MANAGER", "EMPLOYEE"]},
+        {"method": "POST", "path": "/projects/{id}/tasks", "description": "Create task", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "PUT", "path": "/projects/{id}/tasks/{taskId}", "description": "Update task", "roles": ["ADMIN", "HR_MANAGER", "EMPLOYEE"]},
+        {"method": "GET", "path": "/projects/{id}/members", "description": "Get project members", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "POST", "path": "/projects/{id}/members", "description": "Add member", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "DELETE", "path": "/projects/{id}/members/{userId}", "description": "Remove member", "roles": ["ADMIN", "HR_MANAGER"]}
+      ]
+    },
+    {
+      "category": "AI Services",
+      "prefix": "/ai",
+      "endpoints": [
+        {"method": "POST", "path": "/ai/analyze/document", "description": "Analyze document with AI", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/ai/analyze/invoice", "description": "Extract invoice data", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/ai/analyze/bank-statement", "description": "Parse bank statement", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/ai/categorize/transaction", "description": "Categorize transaction", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/ai/generate/journal-entry", "description": "Generate journal entry", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/ai/validate/gst", "description": "Validate GST compliance", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/ai/summarize/report", "description": "Summarize financial report", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "GET", "path": "/ai/suggestions/{context}", "description": "Get AI suggestions", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/ai/usage", "description": "Get AI usage stats", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/ai/providers/status", "description": "Get provider status", "roles": ["ADMIN"]}
+      ]
+    },
+    {
+      "category": "Documents",
+      "prefix": "/documents",
+      "endpoints": [
+        {"method": "GET", "path": "/documents", "description": "List documents", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/documents", "description": "Upload document", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT", "EMPLOYEE"]},
+        {"method": "GET", "path": "/documents/{id}", "description": "Get document details", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT", "SELF"]},
+        {"method": "GET", "path": "/documents/{id}/download", "description": "Download document", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT", "SELF"]},
+        {"method": "PUT", "path": "/documents/{id}", "description": "Update document", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "DELETE", "path": "/documents/{id}", "description": "Delete document", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/documents/{id}/versions", "description": "Get document versions", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/documents/expiring", "description": "Get expiring documents", "roles": ["ADMIN", "HR_MANAGER"]}
+      ]
+    },
+    {
+      "category": "Reports",
+      "prefix": "/reports",
+      "endpoints": [
+        {"method": "GET", "path": "/reports/financial/balance-sheet", "description": "Balance Sheet", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "GET", "path": "/reports/financial/profit-loss", "description": "Profit & Loss", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "GET", "path": "/reports/financial/cash-flow", "description": "Cash Flow Statement", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "GET", "path": "/reports/financial/trial-balance", "description": "Trial Balance", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "GET", "path": "/reports/financial/general-ledger", "description": "General Ledger", "roles": ["ADMIN", "ACCOUNTANT", "EXTERNAL_CA"]},
+        {"method": "GET", "path": "/reports/receivables/aging", "description": "AR Aging Report", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/reports/payables/aging", "description": "AP Aging Report", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/reports/hr/headcount", "description": "Headcount Report", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/reports/hr/attendance", "description": "Attendance Report", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/reports/hr/leave-summary", "description": "Leave Summary", "roles": ["ADMIN", "HR_MANAGER"]},
+        {"method": "GET", "path": "/reports/payroll/summary", "description": "Payroll Summary", "roles": ["ADMIN", "HR_MANAGER", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/reports/payroll/cost-center", "description": "Cost Center Report", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "Multi-Currency",
+      "prefix": "/currency",
+      "endpoints": [
+        {"method": "GET", "path": "/currency/rates", "description": "Get exchange rates", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "POST", "path": "/currency/rates", "description": "Update exchange rate", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "GET", "path": "/currency/supported", "description": "Get supported currencies", "roles": ["*"]},
+        {"method": "POST", "path": "/currency/convert", "description": "Convert amount", "roles": ["ADMIN", "ACCOUNTANT"]}
+      ]
+    },
+    {
+      "category": "Notifications",
+      "prefix": "/notifications",
+      "endpoints": [
+        {"method": "GET", "path": "/notifications", "description": "Get user notifications", "roles": ["*"]},
+        {"method": "PUT", "path": "/notifications/{id}/read", "description": "Mark as read", "roles": ["*"]},
+        {"method": "PUT", "path": "/notifications/read-all", "description": "Mark all read", "roles": ["*"]},
+        {"method": "GET", "path": "/notifications/preferences", "description": "Get preferences", "roles": ["*"]},
+        {"method": "PUT", "path": "/notifications/preferences", "description": "Update preferences", "roles": ["*"]}
+      ]
+    },
+    {
+      "category": "Audit Log",
+      "prefix": "/audit",
+      "endpoints": [
+        {"method": "GET", "path": "/audit/logs", "description": "Get audit logs", "roles": ["ADMIN", "EXTERNAL_CA"]},
+        {"method": "GET", "path": "/audit/logs/{id}", "description": "Get log details", "roles": ["ADMIN", "EXTERNAL_CA"]},
+        {"method": "GET", "path": "/audit/entity/{type}/{id}", "description": "Get entity history", "roles": ["ADMIN", "EXTERNAL_CA"]}
+      ]
+    },
+    {
+      "category": "Settings",
+      "prefix": "/settings",
+      "endpoints": [
+        {"method": "GET", "path": "/settings/company", "description": "Get company settings", "roles": ["ADMIN"]},
+        {"method": "PUT", "path": "/settings/company", "description": "Update company settings", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/settings/fiscal-year", "description": "Get fiscal year settings", "roles": ["ADMIN", "ACCOUNTANT"]},
+        {"method": "PUT", "path": "/settings/fiscal-year", "description": "Update fiscal year", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/settings/email", "description": "Get email settings", "roles": ["ADMIN"]},
+        {"method": "PUT", "path": "/settings/email", "description": "Update email settings", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/settings/ai", "description": "Get AI settings", "roles": ["ADMIN"]},
+        {"method": "PUT", "path": "/settings/ai", "description": "Update AI settings", "roles": ["ADMIN"]}
+      ]
+    },
+    {
+      "category": "Health & System",
+      "prefix": "/system",
+      "endpoints": [
+        {"method": "GET", "path": "/health", "description": "Health check", "roles": ["*"]},
+        {"method": "GET", "path": "/health/detailed", "description": "Detailed health", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/system/info", "description": "System info", "roles": ["ADMIN"]},
+        {"method": "GET", "path": "/system/metrics", "description": "System metrics", "roles": ["ADMIN"]}
+      ]
+    }
+  ],
+  "common_response_formats": {
+    "success": {
+      "success": true,
+      "data": "object|array",
+      "message": "string (optional)"
+    },
+    "paginated": {
+      "success": true,
+      "data": "array",
+      "pagination": {
+        "page": "number",
+        "limit": "number",
+        "total": "number",
+        "total_pages": "number"
+      }
+    },
+    "error": {
+      "success": false,
+      "error": {
+        "code": "string",
+        "message": "string",
+        "details": "object (optional)"
+      }
+    }
+  },
+  "http_status_codes": {
+    "200": "OK - Success",
+    "201": "Created - Resource created",
+    "204": "No Content - Success, no body",
+    "400": "Bad Request - Invalid input",
+    "401": "Unauthorized - Auth required",
+    "403": "Forbidden - No permission",
+    "404": "Not Found - Resource not found",
+    "409": "Conflict - Resource conflict",
+    "422": "Unprocessable Entity - Validation error",
+    "429": "Too Many Requests - Rate limited",
+    "500": "Internal Server Error"
+  }
+}

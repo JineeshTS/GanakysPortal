@@ -1,0 +1,8 @@
+# DEP-005: GanaPortal Kubernetes Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ganaportal
+  labels:
+    app: ganaportal
+    environment: production

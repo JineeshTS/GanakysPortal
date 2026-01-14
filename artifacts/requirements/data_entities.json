@@ -1,0 +1,1033 @@
+{
+  "metadata": {
+    "agent_id": "REQ-010",
+    "agent_name": "Data Entity Analyst",
+    "version": "1.0.0",
+    "created_at": "2026-01-08T00:00:00Z",
+    "last_updated": "2026-01-08T00:00:00Z",
+    "total_tables": 127,
+    "database_type": "PostgreSQL"
+  },
+  "entity_categories": {
+    "core_master": {
+      "description": "Core master data entities",
+      "table_count": 18,
+      "tables": [
+        {
+          "name": "organizations",
+          "description": "Multi-tenant organization master",
+          "primary_key": "id",
+          "columns": ["id", "name", "legal_name", "registration_number", "gst_number", "pan_number", "tan_number", "address", "city", "state", "pincode", "country", "logo_url", "timezone", "currency", "status", "created_at", "updated_at"],
+          "indexes": ["idx_org_gst", "idx_org_pan", "idx_org_status"],
+          "relationships": []
+        },
+        {
+          "name": "branches",
+          "description": "Organization branches/locations",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "address", "city", "state", "pincode", "pt_registration", "esi_registration", "pf_establishment_id", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "departments",
+          "description": "Department master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "parent_department_id", "head_employee_id", "cost_center", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "designations",
+          "description": "Designation/job title master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "level", "grade", "job_description", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "grades",
+          "description": "Employee grade master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "min_salary", "max_salary", "level", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "cost_centers",
+          "description": "Cost center master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "code", "name", "description", "parent_id", "manager_id", "budget", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "pay_groups",
+          "description": "Payroll group configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "pay_frequency", "pay_day", "currency", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "holidays",
+          "description": "Holiday calendar master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "date", "type", "is_optional", "applicable_branches", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "fiscal_years",
+          "description": "Financial year configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "start_date", "end_date", "is_current", "is_locked", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "pay_periods",
+          "description": "Pay period configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "fiscal_year_id", "references": "fiscal_years.id"}],
+          "columns": ["id", "organization_id", "fiscal_year_id", "period_number", "start_date", "end_date", "pay_date", "status", "is_processed", "created_at", "updated_at"]
+        },
+        {
+          "name": "currencies",
+          "description": "Currency master",
+          "primary_key": "id",
+          "columns": ["id", "code", "name", "symbol", "decimal_places", "is_active", "created_at", "updated_at"]
+        },
+        {
+          "name": "exchange_rates",
+          "description": "Currency exchange rates",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "from_currency_id", "references": "currencies.id"}, {"column": "to_currency_id", "references": "currencies.id"}],
+          "columns": ["id", "from_currency_id", "to_currency_id", "rate", "effective_date", "source", "created_at", "updated_at"]
+        },
+        {
+          "name": "countries",
+          "description": "Country master",
+          "primary_key": "id",
+          "columns": ["id", "code", "name", "phone_code", "currency_id", "timezone", "is_active"]
+        },
+        {
+          "name": "states",
+          "description": "State/Province master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "country_id", "references": "countries.id"}],
+          "columns": ["id", "country_id", "code", "name", "gst_state_code", "pt_applicable", "is_active"]
+        },
+        {
+          "name": "banks",
+          "description": "Bank master",
+          "primary_key": "id",
+          "columns": ["id", "name", "code", "ifsc_prefix", "swift_code", "is_active", "created_at", "updated_at"]
+        },
+        {
+          "name": "bank_branches",
+          "description": "Bank branch master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "bank_id", "references": "banks.id"}],
+          "columns": ["id", "bank_id", "name", "ifsc_code", "micr_code", "address", "city", "state", "is_active"]
+        },
+        {
+          "name": "document_types",
+          "description": "Document type master",
+          "primary_key": "id",
+          "columns": ["id", "code", "name", "category", "is_mandatory", "max_size_mb", "allowed_formats", "is_active"]
+        },
+        {
+          "name": "audit_log",
+          "description": "System-wide audit trail",
+          "primary_key": "id",
+          "columns": ["id", "organization_id", "user_id", "entity_type", "entity_id", "action", "old_values", "new_values", "ip_address", "user_agent", "created_at"]
+        }
+      ]
+    },
+    "employee_management": {
+      "description": "Employee master and related entities",
+      "table_count": 22,
+      "tables": [
+        {
+          "name": "employees",
+          "description": "Core employee master",
+          "primary_key": "id",
+          "foreign_keys": [
+            {"column": "organization_id", "references": "organizations.id"},
+            {"column": "branch_id", "references": "branches.id"},
+            {"column": "department_id", "references": "departments.id"},
+            {"column": "designation_id", "references": "designations.id"},
+            {"column": "grade_id", "references": "grades.id"},
+            {"column": "reporting_manager_id", "references": "employees.id"}
+          ],
+          "columns": ["id", "organization_id", "employee_code", "first_name", "middle_name", "last_name", "email", "phone", "date_of_birth", "gender", "blood_group", "marital_status", "nationality", "branch_id", "department_id", "designation_id", "grade_id", "reporting_manager_id", "date_of_joining", "date_of_confirmation", "date_of_exit", "employment_type", "employment_status", "probation_period_months", "notice_period_days", "profile_photo_url", "created_at", "updated_at"],
+          "indexes": ["idx_emp_code", "idx_emp_email", "idx_emp_org", "idx_emp_status"]
+        },
+        {
+          "name": "employee_addresses",
+          "description": "Employee address details",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "address_type", "address_line1", "address_line2", "city", "state", "pincode", "country", "is_current", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_bank_accounts",
+          "description": "Employee bank account details",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "bank_branch_id", "references": "bank_branches.id"}],
+          "columns": ["id", "employee_id", "bank_branch_id", "account_number", "account_holder_name", "account_type", "is_primary", "is_salary_account", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_documents",
+          "description": "Employee document storage",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "document_type_id", "references": "document_types.id"}],
+          "columns": ["id", "employee_id", "document_type_id", "document_number", "issue_date", "expiry_date", "issuing_authority", "file_url", "verification_status", "verified_by", "verified_at", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_education",
+          "description": "Employee educational qualifications",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "degree", "specialization", "institution", "university", "year_of_passing", "percentage", "grade", "certificate_url", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_experience",
+          "description": "Employee work experience",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "company_name", "designation", "from_date", "to_date", "responsibilities", "reason_for_leaving", "last_drawn_salary", "reference_name", "reference_contact", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_emergency_contacts",
+          "description": "Employee emergency contact details",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "name", "relationship", "phone", "email", "address", "is_primary", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_dependents",
+          "description": "Employee dependent details",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "name", "relationship", "date_of_birth", "gender", "is_disabled", "esi_nominee", "pf_nominee", "nomination_percentage", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_statutory",
+          "description": "Employee statutory details",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "pan_number", "aadhaar_number", "uan_number", "pf_number", "esi_number", "pt_number", "passport_number", "voter_id", "driving_license", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_tax_declarations",
+          "description": "Employee tax declaration for TDS",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "fiscal_year_id", "references": "fiscal_years.id"}],
+          "columns": ["id", "employee_id", "fiscal_year_id", "tax_regime", "declaration_data", "submitted_at", "approved_by", "approved_at", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_tax_proofs",
+          "description": "Employee tax investment proofs",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "declaration_id", "references": "employee_tax_declarations.id"}],
+          "columns": ["id", "employee_id", "declaration_id", "section", "description", "declared_amount", "proof_amount", "document_url", "status", "verified_by", "verified_at", "remarks", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_pf_nominations",
+          "description": "PF nomination details",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "dependent_id", "references": "employee_dependents.id"}],
+          "columns": ["id", "employee_id", "dependent_id", "nomination_percentage", "guardian_name", "guardian_address", "witness_name", "witness_address", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_esi_nominations",
+          "description": "ESI nomination details",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "dependent_id", "references": "employee_dependents.id"}],
+          "columns": ["id", "employee_id", "dependent_id", "relationship", "is_residing_with", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_salary_structure",
+          "description": "Employee current salary structure",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "effective_from", "effective_to", "annual_ctc", "monthly_gross", "structure_data", "status", "approved_by", "approved_at", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_salary_revisions",
+          "description": "Salary revision history",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "revision_type", "effective_date", "old_ctc", "new_ctc", "increment_percentage", "reason", "approved_by", "approved_at", "letter_url", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_positions",
+          "description": "Employee position history",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "department_id", "designation_id", "grade_id", "branch_id", "reporting_manager_id", "effective_from", "effective_to", "change_type", "remarks", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_skills",
+          "description": "Employee skills inventory",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "skill_name", "proficiency_level", "years_of_experience", "last_used", "certification", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_training",
+          "description": "Employee training records",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "training_name", "training_type", "provider", "start_date", "end_date", "duration_hours", "cost", "certificate_url", "status", "feedback_rating", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_assets",
+          "description": "Assets assigned to employees",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "asset_type", "asset_name", "asset_tag", "serial_number", "assigned_date", "return_date", "condition_at_issue", "condition_at_return", "remarks", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_letters",
+          "description": "Employee official letters",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "letter_type", "letter_date", "subject", "content", "file_url", "generated_by", "acknowledged_at", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_onboarding",
+          "description": "Employee onboarding checklist",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "checklist_item", "category", "is_completed", "completed_at", "completed_by", "remarks", "due_date", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_offboarding",
+          "description": "Employee offboarding/exit details",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "resignation_date", "last_working_date", "exit_type", "exit_reason", "notice_served_days", "shortfall_recovery", "fnf_status", "exit_interview_done", "feedback", "rehire_eligible", "created_at", "updated_at"]
+        }
+      ]
+    },
+    "attendance_management": {
+      "description": "Attendance and time tracking entities",
+      "table_count": 12,
+      "tables": [
+        {
+          "name": "shift_masters",
+          "description": "Shift configuration master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "start_time", "end_time", "working_hours", "break_duration", "grace_period_in", "grace_period_out", "half_day_hours", "is_night_shift", "is_flexible", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "employee_shifts",
+          "description": "Employee shift assignments",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "shift_id", "references": "shift_masters.id"}],
+          "columns": ["id", "employee_id", "shift_id", "effective_from", "effective_to", "created_at", "updated_at"]
+        },
+        {
+          "name": "attendance_daily",
+          "description": "Daily attendance records",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "shift_id", "references": "shift_masters.id"}],
+          "columns": ["id", "employee_id", "attendance_date", "shift_id", "first_in", "last_out", "total_hours", "break_hours", "overtime_hours", "attendance_status", "late_by_minutes", "early_out_minutes", "regularization_status", "remarks", "source", "created_at", "updated_at"],
+          "indexes": ["idx_att_emp_date", "idx_att_date", "idx_att_status"]
+        },
+        {
+          "name": "attendance_punches",
+          "description": "Raw attendance punch records",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "punch_time", "punch_type", "device_id", "location_lat", "location_long", "source", "ip_address", "photo_url", "is_processed", "created_at"]
+        },
+        {
+          "name": "attendance_regularizations",
+          "description": "Attendance correction requests",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "attendance_id", "references": "attendance_daily.id"}],
+          "columns": ["id", "employee_id", "attendance_id", "attendance_date", "original_in", "original_out", "requested_in", "requested_out", "reason", "status", "approved_by", "approved_at", "remarks", "created_at", "updated_at"]
+        },
+        {
+          "name": "overtime_requests",
+          "description": "Overtime work requests",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "request_date", "start_time", "end_time", "hours", "reason", "project_code", "status", "approved_by", "approved_at", "actual_hours", "created_at", "updated_at"]
+        },
+        {
+          "name": "work_from_home_requests",
+          "description": "WFH requests",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "from_date", "to_date", "reason", "status", "approved_by", "approved_at", "remarks", "created_at", "updated_at"]
+        },
+        {
+          "name": "on_duty_requests",
+          "description": "On-duty/outdoor requests",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "from_date", "to_date", "from_time", "to_time", "location", "purpose", "status", "approved_by", "approved_at", "remarks", "created_at", "updated_at"]
+        },
+        {
+          "name": "comp_off_requests",
+          "description": "Compensatory off requests",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "worked_date", "comp_off_date", "hours_worked", "reason", "status", "approved_by", "approved_at", "expiry_date", "is_used", "created_at", "updated_at"]
+        },
+        {
+          "name": "attendance_policies",
+          "description": "Attendance policy configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "late_mark_after", "half_day_after", "absent_after", "overtime_threshold", "weekend_ot_multiplier", "holiday_ot_multiplier", "comp_off_expiry_days", "wfh_allowed", "max_wfh_days", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "biometric_devices",
+          "description": "Biometric device master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "branch_id", "references": "branches.id"}],
+          "columns": ["id", "branch_id", "device_id", "device_name", "device_type", "ip_address", "port", "serial_number", "location", "is_active", "last_sync", "created_at", "updated_at"]
+        },
+        {
+          "name": "attendance_reports",
+          "description": "Pre-computed attendance reports",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "month", "year", "total_days", "present_days", "absent_days", "half_days", "late_count", "leave_days", "holidays", "weekoffs", "overtime_hours", "comp_offs_earned", "comp_offs_used", "created_at", "updated_at"]
+        }
+      ]
+    },
+    "leave_management": {
+      "description": "Leave management entities",
+      "table_count": 10,
+      "tables": [
+        {
+          "name": "leave_types",
+          "description": "Leave type master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "description", "is_paid", "is_encashable", "is_carry_forward", "max_carry_forward", "is_pro_rata", "requires_document", "document_after_days", "min_days", "max_days", "min_service_days", "gender_applicable", "notice_days", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "leave_policies",
+          "description": "Leave policy configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}, {"column": "leave_type_id", "references": "leave_types.id"}],
+          "columns": ["id", "organization_id", "leave_type_id", "annual_quota", "accrual_type", "accrual_frequency", "credit_on_joining", "lapse_policy", "encashment_limit", "applicable_grades", "applicable_departments", "effective_from", "effective_to", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "leave_balances",
+          "description": "Employee leave balances",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "leave_type_id", "references": "leave_types.id"}, {"column": "fiscal_year_id", "references": "fiscal_years.id"}],
+          "columns": ["id", "employee_id", "leave_type_id", "fiscal_year_id", "opening_balance", "credited", "availed", "lapsed", "encashed", "carried_forward", "current_balance", "created_at", "updated_at"]
+        },
+        {
+          "name": "leave_requests",
+          "description": "Employee leave applications",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "leave_type_id", "references": "leave_types.id"}],
+          "columns": ["id", "employee_id", "leave_type_id", "from_date", "to_date", "days", "from_session", "to_session", "reason", "contact_during_leave", "address_during_leave", "document_url", "status", "applied_at", "approved_by", "approved_at", "cancel_reason", "cancelled_at", "remarks", "created_at", "updated_at"],
+          "indexes": ["idx_leave_emp_date", "idx_leave_status"]
+        },
+        {
+          "name": "leave_accruals",
+          "description": "Leave accrual transactions",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "leave_type_id", "references": "leave_types.id"}],
+          "columns": ["id", "employee_id", "leave_type_id", "accrual_date", "days", "transaction_type", "reference_id", "remarks", "created_at"]
+        },
+        {
+          "name": "leave_encashments",
+          "description": "Leave encashment records",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "leave_type_id", "references": "leave_types.id"}],
+          "columns": ["id", "employee_id", "leave_type_id", "fiscal_year_id", "days", "per_day_amount", "total_amount", "status", "processed_in_payroll", "payroll_id", "created_at", "updated_at"]
+        },
+        {
+          "name": "leave_approval_workflow",
+          "description": "Leave approval configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}, {"column": "leave_type_id", "references": "leave_types.id"}],
+          "columns": ["id", "organization_id", "leave_type_id", "level", "approver_type", "approver_id", "days_threshold", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "leave_approval_history",
+          "description": "Leave approval audit trail",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "leave_request_id", "references": "leave_requests.id"}, {"column": "approver_id", "references": "employees.id"}],
+          "columns": ["id", "leave_request_id", "level", "approver_id", "action", "remarks", "acted_at", "created_at"]
+        },
+        {
+          "name": "restricted_holidays",
+          "description": "Restricted/optional holiday selections",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "holiday_id", "references": "holidays.id"}],
+          "columns": ["id", "employee_id", "holiday_id", "fiscal_year_id", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "leave_calendar",
+          "description": "Leave calendar view data",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "date", "status", "leave_request_id", "holiday_id", "is_weekend", "remarks", "created_at"]
+        }
+      ]
+    },
+    "payroll_management": {
+      "description": "Payroll processing entities",
+      "table_count": 18,
+      "tables": [
+        {
+          "name": "salary_components",
+          "description": "Salary component master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "component_type", "calculation_type", "is_taxable", "is_pf_applicable", "is_esi_applicable", "is_pt_applicable", "is_lwf_applicable", "sequence", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "salary_structures",
+          "description": "Salary structure templates",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "description", "applicable_grades", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "salary_structure_components",
+          "description": "Components in salary structure",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "structure_id", "references": "salary_structures.id"}, {"column": "component_id", "references": "salary_components.id"}],
+          "columns": ["id", "structure_id", "component_id", "calculation_formula", "min_value", "max_value", "default_value", "sequence", "created_at", "updated_at"]
+        },
+        {
+          "name": "payroll_runs",
+          "description": "Payroll processing runs",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}, {"column": "pay_period_id", "references": "pay_periods.id"}],
+          "columns": ["id", "organization_id", "pay_period_id", "run_number", "run_type", "employee_count", "gross_salary", "net_salary", "total_deductions", "total_employer_contributions", "status", "processed_by", "processed_at", "approved_by", "approved_at", "created_at", "updated_at"]
+        },
+        {
+          "name": "payroll_details",
+          "description": "Individual payroll records",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "payroll_run_id", "references": "payroll_runs.id"}, {"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "payroll_run_id", "employee_id", "pay_period_id", "working_days", "paid_days", "lop_days", "basic", "gross_salary", "net_salary", "total_earnings", "total_deductions", "employer_contributions", "payment_status", "payment_mode", "bank_account_id", "created_at", "updated_at"],
+          "indexes": ["idx_payroll_emp", "idx_payroll_period"]
+        },
+        {
+          "name": "payroll_earnings",
+          "description": "Payroll earnings breakup",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "payroll_detail_id", "references": "payroll_details.id"}, {"column": "component_id", "references": "salary_components.id"}],
+          "columns": ["id", "payroll_detail_id", "component_id", "amount", "arrear_amount", "remarks", "created_at"]
+        },
+        {
+          "name": "payroll_deductions",
+          "description": "Payroll deductions breakup",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "payroll_detail_id", "references": "payroll_details.id"}, {"column": "component_id", "references": "salary_components.id"}],
+          "columns": ["id", "payroll_detail_id", "component_id", "amount", "remarks", "created_at"]
+        },
+        {
+          "name": "payroll_employer_contributions",
+          "description": "Employer contribution breakup",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "payroll_detail_id", "references": "payroll_details.id"}, {"column": "component_id", "references": "salary_components.id"}],
+          "columns": ["id", "payroll_detail_id", "component_id", "amount", "remarks", "created_at"]
+        },
+        {
+          "name": "payroll_adjustments",
+          "description": "Ad-hoc payroll adjustments",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "adjustment_type", "component_id", "amount", "effective_month", "reason", "is_recurring", "end_month", "status", "approved_by", "approved_at", "created_at", "updated_at"]
+        },
+        {
+          "name": "loans",
+          "description": "Employee loans master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "loan_type", "principal_amount", "interest_rate", "tenure_months", "emi_amount", "disbursement_date", "start_deduction_month", "total_installments", "paid_installments", "outstanding_amount", "status", "approved_by", "approved_at", "created_at", "updated_at"]
+        },
+        {
+          "name": "loan_repayments",
+          "description": "Loan EMI payments",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "loan_id", "references": "loans.id"}, {"column": "payroll_id", "references": "payroll_details.id"}],
+          "columns": ["id", "loan_id", "payroll_id", "installment_number", "principal_amount", "interest_amount", "total_amount", "payment_date", "created_at"]
+        },
+        {
+          "name": "salary_advances",
+          "description": "Salary advance requests",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "amount", "reason", "requested_date", "disbursement_date", "recovery_month", "status", "approved_by", "approved_at", "created_at", "updated_at"]
+        },
+        {
+          "name": "arrears",
+          "description": "Salary arrears processing",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "arrear_type", "component_id", "from_month", "to_month", "amount", "process_in_month", "status", "processed_in_payroll", "created_at", "updated_at"]
+        },
+        {
+          "name": "bonus_master",
+          "description": "Bonus configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "type", "calculation_method", "percentage", "max_amount", "eligibility_months", "payment_month", "pro_rata_applicable", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "bonus_payouts",
+          "description": "Bonus payment records",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "bonus_id", "references": "bonus_master.id"}],
+          "columns": ["id", "employee_id", "bonus_id", "fiscal_year_id", "eligible_amount", "pro_rata_days", "final_amount", "tax_deducted", "net_amount", "payment_date", "payroll_id", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "reimbursements",
+          "description": "Reimbursement claims through payroll",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "reimbursement_type", "amount", "claim_date", "description", "receipt_url", "status", "approved_by", "approved_at", "processed_in_payroll", "payroll_id", "created_at", "updated_at"]
+        },
+        {
+          "name": "fnf_settlements",
+          "description": "Full and final settlement",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "last_working_date", "earned_salary", "leave_encashment", "bonus_payable", "gratuity", "notice_recovery", "loan_recovery", "other_recoveries", "gross_payable", "tds", "net_payable", "status", "processed_by", "processed_at", "approved_by", "approved_at", "payment_date", "created_at", "updated_at"]
+        },
+        {
+          "name": "payslips",
+          "description": "Generated payslips",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "payroll_detail_id", "references": "payroll_details.id"}, {"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "payroll_detail_id", "employee_id", "pay_period", "file_url", "password_hint", "generated_at", "emailed_at", "downloaded_at", "created_at"]
+        }
+      ]
+    },
+    "statutory_compliance": {
+      "description": "Statutory compliance entities",
+      "table_count": 14,
+      "tables": [
+        {
+          "name": "pf_monthly",
+          "description": "Monthly PF contributions",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "payroll_id", "references": "payroll_details.id"}],
+          "columns": ["id", "employee_id", "payroll_id", "month", "year", "pf_wages", "employee_pf", "employer_pf", "employer_eps", "employer_edli", "admin_charges", "total_contribution", "challan_id", "created_at", "updated_at"]
+        },
+        {
+          "name": "pf_challans",
+          "description": "PF payment challans",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "establishment_id", "month", "year", "total_employees", "total_contribution", "trrn", "payment_date", "bank_reference", "ecr_file_url", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "esi_monthly",
+          "description": "Monthly ESI contributions",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "payroll_id", "references": "payroll_details.id"}],
+          "columns": ["id", "employee_id", "payroll_id", "month", "year", "esi_wages", "employee_contribution", "employer_contribution", "total_contribution", "challan_id", "created_at", "updated_at"]
+        },
+        {
+          "name": "esi_challans",
+          "description": "ESI payment challans",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "esic_code", "month", "year", "total_employees", "total_contribution", "challan_number", "payment_date", "bank_reference", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "pt_monthly",
+          "description": "Monthly PT deductions",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "payroll_id", "references": "payroll_details.id"}],
+          "columns": ["id", "employee_id", "payroll_id", "month", "year", "gross_salary", "pt_amount", "challan_id", "created_at", "updated_at"]
+        },
+        {
+          "name": "pt_challans",
+          "description": "PT payment challans",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}, {"column": "branch_id", "references": "branches.id"}],
+          "columns": ["id", "organization_id", "branch_id", "state", "month", "year", "total_employees", "total_amount", "challan_number", "payment_date", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "tds_monthly",
+          "description": "Monthly TDS calculations",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "payroll_id", "references": "payroll_details.id"}],
+          "columns": ["id", "employee_id", "payroll_id", "month", "year", "gross_salary_ytd", "exemptions_ytd", "taxable_income_ytd", "tax_computed_ytd", "tds_deducted_ytd", "tds_this_month", "surcharge", "cess", "total_tds", "challan_id", "created_at", "updated_at"]
+        },
+        {
+          "name": "tds_challans",
+          "description": "TDS payment challans",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "section", "month", "year", "total_employees", "total_tds", "bsr_code", "challan_serial", "deposit_date", "acknowledgment_number", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "form_16",
+          "description": "Form 16 generation",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}, {"column": "fiscal_year_id", "references": "fiscal_years.id"}],
+          "columns": ["id", "employee_id", "fiscal_year_id", "part_a_data", "part_b_data", "file_url", "generated_at", "issued_at", "created_at", "updated_at"]
+        },
+        {
+          "name": "gst_invoices",
+          "description": "GST invoice register",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "invoice_number", "invoice_date", "customer_gstin", "customer_name", "hsn_sac", "taxable_value", "cgst", "sgst", "igst", "total_amount", "place_of_supply", "reverse_charge", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "gst_returns",
+          "description": "GST return filing tracker",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "return_type", "period", "year", "filing_date", "arn", "total_liability", "itc_claimed", "tax_paid", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "lwf_monthly",
+          "description": "Labour Welfare Fund contributions",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "state", "month", "year", "employee_contribution", "employer_contribution", "challan_id", "created_at", "updated_at"]
+        },
+        {
+          "name": "compliance_calendar",
+          "description": "Compliance due date tracker",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "compliance_type", "description", "due_date", "filing_frequency", "applicable_to", "status", "completed_date", "completed_by", "remarks", "created_at", "updated_at"]
+        },
+        {
+          "name": "compliance_documents",
+          "description": "Compliance document storage",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "document_type", "reference_id", "period", "file_url", "uploaded_by", "uploaded_at", "created_at"]
+        }
+      ]
+    },
+    "expense_management": {
+      "description": "Expense claim entities",
+      "table_count": 8,
+      "tables": [
+        {
+          "name": "expense_categories",
+          "description": "Expense category master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "description", "gl_code", "is_taxable", "requires_receipt", "max_amount", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "expense_policies",
+          "description": "Expense policy configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}, {"column": "category_id", "references": "expense_categories.id"}],
+          "columns": ["id", "organization_id", "category_id", "applicable_grades", "daily_limit", "monthly_limit", "annual_limit", "per_transaction_limit", "advance_allowed", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "expense_claims",
+          "description": "Expense claim headers",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "claim_number", "claim_date", "purpose", "project_code", "total_amount", "approved_amount", "status", "submitted_at", "approved_by", "approved_at", "paid_at", "payment_reference", "created_at", "updated_at"]
+        },
+        {
+          "name": "expense_claim_items",
+          "description": "Expense claim line items",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "claim_id", "references": "expense_claims.id"}, {"column": "category_id", "references": "expense_categories.id"}],
+          "columns": ["id", "claim_id", "category_id", "expense_date", "description", "amount", "currency", "exchange_rate", "inr_amount", "receipt_url", "receipt_number", "vendor_name", "vendor_gstin", "gst_amount", "approved_amount", "status", "remarks", "created_at", "updated_at"]
+        },
+        {
+          "name": "expense_advances",
+          "description": "Expense advance requests",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "purpose", "amount", "requested_date", "travel_from", "travel_to", "status", "approved_by", "approved_at", "disbursed_date", "disbursed_amount", "settled", "settlement_claim_id", "created_at", "updated_at"]
+        },
+        {
+          "name": "expense_approval_workflow",
+          "description": "Expense approval configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "amount_from", "amount_to", "level", "approver_type", "approver_id", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "expense_approval_history",
+          "description": "Expense approval audit trail",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "claim_id", "references": "expense_claims.id"}, {"column": "approver_id", "references": "employees.id"}],
+          "columns": ["id", "claim_id", "level", "approver_id", "action", "remarks", "acted_at", "created_at"]
+        },
+        {
+          "name": "travel_requests",
+          "description": "Travel request management",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "request_number", "purpose", "from_location", "to_location", "departure_date", "return_date", "travel_mode", "accommodation_required", "estimated_cost", "advance_required", "advance_amount", "status", "approved_by", "approved_at", "expense_claim_id", "created_at", "updated_at"]
+        }
+      ]
+    },
+    "user_access": {
+      "description": "User authentication and authorization",
+      "table_count": 12,
+      "tables": [
+        {
+          "name": "users",
+          "description": "User authentication master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "employee_id", "references": "employees.id"}],
+          "columns": ["id", "employee_id", "email", "password_hash", "phone", "is_active", "is_locked", "failed_attempts", "last_login", "password_changed_at", "mfa_enabled", "mfa_secret", "created_at", "updated_at"]
+        },
+        {
+          "name": "roles",
+          "description": "Role master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "description", "is_system", "status", "created_at", "updated_at"]
+        },
+        {
+          "name": "permissions",
+          "description": "Permission master",
+          "primary_key": "id",
+          "columns": ["id", "module", "name", "code", "description", "created_at"]
+        },
+        {
+          "name": "role_permissions",
+          "description": "Role-permission mapping",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "role_id", "references": "roles.id"}, {"column": "permission_id", "references": "permissions.id"}],
+          "columns": ["id", "role_id", "permission_id", "can_view", "can_create", "can_edit", "can_delete", "can_approve", "created_at"]
+        },
+        {
+          "name": "user_roles",
+          "description": "User-role mapping",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "user_id", "references": "users.id"}, {"column": "role_id", "references": "roles.id"}],
+          "columns": ["id", "user_id", "role_id", "assigned_by", "assigned_at", "valid_from", "valid_to", "created_at"]
+        },
+        {
+          "name": "user_sessions",
+          "description": "User session tracking",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "user_id", "references": "users.id"}],
+          "columns": ["id", "user_id", "session_token", "refresh_token", "device_info", "ip_address", "location", "is_active", "expires_at", "created_at", "updated_at"]
+        },
+        {
+          "name": "password_history",
+          "description": "Password change history",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "user_id", "references": "users.id"}],
+          "columns": ["id", "user_id", "password_hash", "changed_at", "changed_by"]
+        },
+        {
+          "name": "password_reset_tokens",
+          "description": "Password reset requests",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "user_id", "references": "users.id"}],
+          "columns": ["id", "user_id", "token", "expires_at", "used_at", "created_at"]
+        },
+        {
+          "name": "otp_requests",
+          "description": "OTP verification requests",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "user_id", "references": "users.id"}],
+          "columns": ["id", "user_id", "purpose", "otp_hash", "channel", "expires_at", "verified_at", "attempts", "created_at"]
+        },
+        {
+          "name": "api_keys",
+          "description": "API key management",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "key_hash", "scopes", "rate_limit", "expires_at", "last_used", "is_active", "created_by", "created_at", "updated_at"]
+        },
+        {
+          "name": "login_attempts",
+          "description": "Login attempt logging",
+          "primary_key": "id",
+          "columns": ["id", "email", "ip_address", "user_agent", "status", "failure_reason", "created_at"]
+        },
+        {
+          "name": "security_events",
+          "description": "Security event logging",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "user_id", "references": "users.id"}],
+          "columns": ["id", "user_id", "event_type", "event_data", "ip_address", "user_agent", "severity", "created_at"]
+        }
+      ]
+    },
+    "notifications": {
+      "description": "Notification management entities",
+      "table_count": 6,
+      "tables": [
+        {
+          "name": "notification_templates",
+          "description": "Notification template master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "code", "name", "category", "subject", "body_template", "channels", "is_active", "created_at", "updated_at"]
+        },
+        {
+          "name": "notifications",
+          "description": "Notification queue",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "user_id", "references": "users.id"}, {"column": "template_id", "references": "notification_templates.id"}],
+          "columns": ["id", "user_id", "template_id", "channel", "subject", "body", "data", "status", "scheduled_at", "sent_at", "read_at", "created_at"]
+        },
+        {
+          "name": "email_logs",
+          "description": "Email delivery logs",
+          "primary_key": "id",
+          "columns": ["id", "notification_id", "from_address", "to_address", "cc", "bcc", "subject", "body", "attachments", "status", "message_id", "error_message", "sent_at", "delivered_at", "opened_at", "clicked_at", "created_at"]
+        },
+        {
+          "name": "sms_logs",
+          "description": "SMS delivery logs",
+          "primary_key": "id",
+          "columns": ["id", "notification_id", "phone_number", "message", "sender_id", "status", "message_id", "error_message", "sent_at", "delivered_at", "created_at"]
+        },
+        {
+          "name": "push_subscriptions",
+          "description": "Push notification subscriptions",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "user_id", "references": "users.id"}],
+          "columns": ["id", "user_id", "device_token", "platform", "device_info", "is_active", "created_at", "updated_at"]
+        },
+        {
+          "name": "in_app_notifications",
+          "description": "In-app notification center",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "user_id", "references": "users.id"}],
+          "columns": ["id", "user_id", "title", "message", "icon", "action_url", "data", "is_read", "read_at", "created_at"]
+        }
+      ]
+    },
+    "workflow_engine": {
+      "description": "Workflow and approval engine",
+      "table_count": 7,
+      "tables": [
+        {
+          "name": "workflow_definitions",
+          "description": "Workflow definition master",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "name", "code", "entity_type", "description", "is_active", "version", "created_at", "updated_at"]
+        },
+        {
+          "name": "workflow_steps",
+          "description": "Workflow step configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "workflow_id", "references": "workflow_definitions.id"}],
+          "columns": ["id", "workflow_id", "step_number", "name", "approver_type", "approver_config", "conditions", "actions_on_approve", "actions_on_reject", "sla_hours", "reminder_hours", "escalation_config", "created_at", "updated_at"]
+        },
+        {
+          "name": "workflow_instances",
+          "description": "Active workflow instances",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "workflow_id", "references": "workflow_definitions.id"}, {"column": "initiator_id", "references": "employees.id"}],
+          "columns": ["id", "workflow_id", "entity_type", "entity_id", "initiator_id", "current_step", "status", "data_snapshot", "started_at", "completed_at", "created_at", "updated_at"]
+        },
+        {
+          "name": "workflow_tasks",
+          "description": "Pending workflow tasks",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "instance_id", "references": "workflow_instances.id"}, {"column": "assignee_id", "references": "employees.id"}],
+          "columns": ["id", "instance_id", "step_number", "assignee_id", "status", "due_date", "reminded_at", "escalated_at", "created_at", "updated_at"]
+        },
+        {
+          "name": "workflow_history",
+          "description": "Workflow action history",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "instance_id", "references": "workflow_instances.id"}, {"column": "actor_id", "references": "employees.id"}],
+          "columns": ["id", "instance_id", "step_number", "actor_id", "action", "remarks", "attachments", "acted_at", "created_at"]
+        },
+        {
+          "name": "delegation_rules",
+          "description": "Approval delegation configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "delegator_id", "references": "employees.id"}, {"column": "delegate_id", "references": "employees.id"}],
+          "columns": ["id", "delegator_id", "delegate_id", "workflow_types", "from_date", "to_date", "reason", "is_active", "created_at", "updated_at"]
+        },
+        {
+          "name": "escalation_rules",
+          "description": "Escalation configuration",
+          "primary_key": "id",
+          "foreign_keys": [{"column": "organization_id", "references": "organizations.id"}],
+          "columns": ["id", "organization_id", "workflow_type", "sla_hours", "escalation_levels", "notify_initiator", "status", "created_at", "updated_at"]
+        }
+      ]
+    }
+  },
+  "relationship_summary": {
+    "total_relationships": 185,
+    "key_relationships": [
+      {
+        "from": "employees",
+        "to": "organizations",
+        "type": "many-to-one",
+        "description": "Each employee belongs to one organization"
+      },
+      {
+        "from": "payroll_details",
+        "to": "employees",
+        "type": "many-to-one",
+        "description": "Payroll records linked to employees"
+      },
+      {
+        "from": "leave_requests",
+        "to": "employees",
+        "type": "many-to-one",
+        "description": "Leave applications by employees"
+      },
+      {
+        "from": "attendance_daily",
+        "to": "employees",
+        "type": "many-to-one",
+        "description": "Daily attendance linked to employees"
+      },
+      {
+        "from": "expense_claims",
+        "to": "employees",
+        "type": "many-to-one",
+        "description": "Expense claims by employees"
+      },
+      {
+        "from": "users",
+        "to": "employees",
+        "type": "one-to-one",
+        "description": "User account linked to employee record"
+      },
+      {
+        "from": "employees",
+        "to": "employees",
+        "type": "self-referencing",
+        "description": "Reporting manager hierarchy"
+      },
+      {
+        "from": "pf_monthly",
+        "to": "payroll_details",
+        "type": "many-to-one",
+        "description": "PF linked to payroll processing"
+      }
+    ]
+  },
+  "indexing_strategy": {
+    "primary_indexes": "All tables have primary key indexes",
+    "foreign_key_indexes": "Indexes on all foreign key columns",
+    "composite_indexes": [
+      "employees(organization_id, employee_code)",
+      "attendance_daily(employee_id, attendance_date)",
+      "payroll_details(employee_id, pay_period_id)",
+      "leave_requests(employee_id, from_date, to_date)"
+    ],
+    "search_indexes": [
+      "employees(first_name, last_name) - Full text",
+      "employees(email)",
+      "audit_log(entity_type, entity_id)"
+    ]
+  }
+}

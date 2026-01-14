@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "agents": ["FE-006", "FE-007", "FE-008"],
+    "category": "Authentication Pages",
+    "created_at": "2026-01-08T11:11:00Z"
+  },
+  "FE-006_login_page": {
+    "status": "completed",
+    "files": ["src/app/(auth)/login/page.tsx"],
+    "features": ["Email/password form", "Form validation", "Error handling", "Remember me", "Forgot password link"]
+  },
+  "FE-007_forgot_password": {
+    "status": "completed",
+    "files": ["src/app/(auth)/forgot-password/page.tsx"],
+    "features": ["Email input", "Send reset link", "Success message"]
+  },
+  "FE-008_reset_password": {
+    "status": "completed",
+    "files": ["src/app/(auth)/reset-password/page.tsx"],
+    "features": ["New password form", "Password confirmation", "Token validation"]
+  }
+}

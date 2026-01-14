@@ -1,0 +1,232 @@
+[project]
+name = "ganaportal-backend"
+version = "1.0.0"
+description = "GanaPortal AI-First ERP Backend - India Compliance"
+requires-python = ">=3.11"
+license = {text = "Proprietary"}
+authors = [
+    {name = "Ganakys Technologies", email = "dev@ganakys.com"}
+]
+keywords = ["erp", "hrms", "payroll", "gst", "india", "compliance"]
+
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.13.0",
+    "asyncpg>=0.29.0",
+    "redis>=5.0.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.6",
+    "aiohttp>=3.9.0",
+    "httpx>=0.26.0",
+    "celery>=5.3.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "httpx>=0.26.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+    "black>=24.1.0",
+    "isort>=5.13.0",
+    "pre-commit>=3.6.0",
+]
+ai = [
+    "openai>=1.10.0",
+    "anthropic>=0.18.0",
+    "langchain>=0.1.0",
+    "chromadb>=0.4.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# =============================================================================
+# Ruff Configuration (replaces flake8, isort, pyupgrade)
+# =============================================================================
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+fix = true
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "PTH",    # flake8-use-pathlib
+    "ERA",    # eradicate (commented code)
+    "RUF",    # Ruff-specific rules
+    "ASYNC",  # flake8-async
+    "S",      # flake8-bandit (security)
+    "DTZ",    # flake8-datetimez
+    "T20",    # flake8-print
+    "LOG",    # flake8-logging
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # function call in argument defaults
+    "S101",   # use of assert (ok in tests)
+    "S104",   # possible binding to all interfaces
+    "ARG001", # unused function argument (ok for API handlers)
+    "ARG002", # unused method argument
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",   # asserts allowed in tests
+    "ARG",    # unused arguments in fixtures
+    "S105",   # hardcoded passwords in tests
+    "S106",   # hardcoded passwords in tests
+]
+"app/api/**/*.py" = [
+    "ARG001", # Dependency injection params
+]
+"alembic/**/*.py" = [
+    "ERA001", # commented code ok in migrations
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+force-single-line = false
+lines-after-imports = 2
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+
+# =============================================================================
+# Black Configuration
+# =============================================================================
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | alembic/versions
+)/
+'''
+
+# =============================================================================
+# MyPy Configuration (Static Type Checking)
+# =============================================================================
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+follow_imports = "silent"
+ignore_missing_imports = true
+
+plugins = [
+    "pydantic.mypy",
+    "sqlalchemy.ext.mypy.plugin"
+]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+strict = false
+
+[[tool.mypy.overrides]]
+module = [
+    "celery.*",
+    "redis.*",
+    "jose.*",
+    "passlib.*"
+]
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+# =============================================================================
+# Pytest Configuration
+# =============================================================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "-ra",
+]
+markers = [
+    "compliance: India compliance tests (PF, ESI, TDS, GST, PT)",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: integration tests requiring database",
+    "unit: unit tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+# =============================================================================
+# Coverage Configuration
+# =============================================================================
+[tool.coverage.run]
+source = ["app"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/alembic/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+    "@abstractmethod",
+    "@abc.abstractmethod",
+]
+fail_under = 80
+show_missing = true
+
+[tool.coverage.html]
+directory = "coverage_html"

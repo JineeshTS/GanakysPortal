@@ -1,0 +1,60 @@
+# DEP-004: Kubernetes Manifests Agent
+# GanaPortal Staging Environment
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ganaportal-staging
+
+resources:
+  - ../../base
+
+namePrefix: staging-
+
+commonLabels:
+  environment: staging
+
+patches:
+  - target:
+      kind: Deployment
+      name: backend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: frontend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Ingress
+      name: ganaportal
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging.ganaportal.ganakys.com
+      - op: replace
+        path: /spec/rules/1/host
+        value: api-staging.ganaportal.ganakys.com
+      - op: replace
+        path: /spec/tls/0/hosts
+        value:
+          - staging.ganaportal.ganakys.com
+          - api-staging.ganaportal.ganakys.com
+
+configMapGenerator:
+  - name: ganaportal-config
+    behavior: merge
+    literals:
+      - ENVIRONMENT=staging
+      - API_URL=https://api-staging.ganaportal.ganakys.com
+      - LOG_LEVEL=DEBUG
+
+images:
+  - name: ghcr.io/ganakys/ganaportal/backend
+    newTag: develop
+  - name: ghcr.io/ganakys/ganaportal/frontend
+    newTag: develop

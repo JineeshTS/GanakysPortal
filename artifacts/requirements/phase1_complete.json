@@ -1,0 +1,59 @@
+{
+  "phase": 1,
+  "name": "Requirements Analysis",
+  "status": "COMPLETE",
+  "completed_at": "2026-01-06T10:40:00Z",
+
+  "agents_executed": [
+    {"id": "REQ-001", "name": "Requirements Parser", "status": "complete", "output": "parsed_requirements.json"},
+    {"id": "REQ-002", "name": "Stakeholder Analyzer", "status": "complete", "output": "stakeholders.json"},
+    {"id": "REQ-003", "name": "Scope Definer", "status": "complete", "output": "scope_definition.json"},
+    {"id": "REQ-004", "name": "Functional Requirements Agent", "status": "complete", "output": "functional_requirements.json"},
+    {"id": "REQ-005", "name": "Non-Functional Requirements Agent", "status": "complete", "output": "nfr_requirements.json"},
+    {"id": "REQ-006", "name": "User Story Writer", "status": "complete", "output": "embedded in functional_requirements.json"},
+    {"id": "REQ-007", "name": "Acceptance Criteria Agent", "status": "complete", "output": "embedded in functional_requirements.json"},
+    {"id": "REQ-008", "name": "India Compliance Extractor", "status": "complete", "output": "india_compliance.json", "critical": true},
+    {"id": "REQ-009", "name": "Integration Requirements Agent", "status": "complete", "output": "embedded in parsed_requirements.json"},
+    {"id": "REQ-010", "name": "Data Entity Extractor", "status": "complete", "output": "data_entities.json"},
+    {"id": "REQ-011", "name": "Risk Analyzer", "status": "complete", "output": "embedded"},
+    {"id": "REQ-012", "name": "Requirements Gap Analyzer", "status": "complete", "output": "embedded"}
+  ],
+
+  "artifacts_created": [
+    "/var/ganaportal/artifacts/requirements/parsed_requirements.json",
+    "/var/ganaportal/artifacts/requirements/stakeholders.json",
+    "/var/ganaportal/artifacts/requirements/scope_definition.json",
+    "/var/ganaportal/artifacts/requirements/functional_requirements.json",
+    "/var/ganaportal/artifacts/requirements/nfr_requirements.json",
+    "/var/ganaportal/artifacts/requirements/india_compliance.json",
+    "/var/ganaportal/artifacts/requirements/data_entities.json"
+  ],
+
+  "quality_gate": {
+    "gate_id": "G1",
+    "criteria": "All 23 modules analyzed, compliance formulas extracted",
+    "status": "PASSED",
+    "verification": {
+      "modules_analyzed": 23,
+      "compliance_formulas_extracted": true,
+      "pf_formula": "verified",
+      "esi_formula": "verified",
+      "tds_slabs": "verified",
+      "pt_slabs": "verified",
+      "gst_rates": "verified",
+      "stakeholders_identified": 5,
+      "database_tables_identified": 120,
+      "api_endpoints_identified": 250,
+      "frontend_screens_identified": 60
+    }
+  },
+
+  "handoff_to_phase_2": {
+    "next_phase": "WBS Generation",
+    "next_agents": ["WBS-001", "WBS-002", "WBS-003", "WBS-004", "WBS-005", "WBS-006", "WBS-007", "WBS-008", "WBS-009", "WBS-010"],
+    "input_files": [
+      "/var/ganaportal/artifacts/requirements/parsed_requirements.json",
+      "/var/ganaportal/artifacts/requirements/india_compliance.json"
+    ]
+  }
+}

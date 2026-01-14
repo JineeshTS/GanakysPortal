@@ -1,0 +1,514 @@
+{
+  "wbs_agent": "WBS-004",
+  "agent_name": "Story Writer",
+  "generated_at": "2026-01-08T10:15:00Z",
+  "project": "GanaPortal",
+  "total_stories": 90,
+  "stories": [
+    {
+      "story_id": "1.1.1.1",
+      "feature_id": "1.1.1",
+      "name": "Gather Stakeholder Requirements",
+      "user_story": "As a project manager, I want documented requirements so that the development team understands the scope",
+      "acceptance_criteria": ["All stakeholders interviewed", "Requirements documented", "Sign-off obtained"],
+      "story_points": 5
+    },
+    {
+      "story_id": "1.1.1.2",
+      "feature_id": "1.1.1",
+      "name": "Define Technical Specifications",
+      "user_story": "As a developer, I want technical specifications so that I can implement features correctly",
+      "acceptance_criteria": ["API specs defined", "Data models documented", "Integration points identified"],
+      "story_points": 8
+    },
+    {
+      "story_id": "1.1.2.1",
+      "feature_id": "1.1.2",
+      "name": "Design Microservices Architecture",
+      "user_story": "As an architect, I want a microservices design so that the system is scalable",
+      "acceptance_criteria": ["Service boundaries defined", "Communication patterns documented", "Architecture diagram created"],
+      "story_points": 8
+    },
+    {
+      "story_id": "1.1.3.1",
+      "feature_id": "1.1.3",
+      "name": "Design Core Database Schema",
+      "user_story": "As a developer, I want a database schema so that I can implement data persistence",
+      "acceptance_criteria": ["ERD created", "Relationships defined", "Indexes planned"],
+      "story_points": 5
+    },
+    {
+      "story_id": "2.1.1.1",
+      "feature_id": "2.1.1",
+      "name": "Configure VPC and Networking",
+      "user_story": "As a DevOps engineer, I want VPC configured so that services can communicate securely",
+      "acceptance_criteria": ["VPC created", "Subnets configured", "Security groups defined"],
+      "story_points": 5
+    },
+    {
+      "story_id": "2.1.2.1",
+      "feature_id": "2.1.2",
+      "name": "Provision EKS Cluster",
+      "user_story": "As a DevOps engineer, I want an EKS cluster so that I can deploy containerized services",
+      "acceptance_criteria": ["EKS cluster running", "Node groups configured", "RBAC set up"],
+      "story_points": 8
+    },
+    {
+      "story_id": "2.1.3.1",
+      "feature_id": "2.1.3",
+      "name": "Set Up RDS PostgreSQL",
+      "user_story": "As a developer, I want a managed database so that I can store application data",
+      "acceptance_criteria": ["RDS instance created", "Backups configured", "Connection tested"],
+      "story_points": 5
+    },
+    {
+      "story_id": "2.2.1.1",
+      "feature_id": "2.2.1",
+      "name": "Create CI Pipeline",
+      "user_story": "As a developer, I want automated builds so that code is tested on every push",
+      "acceptance_criteria": ["Build workflow created", "Tests run automatically", "Artifacts generated"],
+      "story_points": 5
+    },
+    {
+      "story_id": "2.2.1.2",
+      "feature_id": "2.2.1",
+      "name": "Create CD Pipeline",
+      "user_story": "As a DevOps engineer, I want automated deployments so that releases are consistent",
+      "acceptance_criteria": ["Deploy workflow created", "Environment promotion works", "Rollback tested"],
+      "story_points": 8
+    },
+    {
+      "story_id": "2.2.2.1",
+      "feature_id": "2.2.2",
+      "name": "Create Service Dockerfiles",
+      "user_story": "As a developer, I want Dockerized services so that they run consistently",
+      "acceptance_criteria": ["Dockerfiles created", "Images build successfully", "Size optimized"],
+      "story_points": 5
+    },
+    {
+      "story_id": "2.2.3.1",
+      "feature_id": "2.2.3",
+      "name": "Set Up Prometheus and Grafana",
+      "user_story": "As a DevOps engineer, I want monitoring so that I can track system health",
+      "acceptance_criteria": ["Prometheus deployed", "Grafana dashboards created", "Alerts configured"],
+      "story_points": 8
+    },
+    {
+      "story_id": "3.1.1.1",
+      "feature_id": "3.1.1",
+      "name": "Implement JWT Token Generation",
+      "user_story": "As a user, I want to receive a token on login so that I can access protected resources",
+      "acceptance_criteria": ["Token generated on login", "Token contains user claims", "Token expires correctly"],
+      "story_points": 5
+    },
+    {
+      "story_id": "3.1.1.2",
+      "feature_id": "3.1.1",
+      "name": "Implement Token Validation",
+      "user_story": "As a developer, I want token validation so that only authenticated users access APIs",
+      "acceptance_criteria": ["Token validated on requests", "Invalid tokens rejected", "Expired tokens handled"],
+      "story_points": 5
+    },
+    {
+      "story_id": "3.1.2.1",
+      "feature_id": "3.1.2",
+      "name": "Integrate Google OAuth",
+      "user_story": "As a user, I want to sign in with Google so that I don't need another password",
+      "acceptance_criteria": ["Google OAuth flow works", "User created/linked", "Token issued"],
+      "story_points": 5
+    },
+    {
+      "story_id": "3.1.2.2",
+      "feature_id": "3.1.2",
+      "name": "Integrate Microsoft OAuth",
+      "user_story": "As a user, I want to sign in with Microsoft so that I can use my work account",
+      "acceptance_criteria": ["Microsoft OAuth flow works", "User created/linked", "Token issued"],
+      "story_points": 5
+    },
+    {
+      "story_id": "3.1.3.1",
+      "feature_id": "3.1.3",
+      "name": "Implement Permission System",
+      "user_story": "As an admin, I want to define permissions so that I can control access",
+      "acceptance_criteria": ["Permissions defined", "Permission checks work", "Denied access handled"],
+      "story_points": 8
+    },
+    {
+      "story_id": "3.1.3.2",
+      "feature_id": "3.1.3",
+      "name": "Implement Role Assignment",
+      "user_story": "As an admin, I want to assign roles to users so that they have appropriate access",
+      "acceptance_criteria": ["Roles assignable", "Multiple roles supported", "Role inheritance works"],
+      "story_points": 5
+    },
+    {
+      "story_id": "3.2.1.1",
+      "feature_id": "3.2.1",
+      "name": "Set Up Kong API Gateway",
+      "user_story": "As a developer, I want an API gateway so that requests are routed correctly",
+      "acceptance_criteria": ["Kong deployed", "Routes configured", "Rate limiting works"],
+      "story_points": 8
+    },
+    {
+      "story_id": "3.2.2.1",
+      "feature_id": "3.2.2",
+      "name": "Create User Model",
+      "user_story": "As a developer, I want a user model so that I can store user data",
+      "acceptance_criteria": ["Model defined", "Migration created", "CRUD operations work"],
+      "story_points": 3
+    },
+    {
+      "story_id": "3.2.2.2",
+      "feature_id": "3.2.2",
+      "name": "Create Organization Model",
+      "user_story": "As a developer, I want an organization model so that I can implement multi-tenancy",
+      "acceptance_criteria": ["Model defined", "Tenant isolation works", "Relationships correct"],
+      "story_points": 5
+    },
+    {
+      "story_id": "3.2.3.1",
+      "feature_id": "3.2.3",
+      "name": "Generate OpenAPI Documentation",
+      "user_story": "As a developer, I want API documentation so that I can understand endpoints",
+      "acceptance_criteria": ["OpenAPI spec generated", "Swagger UI available", "Examples included"],
+      "story_points": 3
+    },
+    {
+      "story_id": "4.1.1.1",
+      "feature_id": "4.1.1",
+      "name": "Initialize React Project",
+      "user_story": "As a developer, I want a React project so that I can build the frontend",
+      "acceptance_criteria": ["Project created", "TypeScript configured", "Linting set up"],
+      "story_points": 3
+    },
+    {
+      "story_id": "4.1.2.1",
+      "feature_id": "4.1.2",
+      "name": "Set Up Redux Store",
+      "user_story": "As a developer, I want Redux so that I can manage application state",
+      "acceptance_criteria": ["Store configured", "DevTools working", "Middleware set up"],
+      "story_points": 5
+    },
+    {
+      "story_id": "4.1.2.2",
+      "feature_id": "4.1.2",
+      "name": "Create Auth Slice",
+      "user_story": "As a developer, I want an auth slice so that I can manage authentication state",
+      "acceptance_criteria": ["Auth state managed", "Login/logout actions work", "Token persisted"],
+      "story_points": 5
+    },
+    {
+      "story_id": "4.1.3.1",
+      "feature_id": "4.1.3",
+      "name": "Configure React Router",
+      "user_story": "As a user, I want navigation so that I can move between pages",
+      "acceptance_criteria": ["Routes defined", "Navigation works", "History managed"],
+      "story_points": 3
+    },
+    {
+      "story_id": "4.1.3.2",
+      "feature_id": "4.1.3",
+      "name": "Implement Protected Routes",
+      "user_story": "As a user, I want protected routes so that unauthorized access is prevented",
+      "acceptance_criteria": ["Auth check works", "Redirect to login", "Role-based access"],
+      "story_points": 5
+    },
+    {
+      "story_id": "4.2.1.1",
+      "feature_id": "4.2.1",
+      "name": "Build Button Components",
+      "user_story": "As a developer, I want button components so that I have consistent UI",
+      "acceptance_criteria": ["Primary/secondary variants", "Loading state", "Disabled state"],
+      "story_points": 3
+    },
+    {
+      "story_id": "4.2.1.2",
+      "feature_id": "4.2.1",
+      "name": "Build Form Components",
+      "user_story": "As a developer, I want form components so that I can build forms consistently",
+      "acceptance_criteria": ["Input, select, checkbox", "Validation support", "Error display"],
+      "story_points": 5
+    },
+    {
+      "story_id": "4.2.2.1",
+      "feature_id": "4.2.2",
+      "name": "Build Navigation Component",
+      "user_story": "As a user, I want navigation so that I can access different sections",
+      "acceptance_criteria": ["Top nav bar", "User menu", "Mobile responsive"],
+      "story_points": 5
+    },
+    {
+      "story_id": "4.2.2.2",
+      "feature_id": "4.2.2",
+      "name": "Build Sidebar Component",
+      "user_story": "As a user, I want a sidebar so that I can access features quickly",
+      "acceptance_criteria": ["Collapsible sidebar", "Active state", "Icons and labels"],
+      "story_points": 5
+    },
+    {
+      "story_id": "4.2.3.1",
+      "feature_id": "4.2.3",
+      "name": "Implement Theme Provider",
+      "user_story": "As a user, I want theme support so that I can choose my preferred appearance",
+      "acceptance_criteria": ["Theme context", "Dark/light modes", "System preference detection"],
+      "story_points": 5
+    },
+    {
+      "story_id": "5.1.1.1",
+      "feature_id": "5.1.1",
+      "name": "Build User Profile API",
+      "user_story": "As a user, I want to manage my profile so that my information is accurate",
+      "acceptance_criteria": ["Get/update profile", "Avatar upload", "Preferences saved"],
+      "story_points": 5
+    },
+    {
+      "story_id": "5.1.1.2",
+      "feature_id": "5.1.1",
+      "name": "Build User Profile UI",
+      "user_story": "As a user, I want a profile page so that I can view and edit my details",
+      "acceptance_criteria": ["Profile page", "Edit form", "Avatar display"],
+      "story_points": 5
+    },
+    {
+      "story_id": "5.1.2.1",
+      "feature_id": "5.1.2",
+      "name": "Build Role Management API",
+      "user_story": "As an admin, I want to manage roles so that I can control permissions",
+      "acceptance_criteria": ["CRUD roles", "Assign permissions", "List roles"],
+      "story_points": 5
+    },
+    {
+      "story_id": "5.1.2.2",
+      "feature_id": "5.1.2",
+      "name": "Build Role Management UI",
+      "user_story": "As an admin, I want a role management interface so that I can configure roles easily",
+      "acceptance_criteria": ["Role list", "Create/edit form", "Permission matrix"],
+      "story_points": 8
+    },
+    {
+      "story_id": "5.1.3.1",
+      "feature_id": "5.1.3",
+      "name": "Build Team Management API",
+      "user_story": "As a manager, I want to manage teams so that I can organize users",
+      "acceptance_criteria": ["CRUD teams", "Add/remove members", "Team hierarchy"],
+      "story_points": 5
+    },
+    {
+      "story_id": "5.1.3.2",
+      "feature_id": "5.1.3",
+      "name": "Build Team Management UI",
+      "user_story": "As a manager, I want a team interface so that I can manage my team",
+      "acceptance_criteria": ["Team list", "Member management", "Team settings"],
+      "story_points": 5
+    },
+    {
+      "story_id": "5.2.1.1",
+      "feature_id": "5.2.1",
+      "name": "Build Organization API",
+      "user_story": "As an admin, I want to manage organizations so that tenants are isolated",
+      "acceptance_criteria": ["CRUD organizations", "Invite users", "Org hierarchy"],
+      "story_points": 8
+    },
+    {
+      "story_id": "5.2.1.2",
+      "feature_id": "5.2.1",
+      "name": "Build Organization UI",
+      "user_story": "As an admin, I want an org management interface so that I can configure organizations",
+      "acceptance_criteria": ["Org dashboard", "User invitations", "Org settings"],
+      "story_points": 8
+    },
+    {
+      "story_id": "5.2.2.1",
+      "feature_id": "5.2.2",
+      "name": "Implement Tenant Middleware",
+      "user_story": "As a developer, I want tenant isolation so that data is segregated",
+      "acceptance_criteria": ["Tenant context set", "Queries filtered", "Cross-tenant blocked"],
+      "story_points": 8
+    },
+    {
+      "story_id": "5.2.3.1",
+      "feature_id": "5.2.3",
+      "name": "Build Org Settings API",
+      "user_story": "As an admin, I want org settings so that I can customize the organization",
+      "acceptance_criteria": ["Get/update settings", "Branding options", "Feature toggles"],
+      "story_points": 5
+    },
+    {
+      "story_id": "5.2.3.2",
+      "feature_id": "5.2.3",
+      "name": "Build Org Settings UI",
+      "user_story": "As an admin, I want a settings page so that I can configure the organization",
+      "acceptance_criteria": ["Settings form", "Logo upload", "Save confirmation"],
+      "story_points": 5
+    },
+    {
+      "story_id": "5.3.1.1",
+      "feature_id": "5.3.1",
+      "name": "Build Project API",
+      "user_story": "As a user, I want to create projects so that I can organize work",
+      "acceptance_criteria": ["CRUD projects", "Project members", "Project settings"],
+      "story_points": 5
+    },
+    {
+      "story_id": "5.3.1.2",
+      "feature_id": "5.3.1",
+      "name": "Build Project UI",
+      "user_story": "As a user, I want a project interface so that I can manage projects",
+      "acceptance_criteria": ["Project list", "Project detail", "Create/edit form"],
+      "story_points": 8
+    },
+    {
+      "story_id": "5.3.2.1",
+      "feature_id": "5.3.2",
+      "name": "Build Task API",
+      "user_story": "As a user, I want to create tasks so that I can track work items",
+      "acceptance_criteria": ["CRUD tasks", "Assignees", "Status transitions"],
+      "story_points": 8
+    },
+    {
+      "story_id": "5.3.2.2",
+      "feature_id": "5.3.2",
+      "name": "Build Task UI",
+      "user_story": "As a user, I want a task interface so that I can manage tasks",
+      "acceptance_criteria": ["Task list", "Task detail", "Quick edit"],
+      "story_points": 8
+    },
+    {
+      "story_id": "5.3.3.1",
+      "feature_id": "5.3.3",
+      "name": "Build Kanban Board",
+      "user_story": "As a user, I want a Kanban board so that I can visualize workflow",
+      "acceptance_criteria": ["Columns for statuses", "Drag and drop", "Swimlanes"],
+      "story_points": 13
+    },
+    {
+      "story_id": "6.1.1.1",
+      "feature_id": "6.1.1",
+      "name": "Build Workflow Designer UI",
+      "user_story": "As a user, I want to design workflows visually so that I can automate processes",
+      "acceptance_criteria": ["Canvas with nodes", "Drag and drop", "Connection lines"],
+      "story_points": 13
+    },
+    {
+      "story_id": "6.1.2.1",
+      "feature_id": "6.1.2",
+      "name": "Build Workflow Engine Backend",
+      "user_story": "As a developer, I want a workflow engine so that workflows execute correctly",
+      "acceptance_criteria": ["Parse workflow definitions", "Execute steps", "Handle conditions"],
+      "story_points": 13
+    },
+    {
+      "story_id": "6.1.3.1",
+      "feature_id": "6.1.3",
+      "name": "Create Workflow Templates",
+      "user_story": "As a user, I want workflow templates so that I can start quickly",
+      "acceptance_criteria": ["Template library", "Clone template", "Customize options"],
+      "story_points": 8
+    },
+    {
+      "story_id": "6.2.1.1",
+      "feature_id": "6.2.1",
+      "name": "Build File Upload API",
+      "user_story": "As a user, I want to upload files so that I can share documents",
+      "acceptance_criteria": ["Multi-file upload", "Progress tracking", "S3 storage"],
+      "story_points": 8
+    },
+    {
+      "story_id": "6.2.1.2",
+      "feature_id": "6.2.1",
+      "name": "Build File Upload UI",
+      "user_story": "As a user, I want an upload interface so that I can easily upload files",
+      "acceptance_criteria": ["Drag and drop", "Progress bar", "File list"],
+      "story_points": 5
+    },
+    {
+      "story_id": "6.2.2.1",
+      "feature_id": "6.2.2",
+      "name": "Implement Document Versioning",
+      "user_story": "As a user, I want document versions so that I can track changes",
+      "acceptance_criteria": ["Version history", "Restore version", "Compare versions"],
+      "story_points": 8
+    },
+    {
+      "story_id": "6.2.3.1",
+      "feature_id": "6.2.3",
+      "name": "Build Document Preview",
+      "user_story": "As a user, I want to preview documents so that I don't need to download them",
+      "acceptance_criteria": ["PDF preview", "Image preview", "Office doc preview"],
+      "story_points": 8
+    },
+    {
+      "story_id": "6.3.1.1",
+      "feature_id": "6.3.1",
+      "name": "Build Dashboard Builder",
+      "user_story": "As a user, I want to build dashboards so that I can visualize data",
+      "acceptance_criteria": ["Widget library", "Drag and drop", "Save layouts"],
+      "story_points": 13
+    },
+    {
+      "story_id": "6.3.2.1",
+      "feature_id": "6.3.2",
+      "name": "Build Report Generator",
+      "user_story": "As a user, I want to generate reports so that I can analyze data",
+      "acceptance_criteria": ["Report templates", "Data filtering", "Export to PDF/Excel"],
+      "story_points": 8
+    },
+    {
+      "story_id": "6.3.3.1",
+      "feature_id": "6.3.3",
+      "name": "Build Charts Components",
+      "user_story": "As a user, I want charts so that I can visualize metrics",
+      "acceptance_criteria": ["Line, bar, pie charts", "Interactive tooltips", "Responsive"],
+      "story_points": 8
+    },
+    {
+      "story_id": "7.1.1.1",
+      "feature_id": "7.1.1",
+      "name": "Implement Slack Integration",
+      "user_story": "As a user, I want Slack notifications so that I stay informed",
+      "acceptance_criteria": ["OAuth connection", "Channel selection", "Message formatting"],
+      "story_points": 8
+    },
+    {
+      "story_id": "7.1.2.1",
+      "feature_id": "7.1.2",
+      "name": "Implement Calendar Integration",
+      "user_story": "As a user, I want calendar sync so that tasks appear in my calendar",
+      "acceptance_criteria": ["Google Calendar", "Outlook Calendar", "Two-way sync"],
+      "story_points": 8
+    },
+    {
+      "story_id": "7.1.3.1",
+      "feature_id": "7.1.3",
+      "name": "Build Webhook System",
+      "user_story": "As a developer, I want webhooks so that I can integrate with external systems",
+      "acceptance_criteria": ["Configure webhooks", "Event triggers", "Retry logic"],
+      "story_points": 8
+    },
+    {
+      "story_id": "7.2.1.1",
+      "feature_id": "7.2.1",
+      "name": "Build Email Notification System",
+      "user_story": "As a user, I want email notifications so that I receive updates",
+      "acceptance_criteria": ["Email templates", "SES integration", "Preference settings"],
+      "story_points": 8
+    },
+    {
+      "story_id": "7.2.2.1",
+      "feature_id": "7.2.2",
+      "name": "Build Push Notification System",
+      "user_story": "As a user, I want push notifications so that I get real-time alerts",
+      "acceptance_criteria": ["Browser push", "Mobile push", "Notification center"],
+      "story_points": 8
+    },
+    {
+      "story_id": "7.2.3.1",
+      "feature_id": "7.2.3",
+      "name": "Implement WebSocket Updates",
+      "user_story": "As a user, I want real-time updates so that I see changes immediately",
+      "acceptance_criteria": ["WebSocket connection", "Event broadcasting", "Reconnection logic"],
+      "story_points": 8
+    }
+  ],
+  "status": "completed"
+}

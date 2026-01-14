@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "agents": ["FE-031", "FE-032", "FE-033", "FE-034", "FE-035"],
+    "category": "GST, CRM & Other Pages",
+    "created_at": "2026-01-08T11:17:00Z"
+  },
+  "FE-031_gst_pages": {
+    "status": "completed",
+    "files": ["src/app/(dashboard)/statutory/gst/page.tsx"],
+    "features": ["Return list", "GSTR-1 view", "GSTR-3B summary", "JSON download", "Reconciliation"]
+  },
+  "FE-032_crm_pages": {
+    "status": "completed",
+    "files": ["src/app/(dashboard)/crm/page.tsx", "src/app/(dashboard)/crm/leads/page.tsx"],
+    "features": ["Lead list", "Pipeline view", "Activity log", "Convert to customer"]
+  },
+  "FE-033_project_pages": {
+    "status": "completed",
+    "files": ["src/app/(dashboard)/projects/page.tsx", "src/app/(dashboard)/projects/[id]/page.tsx"],
+    "features": ["Project list", "Task board", "Member management", "Progress tracking"]
+  },
+  "FE-034_document_pages": {
+    "status": "completed",
+    "files": ["src/app/(dashboard)/documents/page.tsx"],
+    "features": ["Document list", "Upload", "Preview", "Download", "Expiry alerts"]
+  },
+  "FE-035_report_pages": {
+    "status": "completed",
+    "files": ["src/app/(dashboard)/reports/page.tsx"],
+    "features": ["Report categories", "Date range picker", "Generate button", "PDF/Excel export"]
+  }
+}

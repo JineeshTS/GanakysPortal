@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-010",
+    "agent_name": "Caching Architect",
+    "created_at": "2026-01-08T10:54:00Z",
+    "version": "1.0"
+  },
+  "cache_infrastructure": {
+    "provider": "Redis 7",
+    "deployment": "Single instance (cluster-ready)",
+    "memory": "512MB",
+    "persistence": "RDB snapshots every 5 minutes"
+  },
+  "cache_patterns": {
+    "cache_aside": "Application manages cache reads/writes",
+    "write_through": "For critical data consistency",
+    "ttl_based": "Time-based expiration for most cases"
+  },
+  "cache_keys": {
+    "sessions": {"pattern": "session:{user_id}", "ttl": "24h", "data": "JWT payload, permissions"},
+    "users": {"pattern": "user:{id}", "ttl": "1h", "data": "User profile"},
+    "permissions": {"pattern": "perms:{role}", "ttl": "1h", "data": "Role permissions array"},
+    "config": {"pattern": "config:{key}", "ttl": "1h", "data": "System settings"},
+    "employee": {"pattern": "emp:{id}", "ttl": "15m", "data": "Employee details"},
+    "leave_balance": {"pattern": "leave:{emp_id}:{year}", "ttl": "5m", "data": "Leave balances"},
+    "exchange_rates": {"pattern": "fx:{currency}", "ttl": "24h", "data": "Exchange rate"},
+    "rate_limit": {"pattern": "rate:{ip}:{endpoint}", "ttl": "1m", "data": "Request count"}
+  },
+  "invalidation_strategy": {
+    "events": ["user.updated", "employee.updated", "config.changed", "permissions.changed"],
+    "pattern_delete": "Use SCAN for pattern-based deletion",
+    "cascade": "Invalidate dependent caches on parent change"
+  },
+  "http_caching": {
+    "static_assets": "Cache-Control: max-age=31536000, immutable",
+    "api_responses": "Cache-Control: private, max-age=0",
+    "etag": "Enabled for GET endpoints"
+  }
+}

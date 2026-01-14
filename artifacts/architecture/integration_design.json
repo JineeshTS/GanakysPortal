@@ -1,0 +1,52 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-008",
+    "agent_name": "Integration Architect",
+    "created_at": "2026-01-08T10:52:00Z",
+    "version": "1.0"
+  },
+  "ai_integrations": {
+    "fallback_chain": ["Claude", "Gemini", "GPT-4", "Together AI"],
+    "confidence_thresholds": {"auto_execute": 95, "review_required": 70, "manual_required": 0},
+    "providers": {
+      "claude": {"model": "claude-3-5-sonnet-20241022", "max_tokens": 4096, "rate_limit": "20/min"},
+      "gemini": {"model": "gemini-pro", "max_tokens": 4096, "rate_limit": "60/min"},
+      "gpt4": {"model": "gpt-4-turbo", "max_tokens": 4096, "rate_limit": "60/min"},
+      "together": {"model": "mistralai/Mixtral-8x7B-Instruct-v0.1", "max_tokens": 4096, "rate_limit": "100/min"}
+    },
+    "use_cases": ["document_analysis", "invoice_extraction", "transaction_categorization", "report_summarization", "compliance_validation"]
+  },
+  "email_integration": {
+    "provider": "AWS SES",
+    "fallback": "SMTP",
+    "templates": ["welcome", "password_reset", "leave_approval", "payslip", "invoice"],
+    "rate_limit": "100/day per recipient"
+  },
+  "sms_integration": {
+    "provider": "MSG91",
+    "dlt_compliance": true,
+    "templates": ["otp", "leave_status", "salary_credit"],
+    "rate_limit": "1000/day"
+  },
+  "payment_gateways": {
+    "razorpay": {"purpose": "Invoice payments", "webhooks": ["payment.captured", "payment.failed"]}
+  },
+  "government_portals": {
+    "gstn": {"purpose": "GSTR-1, GSTR-3B filing", "method": "API + JSON export"},
+    "tds_traces": {"purpose": "TDS returns, Form 16", "method": "FVU file generation"},
+    "epfo": {"purpose": "PF returns", "method": "ECR file generation"},
+    "esic": {"purpose": "ESI returns", "method": "Excel export"}
+  },
+  "exchange_rates": {
+    "primary": "RBI reference rate API",
+    "fallback": "Open Exchange Rates",
+    "cache_duration": "24 hours",
+    "supported_currencies": ["USD", "EUR", "GBP", "AED", "SGD"]
+  },
+  "file_storage": {
+    "provider": "MinIO (S3-compatible)",
+    "buckets": ["documents", "payslips", "invoices", "exports", "temp"],
+    "max_file_size": "10MB",
+    "allowed_types": ["pdf", "xlsx", "docx", "csv", "png", "jpg"]
+  }
+}

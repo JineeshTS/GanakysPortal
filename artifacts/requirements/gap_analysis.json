@@ -1,0 +1,884 @@
+{
+  "metadata": {
+    "agent_id": "REQ-012",
+    "agent_name": "Gap Analyzer",
+    "version": "1.0.0",
+    "created_at": "2026-01-08T00:00:00Z",
+    "last_updated": "2026-01-08T00:00:00Z",
+    "analysis_scope": "GanaPortal HRMS Implementation"
+  },
+  "executive_summary": {
+    "total_gaps_identified": 78,
+    "critical_gaps": 12,
+    "high_priority_gaps": 24,
+    "medium_priority_gaps": 28,
+    "low_priority_gaps": 14,
+    "estimated_effort_months": 18,
+    "recommended_phases": 4
+  },
+  "current_state_assessment": {
+    "existing_capabilities": [
+      "Basic employee data management",
+      "Manual payroll processing",
+      "Spreadsheet-based attendance tracking",
+      "Email-based leave requests",
+      "Manual statutory compliance filing",
+      "File-based document storage"
+    ],
+    "existing_systems": [
+      {
+        "system": "Legacy HRMS (if any)",
+        "status": "Varies by client",
+        "integration_complexity": "Medium-High"
+      },
+      {
+        "system": "Tally/accounting software",
+        "status": "Common across clients",
+        "integration_complexity": "Medium"
+      },
+      {
+        "system": "Biometric devices",
+        "status": "Various vendors",
+        "integration_complexity": "Medium"
+      }
+    ],
+    "pain_points": [
+      "Manual data entry errors",
+      "Compliance deadline misses",
+      "No real-time visibility",
+      "Disconnected systems",
+      "Paper-based approvals",
+      "Delayed salary processing"
+    ]
+  },
+  "target_state_vision": {
+    "core_objectives": [
+      "Fully automated payroll processing",
+      "100% statutory compliance",
+      "Real-time attendance tracking",
+      "Self-service employee portal",
+      "AI-powered insights and assistance",
+      "Mobile-first accessibility"
+    ],
+    "key_capabilities": [
+      "Multi-tenant SaaS platform",
+      "India compliance automation",
+      "Intelligent document processing",
+      "Workflow automation",
+      "Advanced analytics and reporting",
+      "Seamless integrations"
+    ]
+  },
+  "gap_analysis_by_module": {
+    "employee_management": {
+      "current_state": "Basic employee records in spreadsheets or legacy systems",
+      "target_state": "Comprehensive employee lifecycle management with self-service",
+      "gaps": [
+        {
+          "id": "EM-001",
+          "gap": "No centralized employee database",
+          "priority": "Critical",
+          "effort": "High",
+          "dependencies": ["Database design", "Data migration"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "EM-002",
+          "gap": "Missing employee self-service portal",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["EM-001", "User authentication"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "EM-003",
+          "gap": "No digital document management",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["EM-001", "Cloud storage"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "EM-004",
+          "gap": "Missing onboarding workflow automation",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["EM-001", "Workflow engine"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "EM-005",
+          "gap": "No offboarding/F&F automation",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["Payroll module", "Workflow engine"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "EM-006",
+          "gap": "Missing org chart visualization",
+          "priority": "Low",
+          "effort": "Low",
+          "dependencies": ["EM-001"],
+          "implementation_phase": 3
+        },
+        {
+          "id": "EM-007",
+          "gap": "No succession planning tools",
+          "priority": "Low",
+          "effort": "Medium",
+          "dependencies": ["EM-001", "Performance management"],
+          "implementation_phase": 4
+        }
+      ]
+    },
+    "attendance_management": {
+      "current_state": "Manual or basic biometric tracking with spreadsheet consolidation",
+      "target_state": "Real-time multi-source attendance with policy automation",
+      "gaps": [
+        {
+          "id": "AT-001",
+          "gap": "No unified attendance system",
+          "priority": "Critical",
+          "effort": "High",
+          "dependencies": ["Employee master"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "AT-002",
+          "gap": "Missing biometric device integration",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["AT-001"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "AT-003",
+          "gap": "No mobile attendance/geo-fencing",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["AT-001", "Mobile app"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "AT-004",
+          "gap": "Missing shift management",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["AT-001"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "AT-005",
+          "gap": "No overtime calculation automation",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["AT-001", "AT-004"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "AT-006",
+          "gap": "Missing regularization workflow",
+          "priority": "Medium",
+          "effort": "Low",
+          "dependencies": ["AT-001", "Workflow engine"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "AT-007",
+          "gap": "No WFH/remote work tracking",
+          "priority": "Medium",
+          "effort": "Low",
+          "dependencies": ["AT-001"],
+          "implementation_phase": 2
+        }
+      ]
+    },
+    "leave_management": {
+      "current_state": "Email or paper-based leave requests with manual tracking",
+      "target_state": "Automated leave lifecycle with policy enforcement",
+      "gaps": [
+        {
+          "id": "LV-001",
+          "gap": "No digital leave application system",
+          "priority": "Critical",
+          "effort": "Medium",
+          "dependencies": ["Employee master", "Workflow engine"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "LV-002",
+          "gap": "Missing leave balance automation",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["LV-001"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "LV-003",
+          "gap": "No configurable leave policies",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["LV-001"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "LV-004",
+          "gap": "Missing leave encashment automation",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["LV-001", "Payroll module"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "LV-005",
+          "gap": "No team calendar view",
+          "priority": "Medium",
+          "effort": "Low",
+          "dependencies": ["LV-001"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "LV-006",
+          "gap": "Missing comp-off management",
+          "priority": "Medium",
+          "effort": "Low",
+          "dependencies": ["LV-001", "AT-005"],
+          "implementation_phase": 2
+        }
+      ]
+    },
+    "payroll_management": {
+      "current_state": "Manual/semi-automated payroll with spreadsheet calculations",
+      "target_state": "Fully automated compliant payroll processing",
+      "gaps": [
+        {
+          "id": "PY-001",
+          "gap": "No automated payroll engine",
+          "priority": "Critical",
+          "effort": "High",
+          "dependencies": ["Employee master", "Attendance", "Leave"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "PY-002",
+          "gap": "Missing salary structure configuration",
+          "priority": "Critical",
+          "effort": "Medium",
+          "dependencies": ["PY-001"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "PY-003",
+          "gap": "No PF/ESI auto-calculation",
+          "priority": "Critical",
+          "effort": "Medium",
+          "dependencies": ["PY-001", "Compliance rules"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "PY-004",
+          "gap": "Missing TDS calculation engine",
+          "priority": "Critical",
+          "effort": "High",
+          "dependencies": ["PY-001", "Tax declaration"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "PY-005",
+          "gap": "No Professional Tax automation",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["PY-001", "State rules"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "PY-006",
+          "gap": "Missing payslip generation",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["PY-001"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "PY-007",
+          "gap": "No bank file generation",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["PY-001", "Bank formats"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "PY-008",
+          "gap": "Missing arrears processing",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["PY-001"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "PY-009",
+          "gap": "No loan/advance management",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["PY-001"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "PY-010",
+          "gap": "Missing bonus/incentive processing",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["PY-001"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "PY-011",
+          "gap": "No F&F settlement automation",
+          "priority": "Medium",
+          "effort": "High",
+          "dependencies": ["PY-001", "Leave encashment", "Gratuity"],
+          "implementation_phase": 2
+        }
+      ]
+    },
+    "statutory_compliance": {
+      "current_state": "Manual filing with external consultants",
+      "target_state": "Automated compliance with integrated filing",
+      "gaps": [
+        {
+          "id": "SC-001",
+          "gap": "No PF challan generation",
+          "priority": "Critical",
+          "effort": "Medium",
+          "dependencies": ["PY-003", "ECR format"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "SC-002",
+          "gap": "Missing ESI return generation",
+          "priority": "Critical",
+          "effort": "Medium",
+          "dependencies": ["PY-003"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "SC-003",
+          "gap": "No TDS return preparation (24Q)",
+          "priority": "Critical",
+          "effort": "High",
+          "dependencies": ["PY-004"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "SC-004",
+          "gap": "Missing Form 16 generation",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["SC-003"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "SC-005",
+          "gap": "No PT return preparation",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["PY-005"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "SC-006",
+          "gap": "Missing compliance calendar/alerts",
+          "priority": "High",
+          "effort": "Low",
+          "dependencies": ["Notification system"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "SC-007",
+          "gap": "No statutory report generation",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["Reporting engine"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "SC-008",
+          "gap": "Missing GST invoicing integration",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["Vendor management"],
+          "implementation_phase": 3
+        }
+      ]
+    },
+    "expense_management": {
+      "current_state": "Paper/email-based claims with manual reimbursement",
+      "target_state": "Digital expense lifecycle with policy compliance",
+      "gaps": [
+        {
+          "id": "EX-001",
+          "gap": "No digital expense claim system",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["Employee master", "Workflow engine"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "EX-002",
+          "gap": "Missing receipt OCR/scanning",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["EX-001", "AI integration"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "EX-003",
+          "gap": "No expense policy enforcement",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["EX-001"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "EX-004",
+          "gap": "Missing travel request workflow",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["EX-001", "Workflow engine"],
+          "implementation_phase": 3
+        },
+        {
+          "id": "EX-005",
+          "gap": "No advance management",
+          "priority": "Medium",
+          "effort": "Low",
+          "dependencies": ["EX-001"],
+          "implementation_phase": 3
+        },
+        {
+          "id": "EX-006",
+          "gap": "Missing mileage calculation",
+          "priority": "Low",
+          "effort": "Low",
+          "dependencies": ["EX-001"],
+          "implementation_phase": 3
+        }
+      ]
+    },
+    "ai_capabilities": {
+      "current_state": "No AI/ML capabilities",
+      "target_state": "AI-powered assistance and intelligent automation",
+      "gaps": [
+        {
+          "id": "AI-001",
+          "gap": "No document intelligence (OCR, extraction)",
+          "priority": "High",
+          "effort": "High",
+          "dependencies": ["AI provider integration"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "AI-002",
+          "gap": "Missing chatbot/virtual assistant",
+          "priority": "High",
+          "effort": "High",
+          "dependencies": ["AI-001", "Knowledge base"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "AI-003",
+          "gap": "No intelligent compliance checking",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["AI-001", "Compliance rules"],
+          "implementation_phase": 3
+        },
+        {
+          "id": "AI-004",
+          "gap": "Missing anomaly detection",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["AI-001", "Historical data"],
+          "implementation_phase": 3
+        },
+        {
+          "id": "AI-005",
+          "gap": "No predictive analytics",
+          "priority": "Low",
+          "effort": "High",
+          "dependencies": ["AI-001", "Data warehouse"],
+          "implementation_phase": 4
+        }
+      ]
+    },
+    "reporting_analytics": {
+      "current_state": "Manual report generation from spreadsheets",
+      "target_state": "Real-time dashboards with self-service reporting",
+      "gaps": [
+        {
+          "id": "RA-001",
+          "gap": "No real-time dashboards",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["Data aggregation layer"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "RA-002",
+          "gap": "Missing standard report library",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["Reporting engine"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "RA-003",
+          "gap": "No custom report builder",
+          "priority": "Medium",
+          "effort": "High",
+          "dependencies": ["RA-002"],
+          "implementation_phase": 3
+        },
+        {
+          "id": "RA-004",
+          "gap": "Missing scheduled report delivery",
+          "priority": "Medium",
+          "effort": "Low",
+          "dependencies": ["RA-002", "Email integration"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "RA-005",
+          "gap": "No data export capabilities",
+          "priority": "Medium",
+          "effort": "Low",
+          "dependencies": ["RA-002"],
+          "implementation_phase": 2
+        }
+      ]
+    },
+    "mobile_experience": {
+      "current_state": "No mobile capabilities",
+      "target_state": "Full-featured mobile app for employees and managers",
+      "gaps": [
+        {
+          "id": "MB-001",
+          "gap": "No mobile application",
+          "priority": "High",
+          "effort": "High",
+          "dependencies": ["API layer", "Authentication"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "MB-002",
+          "gap": "Missing push notifications",
+          "priority": "Medium",
+          "effort": "Medium",
+          "dependencies": ["MB-001", "Notification system"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "MB-003",
+          "gap": "No offline capabilities",
+          "priority": "Low",
+          "effort": "Medium",
+          "dependencies": ["MB-001"],
+          "implementation_phase": 3
+        },
+        {
+          "id": "MB-004",
+          "gap": "Missing biometric authentication",
+          "priority": "Medium",
+          "effort": "Low",
+          "dependencies": ["MB-001"],
+          "implementation_phase": 2
+        }
+      ]
+    },
+    "integration_layer": {
+      "current_state": "No integration capabilities",
+      "target_state": "Comprehensive integration ecosystem",
+      "gaps": [
+        {
+          "id": "IN-001",
+          "gap": "No REST API layer",
+          "priority": "Critical",
+          "effort": "High",
+          "dependencies": ["Core modules"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "IN-002",
+          "gap": "Missing accounting software integration",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["IN-001"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "IN-003",
+          "gap": "No biometric vendor integrations",
+          "priority": "High",
+          "effort": "Medium",
+          "dependencies": ["IN-001", "AT-002"],
+          "implementation_phase": 1
+        },
+        {
+          "id": "IN-004",
+          "gap": "Missing bank integration for payments",
+          "priority": "Medium",
+          "effort": "High",
+          "dependencies": ["IN-001", "PY-007"],
+          "implementation_phase": 2
+        },
+        {
+          "id": "IN-005",
+          "gap": "No webhook support",
+          "priority": "Medium",
+          "effort": "Low",
+          "dependencies": ["IN-001"],
+          "implementation_phase": 2
+        }
+      ]
+    }
+  },
+  "implementation_roadmap": {
+    "phase_1": {
+      "name": "Foundation & Core",
+      "duration_months": 5,
+      "objectives": [
+        "Core employee management",
+        "Basic attendance and leave",
+        "Payroll engine with compliance",
+        "User authentication and authorization"
+      ],
+      "key_deliverables": [
+        "Employee master with self-service",
+        "Attendance tracking and shift management",
+        "Leave application and balance management",
+        "Payroll processing with PF/ESI/TDS/PT",
+        "Challan and return generation",
+        "Role-based access control"
+      ],
+      "gaps_addressed": 35,
+      "critical_gaps_addressed": 10
+    },
+    "phase_2": {
+      "name": "Enhanced Functionality",
+      "duration_months": 4,
+      "objectives": [
+        "Mobile application",
+        "Expense management",
+        "AI document processing",
+        "Advanced reporting"
+      ],
+      "key_deliverables": [
+        "Mobile app (iOS/Android)",
+        "Digital expense claims with OCR",
+        "Real-time dashboards",
+        "Form 16 generation",
+        "AI-powered chatbot MVP"
+      ],
+      "gaps_addressed": 25,
+      "critical_gaps_addressed": 2
+    },
+    "phase_3": {
+      "name": "Advanced Features",
+      "duration_months": 5,
+      "objectives": [
+        "Advanced integrations",
+        "Custom reporting",
+        "Travel management",
+        "Intelligent compliance"
+      ],
+      "key_deliverables": [
+        "Accounting software integrations",
+        "Custom report builder",
+        "Travel request workflow",
+        "AI compliance checking",
+        "Org chart and visualization"
+      ],
+      "gaps_addressed": 12,
+      "critical_gaps_addressed": 0
+    },
+    "phase_4": {
+      "name": "Innovation & Optimization",
+      "duration_months": 4,
+      "objectives": [
+        "Predictive analytics",
+        "Succession planning",
+        "Advanced AI features",
+        "Platform optimization"
+      ],
+      "key_deliverables": [
+        "Predictive attrition models",
+        "Succession planning tools",
+        "Advanced anomaly detection",
+        "Performance optimization",
+        "Offline mobile capabilities"
+      ],
+      "gaps_addressed": 6,
+      "critical_gaps_addressed": 0
+    }
+  },
+  "priority_ranking": {
+    "methodology": "Weighted scoring based on business impact, compliance requirement, user needs, and implementation effort",
+    "weights": {
+      "business_impact": 0.30,
+      "compliance_requirement": 0.25,
+      "user_demand": 0.25,
+      "implementation_feasibility": 0.20
+    },
+    "top_priority_gaps": [
+      {
+        "rank": 1,
+        "id": "PY-001",
+        "description": "Automated payroll engine",
+        "score": 95,
+        "rationale": "Core functionality required for all other features"
+      },
+      {
+        "rank": 2,
+        "id": "EM-001",
+        "description": "Centralized employee database",
+        "score": 94,
+        "rationale": "Foundation for entire system"
+      },
+      {
+        "rank": 3,
+        "id": "SC-001",
+        "description": "PF challan generation",
+        "score": 92,
+        "rationale": "Critical compliance requirement"
+      },
+      {
+        "rank": 4,
+        "id": "PY-004",
+        "description": "TDS calculation engine",
+        "score": 91,
+        "rationale": "Monthly compliance requirement"
+      },
+      {
+        "rank": 5,
+        "id": "AT-001",
+        "description": "Unified attendance system",
+        "score": 90,
+        "rationale": "Required for accurate payroll"
+      },
+      {
+        "rank": 6,
+        "id": "LV-001",
+        "description": "Digital leave application",
+        "score": 88,
+        "rationale": "High user demand, affects payroll"
+      },
+      {
+        "rank": 7,
+        "id": "SC-003",
+        "description": "TDS return preparation",
+        "score": 87,
+        "rationale": "Quarterly compliance requirement"
+      },
+      {
+        "rank": 8,
+        "id": "PY-006",
+        "description": "Payslip generation",
+        "score": 85,
+        "rationale": "Employee expectation and legal requirement"
+      },
+      {
+        "rank": 9,
+        "id": "IN-001",
+        "description": "REST API layer",
+        "score": 84,
+        "rationale": "Required for mobile and integrations"
+      },
+      {
+        "rank": 10,
+        "id": "SC-006",
+        "description": "Compliance calendar/alerts",
+        "score": 83,
+        "rationale": "Prevents compliance violations"
+      }
+    ]
+  },
+  "resource_requirements": {
+    "team_composition": {
+      "phase_1": {
+        "backend_developers": 4,
+        "frontend_developers": 3,
+        "qa_engineers": 2,
+        "devops_engineer": 1,
+        "ui_ux_designer": 1,
+        "product_manager": 1,
+        "compliance_expert": 1
+      },
+      "phase_2_onwards": {
+        "backend_developers": 5,
+        "frontend_developers": 4,
+        "mobile_developers": 2,
+        "qa_engineers": 3,
+        "devops_engineer": 2,
+        "ui_ux_designer": 1,
+        "product_manager": 1,
+        "data_engineer": 1,
+        "ml_engineer": 1
+      }
+    },
+    "infrastructure": {
+      "cloud_provider": "AWS",
+      "estimated_monthly_cost": {
+        "development": 5000,
+        "staging": 3000,
+        "production_initial": 15000,
+        "production_scaled": 50000
+      }
+    },
+    "external_dependencies": [
+      "AI API subscriptions (Claude, Gemini, GPT-4)",
+      "SMS provider (MSG91)",
+      "Email service (AWS SES)",
+      "Payment gateway integration",
+      "Biometric device SDKs"
+    ]
+  },
+  "success_metrics": {
+    "implementation_kpis": [
+      {
+        "metric": "Feature completion rate",
+        "target": "> 95% per phase"
+      },
+      {
+        "metric": "Critical bug count at launch",
+        "target": "0"
+      },
+      {
+        "metric": "Code coverage",
+        "target": "> 80%"
+      },
+      {
+        "metric": "Performance benchmarks met",
+        "target": "100%"
+      }
+    ],
+    "business_kpis": [
+      {
+        "metric": "Payroll processing time reduction",
+        "target": "> 80%"
+      },
+      {
+        "metric": "Compliance deadline adherence",
+        "target": "100%"
+      },
+      {
+        "metric": "Employee self-service adoption",
+        "target": "> 90% within 3 months"
+      },
+      {
+        "metric": "Support ticket reduction",
+        "target": "> 50% after 6 months"
+      }
+    ]
+  }
+}

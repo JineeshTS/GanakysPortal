@@ -1,0 +1,89 @@
+# DEP-004: Kubernetes Manifests Agent
+# GanaPortal Redis Deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: ganaportal
+  labels:
+    app.kubernetes.io/name: ganaportal
+    app.kubernetes.io/component: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ganaportal
+      app.kubernetes.io/component: cache
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ganaportal
+        app.kubernetes.io/component: cache
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+              name: redis
+          command:
+            - redis-server
+            - --appendonly
+            - "yes"
+            - --maxmemory
+            - "512mb"
+            - --maxmemory-policy
+            - allkeys-lru
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+      volumes:
+        - name: redis-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: ganaportal
+  labels:
+    app.kubernetes.io/name: ganaportal
+    app.kubernetes.io/component: cache
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: redis
+      name: redis
+  selector:
+    app.kubernetes.io/name: ganaportal
+    app.kubernetes.io/component: cache

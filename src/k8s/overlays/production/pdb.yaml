@@ -1,0 +1,38 @@
+# DEP-004: Kubernetes Manifests Agent
+# GanaPortal Production PDB (Pod Disruption Budget)
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-pdb
+  namespace: ganaportal-prod
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ganaportal
+      app.kubernetes.io/component: backend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend-pdb
+  namespace: ganaportal-prod
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ganaportal
+      app.kubernetes.io/component: frontend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgres-pdb
+  namespace: ganaportal-prod
+spec:
+  maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ganaportal
+      app.kubernetes.io/component: database

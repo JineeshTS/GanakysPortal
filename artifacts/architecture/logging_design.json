@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-013",
+    "agent_name": "Logging Architect",
+    "created_at": "2026-01-08T10:57:00Z",
+    "version": "1.0"
+  },
+  "logging_framework": {
+    "backend": "structlog",
+    "frontend": "console + error boundary reporting"
+  },
+  "log_levels": {
+    "DEBUG": "Detailed debugging information",
+    "INFO": "General operational events",
+    "WARNING": "Unexpected but handled events",
+    "ERROR": "Error events that need attention",
+    "CRITICAL": "System-breaking events"
+  },
+  "log_format": {
+    "production": "JSON lines",
+    "development": "Pretty colored console",
+    "fields": ["timestamp", "level", "message", "request_id", "user_id", "endpoint", "duration_ms", "status_code"]
+  },
+  "structured_logging": {
+    "request_log": {"fields": ["method", "path", "query", "user_id", "ip", "user_agent", "duration_ms", "status_code"]},
+    "error_log": {"fields": ["error_type", "error_message", "stack_trace", "request_id"]},
+    "audit_log": {"fields": ["user_id", "action", "entity_type", "entity_id", "changes", "ip"]}
+  },
+  "log_destinations": {
+    "stdout": "Container logs (default)",
+    "file": "/var/log/ganaportal/ (optional)",
+    "retention": "30 days"
+  },
+  "sensitive_data": {
+    "mask": ["password", "token", "api_key", "aadhaar", "pan", "bank_account"],
+    "redact": "Replace with [REDACTED]"
+  },
+  "correlation": {
+    "request_id": "X-Request-ID header (UUID)",
+    "propagation": "Pass through all service calls"
+  }
+}

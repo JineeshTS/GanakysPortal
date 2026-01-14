@@ -1,0 +1,94 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-004",
+    "agent_name": "Security Architect",
+    "created_at": "2026-01-08T10:48:00Z",
+    "version": "1.0"
+  },
+  "authentication": {
+    "method": "JWT (JSON Web Tokens)",
+    "algorithm": "RS256",
+    "access_token": {"expiry": "24 hours", "storage": "Memory only (not localStorage)"},
+    "refresh_token": {"expiry": "7 days", "storage": "HttpOnly cookie"},
+    "password_policy": {
+      "min_length": 8,
+      "require_uppercase": true,
+      "require_lowercase": true,
+      "require_number": true,
+      "require_special": true,
+      "history_count": 5
+    },
+    "account_lockout": {
+      "max_attempts": 5,
+      "lockout_duration": "30 minutes",
+      "reset_on_success": true
+    }
+  },
+  "authorization": {
+    "model": "RBAC (Role-Based Access Control)",
+    "roles": {
+      "ADMIN": {"description": "Full system access", "permissions": ["*"]},
+      "HR_MANAGER": {"description": "HR and employee management", "permissions": ["employees.*", "leave.*", "onboarding.*", "timesheet.*", "reports.hr.*"]},
+      "ACCOUNTANT": {"description": "Financial operations", "permissions": ["accounting.*", "payroll.*", "statutory.*", "banking.*", "gst.*", "tds.*", "invoices.*", "bills.*", "reports.financial.*"]},
+      "EMPLOYEE": {"description": "Self-service access", "permissions": ["self.*", "leave.apply", "timesheet.own", "documents.own"]},
+      "EXTERNAL_CA": {"description": "External CA readonly access", "permissions": ["reports.financial.read", "gst.read", "statutory.read", "audit.read"]}
+    },
+    "permission_format": "resource.action",
+    "actions": ["read", "write", "delete", "approve", "export"]
+  },
+  "data_protection": {
+    "encryption_at_rest": {
+      "algorithm": "AES-256-GCM",
+      "key_management": "Environment variables (production: AWS KMS)",
+      "sensitive_fields": ["password_hash", "aadhaar", "pan", "bank_account", "salary_amount"]
+    },
+    "encryption_in_transit": {
+      "protocol": "TLS 1.3",
+      "certificate": "Let's Encrypt (auto-renewal)",
+      "hsts_enabled": true,
+      "hsts_max_age": 31536000
+    },
+    "pii_handling": {
+      "masking": {"aadhaar": "XXXX-XXXX-1234", "pan": "XXXXX1234X", "bank_account": "XXXXXXXX1234"},
+      "audit_logging": "All access to PII fields logged",
+      "retention": "As per compliance requirements"
+    }
+  },
+  "api_security": {
+    "cors": {
+      "allowed_origins": ["https://portal.ganakys.com"],
+      "allowed_methods": ["GET", "POST", "PUT", "PATCH", "DELETE"],
+      "allowed_headers": ["Authorization", "Content-Type", "X-Request-ID"],
+      "expose_headers": ["X-Request-ID", "X-RateLimit-Remaining"],
+      "max_age": 86400
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "storage": "Redis",
+      "default_limit": "100/minute"
+    },
+    "input_validation": {
+      "framework": "Pydantic v2",
+      "sql_injection": "Parameterized queries via SQLAlchemy",
+      "xss_prevention": "Output encoding, CSP headers",
+      "file_upload": {"max_size": "10MB", "allowed_types": ["pdf", "xlsx", "docx", "png", "jpg"]}
+    }
+  },
+  "security_headers": {
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'",
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "X-XSS-Protection": "1; mode=block",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()"
+  },
+  "audit_logging": {
+    "events_logged": ["login", "logout", "password_change", "role_change", "data_create", "data_update", "data_delete", "data_export", "pii_access"],
+    "retention": "7 years (as per compliance)",
+    "fields": ["user_id", "action", "entity_type", "entity_id", "old_values", "new_values", "ip_address", "user_agent", "timestamp"]
+  },
+  "compliance": {
+    "india_regulations": ["IT Act 2000", "SPDI Rules 2011", "Personal Data Protection"],
+    "security_standards": ["OWASP Top 10", "SANS Top 25"]
+  }
+}
