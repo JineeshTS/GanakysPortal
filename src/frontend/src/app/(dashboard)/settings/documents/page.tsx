@@ -129,8 +129,8 @@ export default function DocumentSettingsPage() {
         api.get('/documents/settings/categories?active_only=false'),
         api.get('/documents/settings/types?active_only=false')
       ])
-      setCategories(categoriesRes.data)
-      setTypes(typesRes.data)
+      setCategories(Array.isArray(categoriesRes) ? categoriesRes : [])
+      setTypes(Array.isArray(typesRes) ? typesRes : [])
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load document settings')
     } finally {
@@ -138,13 +138,13 @@ export default function DocumentSettingsPage() {
     }
   }
 
-  // Filter data
-  const filteredCategories = categories.filter(cat =>
+  // Filter data - ensure arrays exist
+  const filteredCategories = (categories || []).filter(cat =>
     cat.name.toLowerCase().includes(categorySearch.toLowerCase()) ||
     cat.code.toLowerCase().includes(categorySearch.toLowerCase())
   )
 
-  const filteredTypes = types.filter(type => {
+  const filteredTypes = (types || []).filter(type => {
     const matchesSearch = type.name.toLowerCase().includes(typeSearch.toLowerCase()) ||
       type.code.toLowerCase().includes(typeSearch.toLowerCase())
     const matchesCategory = selectedCategoryFilter === 'all' || type.category_id === selectedCategoryFilter
@@ -339,7 +339,7 @@ export default function DocumentSettingsPage() {
                           <p className="text-sm text-muted-foreground mt-1">{category.description}</p>
                         )}
                         <p className="text-xs text-muted-foreground mt-2">
-                          {types.filter(t => t.category_id === category.id).length} document types
+                          {(types || []).filter(t => t.category_id === category.id).length} document types
                         </p>
                       </div>
                     </div>
@@ -392,7 +392,7 @@ export default function DocumentSettingsPage() {
                     name="category-filter"
                     options={[
                       { value: 'all', label: 'All Categories' },
-                      ...categories.map(c => ({ value: c.id, label: c.name }))
+                      ...(categories || []).map(c => ({ value: c.id, label: c.name }))
                     ]}
                     value={selectedCategoryFilter}
                     onChange={(e) => setSelectedCategoryFilter(e.target.value)}
@@ -594,7 +594,7 @@ export default function DocumentSettingsPage() {
             <FormSelect
               label="Category *"
               name="category"
-              options={categories.filter(c => c.is_active).map(c => ({ value: c.id, label: c.name }))}
+              options={(categories || []).filter(c => c.is_active).map(c => ({ value: c.id, label: c.name }))}
               value={typeForm.category_id}
               onChange={(e) => setTypeForm(prev => ({ ...prev, category_id: e.target.value }))}
               placeholder="Select a category"
