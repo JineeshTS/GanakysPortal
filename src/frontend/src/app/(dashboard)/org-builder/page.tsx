@@ -292,7 +292,6 @@ export default function OrgBuilderPage() {
           description="AI-powered organizational structure recommendations"
           breadcrumbs={[
             { label: "Dashboard", href: "/" },
-            { label: "HRMS" },
             { label: "AI Org Builder" }
           ]}
         />
@@ -371,7 +370,6 @@ export default function OrgBuilderPage() {
         description="AI-powered organizational structure recommendations"
         breadcrumbs={[
           { label: "Dashboard", href: "/" },
-          { label: "HRMS" },
           { label: "AI Org Builder" }
         ]}
         actions={
