@@ -7,7 +7,7 @@ export default function OrgBuilderRedirect() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace('/settings/organization-setup?tab=ai-builder')
+    router.replace('/settings/organization?tab=ai-builder')
   }, [router])
 
   return (

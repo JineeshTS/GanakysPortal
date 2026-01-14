@@ -817,7 +817,7 @@ export default function OrganizationSetupPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Organization Setup" description="Loading..." />
+        <PageHeader title="Organization" description="Loading..." />
         <div className="grid gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map(i => (
             <Card key={i}><CardContent className="p-6"><Skeleton className="h-8 w-24 mb-2" /><Skeleton className="h-4 w-32" /></CardContent></Card>
@@ -831,12 +831,12 @@ export default function OrganizationSetupPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Organization Setup"
+        title="Organization"
         description="Configure your company profile, structure, and AI-powered recommendations"
         breadcrumbs={[
           { label: 'Dashboard', href: '/' },
           { label: 'Settings', href: '/settings' },
-          { label: 'Organization Setup' },
+          { label: 'Organization' },
         ]}
         actions={
           <div className="flex items-center gap-3">

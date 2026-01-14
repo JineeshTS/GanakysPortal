@@ -159,7 +159,8 @@ const navigationItems: NavItem[] = [
     permission: "settings.view",
     children: [
       { title: "Overview", href: "/settings", icon: Settings, permission: "settings.view" },
-      { title: "Organization Setup", href: "/settings/organization-setup", icon: Network, permission: "settings.view" },
+      { title: "Setup Wizard", href: "/settings/setup-wizard", icon: Sparkles, permission: "settings.view" },
+      { title: "Organization", href: "/settings/organization", icon: Network, permission: "settings.view" },
       { title: "Company", href: "/settings/company", icon: Building2, permission: "settings.view" },
       { title: "Users & Roles", href: "/settings/users", icon: Users, permission: "settings.view" },
       { title: "Leave Policies", href: "/settings/leave", icon: Calendar, permission: "settings.view" },

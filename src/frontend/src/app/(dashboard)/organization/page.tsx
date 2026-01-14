@@ -7,7 +7,7 @@ export default function OrganizationRedirect() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace('/settings/organization-setup?tab=orgchart')
+    router.replace('/settings/organization?tab=orgchart')
   }, [router])
 
   return (

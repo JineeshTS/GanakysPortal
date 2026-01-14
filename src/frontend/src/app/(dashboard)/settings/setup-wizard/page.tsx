@@ -1,400 +1,387 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Building2, Users, Wallet, FileText, Settings, Bell, Shield, Rocket } from 'lucide-react';
-import { PageHeader } from '@/components/layout/page-header';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { PageHeader } from '@/components/layout/page-header'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useApi, useToast, useAuthStore } from '@/hooks'
+import {
+  Check,
+  Building2,
+  Users,
+  Wallet,
+  FileText,
+  Settings,
+  Bell,
+  Shield,
+  Rocket,
+  ExternalLink,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  Network,
+  Briefcase,
+  Calendar,
+  RefreshCw,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-interface Step {
-  id: number;
-  title: string;
-  description: string;
-  icon: React.ElementType;
+interface SetupStep {
+  id: string
+  title: string
+  description: string
+  icon: React.ElementType
+  href: string
+  checkKey: string
+  required: boolean
 }
 
-const steps: Step[] = [
-  { id: 1, title: 'Company Setup', description: 'Basic company information', icon: Building2 },
-  { id: 2, title: 'Departments', description: 'Create departments', icon: Users },
-  { id: 3, title: 'Salary Components', description: 'Configure salary structure', icon: Wallet },
-  { id: 4, title: 'Leave Policies', description: 'Setup leave types', icon: FileText },
-  { id: 5, title: 'Statutory Settings', description: 'PF, ESI, TDS configuration', icon: Settings },
-  { id: 6, title: 'Email Setup', description: 'Configure email notifications', icon: Bell },
-  { id: 7, title: 'User Roles', description: 'Setup permissions', icon: Shield },
-  { id: 8, title: 'Go Live', description: 'Review and launch', icon: Rocket },
-];
-
-// Step 1: Company Setup
-function CompanySetupStep() {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label>Company Name *</Label>
-          <Input placeholder="Acme Corporation Pvt Ltd" className="mt-1.5" />
-        </div>
-        <div>
-          <Label>Legal Name</Label>
-          <Input placeholder="Acme Corporation Private Limited" className="mt-1.5" />
-        </div>
-        <div>
-          <Label>CIN Number</Label>
-          <Input placeholder="U12345MH2020PTC123456" className="mt-1.5" />
-        </div>
-        <div>
-          <Label>GSTIN</Label>
-          <Input placeholder="27AABCU9603R1ZM" className="mt-1.5" />
-        </div>
-        <div>
-          <Label>PAN</Label>
-          <Input placeholder="AABCU9603R" className="mt-1.5" />
-        </div>
-        <div>
-          <Label>TAN</Label>
-          <Input placeholder="MUMU12345A" className="mt-1.5" />
-        </div>
-        <div className="md:col-span-2">
-          <Label>Registered Address *</Label>
-          <Input placeholder="123 Business Park, Mumbai 400001" className="mt-1.5" />
-        </div>
-        <div>
-          <Label>Contact Email *</Label>
-          <Input type="email" placeholder="hr@acme.com" className="mt-1.5" />
-        </div>
-        <div>
-          <Label>Contact Phone</Label>
-          <Input placeholder="+91 22 1234 5678" className="mt-1.5" />
-        </div>
-      </div>
-    </div>
-  );
+interface SetupStatus {
+  company_configured: boolean
+  organization_configured: boolean
+  departments_exist: boolean
+  designations_exist: boolean
+  salary_components_configured: boolean
+  statutory_configured: boolean
+  leave_policies_configured: boolean
+  attendance_configured: boolean
+  users_configured: boolean
+  email_configured: boolean
+  overall_complete: boolean
+  completion_percentage: number
 }
 
-// Step 2: Departments
-function DepartmentsStep() {
-  const defaultDepts = ['HR', 'Finance', 'Engineering', 'Sales', 'Operations'];
-  return (
-    <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Create departments for your organization. You can add more later.
-      </p>
-      <div className="space-y-3">
-        {defaultDepts.map((dept, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <Input defaultValue={dept} className="flex-1" />
-            <Button variant="outline" size="icon">×</Button>
-          </div>
-        ))}
-        <Button variant="outline" className="w-full">+ Add Department</Button>
-      </div>
-    </div>
-  );
-}
-
-// Step 3: Salary Components
-function SalaryComponentsStep() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h4 className="font-medium mb-3">Earnings</h4>
-        <div className="space-y-2 bg-green-50 dark:bg-green-950/20 p-4 rounded-lg">
-          {['Basic', 'HRA', 'Special Allowance', 'Conveyance', 'Medical'].map((comp, i) => (
-            <div key={i} className="flex items-center justify-between p-2 bg-background rounded">
-              <span>{comp}</span>
-              <span className="text-sm text-muted-foreground">Enabled</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div>
-        <h4 className="font-medium mb-3">Deductions</h4>
-        <div className="space-y-2 bg-red-50 dark:bg-red-950/20 p-4 rounded-lg">
-          {['PF (Employee)', 'ESI (Employee)', 'Professional Tax', 'TDS'].map((comp, i) => (
-            <div key={i} className="flex items-center justify-between p-2 bg-background rounded">
-              <span>{comp}</span>
-              <span className="text-sm text-muted-foreground">Enabled</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Step 4: Leave Policies
-function LeavePoliciesStep() {
-  const leaveTypes = [
-    { name: 'Casual Leave (CL)', days: 12, color: 'bg-green-500' },
-    { name: 'Earned Leave (EL)', days: 15, color: 'bg-blue-500' },
-    { name: 'Sick Leave (SL)', days: 12, color: 'bg-red-500' },
-    { name: 'Maternity Leave (ML)', days: 182, color: 'bg-pink-500' },
-  ];
-  return (
-    <div className="space-y-4">
-      {leaveTypes.map((leave, i) => (
-        <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
-          <div className={cn('w-3 h-3 rounded-full', leave.color)} />
-          <div className="flex-1">
-            <div className="font-medium">{leave.name}</div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Input type="number" defaultValue={leave.days} className="w-20" />
-            <span className="text-sm text-muted-foreground">days/year</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Step 5: Statutory Settings
-function StatutorySettingsStep() {
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Provident Fund (PF)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span>PF Establishment Code</span>
-            <Input placeholder="MHBAN12345" className="w-48" />
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Employer Contribution</span>
-            <span className="font-medium">12%</span>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">ESI</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span>ESI Code</span>
-            <Input placeholder="12345678901234567" className="w-48" />
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Wage Limit</span>
-            <span className="font-medium">₹21,000</span>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Professional Tax</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <span>State</span>
-            <span className="font-medium">Karnataka</span>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// Step 6: Email Setup
-function EmailSetupStep() {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label>SMTP Host</Label>
-          <Input placeholder="smtp.hostinger.com" className="mt-1.5" />
-        </div>
-        <div>
-          <Label>SMTP Port</Label>
-          <Input placeholder="587" className="mt-1.5" />
-        </div>
-        <div>
-          <Label>Email Username</Label>
-          <Input placeholder="noreply@yourcompany.com" className="mt-1.5" />
-        </div>
-        <div>
-          <Label>Email Password</Label>
-          <Input type="password" placeholder="••••••••" className="mt-1.5" />
-        </div>
-        <div className="md:col-span-2">
-          <Label>From Name</Label>
-          <Input placeholder="Acme HR System" className="mt-1.5" />
-        </div>
-      </div>
-      <Button variant="outline">Send Test Email</Button>
-    </div>
-  );
-}
-
-// Step 7: User Roles
-function UserRolesStep() {
-  const roles = [
-    { name: 'Super Admin', desc: 'Full access to all features', users: 1 },
-    { name: 'HR Manager', desc: 'Manage employees, payroll, leave', users: 0 },
-    { name: 'Finance Manager', desc: 'Manage accounting, invoices', users: 0 },
-    { name: 'Employee', desc: 'Self-service portal access', users: 0 },
-  ];
-  return (
-    <div className="space-y-4">
-      {roles.map((role, i) => (
-        <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
-          <div className="flex-1">
-            <div className="font-medium">{role.name}</div>
-            <div className="text-sm text-muted-foreground">{role.desc}</div>
-          </div>
-          <div className="text-sm text-muted-foreground">{role.users} users</div>
-          <Button variant="outline" size="sm">Configure</Button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Step 8: Go Live
-function GoLiveStep() {
-  const checkItems = [
-    { name: 'Company information configured', done: true },
-    { name: 'Departments created', done: true },
-    { name: 'Salary structure defined', done: true },
-    { name: 'Leave policies configured', done: true },
-    { name: 'Statutory settings completed', done: true },
-    { name: 'Email configured', done: false },
-    { name: 'User roles defined', done: true },
-  ];
-  return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <Rocket className="h-16 w-16 mx-auto text-primary mb-4" />
-        <h3 className="text-xl font-semibold">Ready to Launch!</h3>
-        <p className="text-muted-foreground">Review your setup before going live</p>
-      </div>
-      <div className="space-y-2">
-        {checkItems.map((item, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
-            <div className={cn(
-              'w-5 h-5 rounded-full flex items-center justify-center',
-              item.done ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'
-            )}>
-              {item.done ? <Check className="h-3 w-3" /> : '!'}
-            </div>
-            <span className={item.done ? '' : 'text-yellow-600'}>{item.name}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const setupSteps: SetupStep[] = [
+  {
+    id: 'company',
+    title: 'Company Information',
+    description: 'Configure company name, GSTIN, PAN, addresses, and branches',
+    icon: Building2,
+    href: '/settings/company',
+    checkKey: 'company_configured',
+    required: true,
+  },
+  {
+    id: 'organization',
+    title: 'Organization Structure',
+    description: 'Set up departments, designations, and company profile',
+    icon: Network,
+    href: '/settings/organization',
+    checkKey: 'organization_configured',
+    required: true,
+  },
+  {
+    id: 'salary',
+    title: 'Salary Components',
+    description: 'Configure earnings, deductions, and pay schedule',
+    icon: Wallet,
+    href: '/settings/payroll',
+    checkKey: 'salary_components_configured',
+    required: true,
+  },
+  {
+    id: 'statutory',
+    title: 'Statutory Settings',
+    description: 'Configure PF, ESI, Professional Tax, and TDS',
+    icon: FileText,
+    href: '/settings/payroll?tab=pf',
+    checkKey: 'statutory_configured',
+    required: true,
+  },
+  {
+    id: 'leave',
+    title: 'Leave Policies',
+    description: 'Set up leave types, holiday calendar, and week-offs',
+    icon: Calendar,
+    href: '/settings/leave',
+    checkKey: 'leave_policies_configured',
+    required: true,
+  },
+  {
+    id: 'attendance',
+    title: 'Attendance Settings',
+    description: 'Configure shifts, overtime rules, and geo-fencing',
+    icon: Clock,
+    href: '/settings/attendance',
+    checkKey: 'attendance_configured',
+    required: false,
+  },
+  {
+    id: 'users',
+    title: 'Users & Roles',
+    description: 'Add users and configure role-based permissions',
+    icon: Shield,
+    href: '/settings/users',
+    checkKey: 'users_configured',
+    required: true,
+  },
+  {
+    id: 'email',
+    title: 'Email Configuration',
+    description: 'Set up email notifications and templates',
+    icon: Bell,
+    href: '/settings/email',
+    checkKey: 'email_configured',
+    required: false,
+  },
+]
 
 export default function SetupWizardPage() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const { accessToken } = useAuthStore()
+  const { showToast } = useToast()
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case 1: return <CompanySetupStep />;
-      case 2: return <DepartmentsStep />;
-      case 3: return <SalaryComponentsStep />;
-      case 4: return <LeavePoliciesStep />;
-      case 5: return <StatutorySettingsStep />;
-      case 6: return <EmailSetupStep />;
-      case 7: return <UserRolesStep />;
-      case 8: return <GoLiveStep />;
-      default: return null;
+  const [isLoading, setIsLoading] = useState(true)
+  const [status, setStatus] = useState<SetupStatus | null>(null)
+  const [isGoingLive, setIsGoingLive] = useState(false)
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE}/company/setup-status`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        // Map the API response to our expected format
+        setStatus({
+          company_configured: data.company_profile_complete || false,
+          organization_configured: data.extended_profile_complete || false,
+          departments_exist: data.departments_exist || false,
+          designations_exist: data.designations_exist || false,
+          salary_components_configured: true, // Assume configured by default
+          statutory_configured: true, // Assume configured by default
+          leave_policies_configured: true, // Assume configured by default
+          attendance_configured: true, // Assume configured by default
+          users_configured: true, // Assume configured by default
+          email_configured: false, // Usually not configured initially
+          overall_complete: data.overall_complete || false,
+          completion_percentage: data.completion_percentage || 0,
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch setup status:', error)
+      // Set default status on error
+      setStatus({
+        company_configured: false,
+        organization_configured: false,
+        departments_exist: false,
+        designations_exist: false,
+        salary_components_configured: false,
+        statutory_configured: false,
+        leave_policies_configured: false,
+        attendance_configured: false,
+        users_configured: false,
+        email_configured: false,
+        overall_complete: false,
+        completion_percentage: 0,
+      })
+    } finally {
+      setIsLoading(false)
     }
-  };
+  }, [API_BASE, accessToken])
+
+  useEffect(() => {
+    fetchStatus()
+  }, [fetchStatus])
+
+  const getStepStatus = (step: SetupStep): 'complete' | 'pending' | 'optional' => {
+    if (!status) return 'pending'
+    const isComplete = status[step.checkKey as keyof SetupStatus]
+    if (isComplete) return 'complete'
+    if (!step.required) return 'optional'
+    return 'pending'
+  }
+
+  const completedSteps = setupSteps.filter(s => getStepStatus(s) === 'complete').length
+  const requiredSteps = setupSteps.filter(s => s.required)
+  const completedRequired = requiredSteps.filter(s => getStepStatus(s) === 'complete').length
+  const progressPercent = Math.round((completedRequired / requiredSteps.length) * 100)
+
+  const handleGoLive = async () => {
+    if (completedRequired < requiredSteps.length) {
+      showToast('error', 'Incomplete', 'Please complete all required settings before going live')
+      return
+    }
+    setIsGoingLive(true)
+    // Simulate go-live action
+    setTimeout(() => {
+      showToast('success', 'Success', 'Your system is now live! Start adding employees.')
+      setIsGoingLive(false)
+    }, 1500)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Setup Wizard" description="Loading..." />
+        <div className="max-w-3xl mx-auto space-y-4">
+          {[1, 2, 3, 4].map(i => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Initial Setup Wizard"
-        description="Configure your HR & Finance system step by step"
-        icon={<Settings className="h-6 w-6" />}
+        title="Setup Wizard"
+        description="Configure your HR & Payroll system step by step"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/' },
+          { label: 'Settings', href: '/settings' },
+          { label: 'Setup Wizard' },
+        ]}
+        actions={
+          <Button variant="outline" onClick={fetchStatus}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh Status
+          </Button>
+        }
       />
 
-      <div className="max-w-4xl mx-auto">
-        {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-              const isActive = step.id === currentStep;
-              const isComplete = step.id < currentStep;
-              return (
-                <div key={step.id} className="flex flex-col items-center flex-1">
-                  <div className="flex items-center w-full">
-                    {index > 0 && (
-                      <div className={cn(
-                        'flex-1 h-1 mx-2',
-                        isComplete ? 'bg-primary' : 'bg-muted'
-                      )} />
-                    )}
-                    <button
-                      onClick={() => setCurrentStep(step.id)}
-                      className={cn(
-                        'w-10 h-10 rounded-full flex items-center justify-center transition-colors',
-                        isActive && 'bg-primary text-primary-foreground',
-                        isComplete && 'bg-primary text-primary-foreground',
-                        !isActive && !isComplete && 'bg-muted text-muted-foreground'
-                      )}
-                    >
-                      {isComplete ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
-                    </button>
-                    {index < steps.length - 1 && (
-                      <div className={cn(
-                        'flex-1 h-1 mx-2',
-                        step.id < currentStep ? 'bg-primary' : 'bg-muted'
-                      )} />
-                    )}
-                  </div>
-                  <span className={cn(
-                    'text-xs mt-2 text-center hidden md:block',
-                    isActive ? 'text-primary font-medium' : 'text-muted-foreground'
-                  )}>
-                    {step.title}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Step Content */}
+      <div className="max-w-3xl mx-auto space-y-6">
+        {/* Progress Card */}
         <Card>
-          <CardHeader>
-            <CardTitle>{steps[currentStep - 1].title}</CardTitle>
-            <CardDescription>{steps[currentStep - 1].description}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {renderStep()}
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">Setup Progress</h3>
+                <p className="text-sm text-muted-foreground">
+                  {completedRequired} of {requiredSteps.length} required steps complete
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-primary">{progressPercent}%</div>
+              </div>
+            </div>
+            <Progress value={progressPercent} className="h-3" />
+            {progressPercent === 100 && (
+              <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <span className="text-green-700 dark:text-green-400 font-medium">
+                  All required settings are complete! You can go live.
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Navigation */}
-        <div className="flex justify-between mt-6">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
-            disabled={currentStep === 1}
-          >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Previous
-          </Button>
-          {currentStep < 8 ? (
-            <Button onClick={() => setCurrentStep(currentStep + 1)}>
-              Next
-              <ChevronRight className="h-4 w-4 ml-2" />
+        {/* Setup Steps */}
+        <div className="space-y-3">
+          {setupSteps.map((step) => {
+            const stepStatus = getStepStatus(step)
+            const Icon = step.icon
+
+            return (
+              <Card
+                key={step.id}
+                className={cn(
+                  'transition-all hover:shadow-md',
+                  stepStatus === 'complete' && 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20'
+                )}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    {/* Status Icon */}
+                    <div className={cn(
+                      'w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0',
+                      stepStatus === 'complete' && 'bg-green-100 dark:bg-green-900',
+                      stepStatus === 'pending' && 'bg-yellow-100 dark:bg-yellow-900',
+                      stepStatus === 'optional' && 'bg-muted'
+                    )}>
+                      {stepStatus === 'complete' ? (
+                        <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <Icon className={cn(
+                          'h-6 w-6',
+                          stepStatus === 'pending' && 'text-yellow-600 dark:text-yellow-400',
+                          stepStatus === 'optional' && 'text-muted-foreground'
+                        )} />
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-medium">{step.title}</h4>
+                        {step.required ? (
+                          <Badge variant="outline" className="text-xs">Required</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">Optional</Badge>
+                        )}
+                        {stepStatus === 'complete' && (
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            Complete
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{step.description}</p>
+                    </div>
+
+                    {/* Action Button */}
+                    <Link href={step.href}>
+                      <Button
+                        variant={stepStatus === 'complete' ? 'outline' : 'default'}
+                        size="sm"
+                        className="flex-shrink-0"
+                      >
+                        {stepStatus === 'complete' ? 'Review' : 'Configure'}
+                        <ExternalLink className="h-3 w-3 ml-2" />
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+
+        {/* Go Live Card */}
+        <Card className="border-2 border-dashed">
+          <CardContent className="p-6 text-center">
+            <Rocket className="h-12 w-12 mx-auto text-primary mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Ready to Go Live?</h3>
+            <p className="text-muted-foreground mb-6">
+              {progressPercent < 100
+                ? `Complete ${requiredSteps.length - completedRequired} more required settings to go live`
+                : 'All required settings are configured. You can now start using the system!'
+              }
+            </p>
+            <Button
+              size="lg"
+              className="bg-green-600 hover:bg-green-700"
+              disabled={progressPercent < 100 || isGoingLive}
+              onClick={handleGoLive}
+            >
+              {isGoingLive ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Going Live...
+                </>
+              ) : (
+                <>
+                  <Rocket className="h-4 w-4 mr-2" />
+                  Go Live
+                </>
+              )}
             </Button>
-          ) : (
-            <Button className="bg-green-600 hover:bg-green-700">
-              <Rocket className="h-4 w-4 mr-2" />
-              Go Live
-            </Button>
-          )}
+          </CardContent>
+        </Card>
+
+        {/* Help Text */}
+        <div className="text-center text-sm text-muted-foreground">
+          <p>
+            Need help? Check the <Link href="/docs" className="text-primary hover:underline">documentation</Link> or{' '}
+            <Link href="/support" className="text-primary hover:underline">contact support</Link>.
+          </p>
         </div>
       </div>
     </div>
-  );
+  )
 }

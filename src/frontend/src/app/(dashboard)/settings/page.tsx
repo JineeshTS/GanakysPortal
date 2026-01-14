@@ -1,9 +1,14 @@
 "use client"
 
 import * as React from "react"
+import { useState, useEffect, useCallback } from "react"
+import Link from "next/link"
 import { PageHeader } from "@/components/layout/page-header"
 import { SettingsCard, SettingsCategoryGrid, SettingsSection } from "@/components/settings/SettingsCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { useAuthStore } from "@/hooks"
 import {
   Building2,
   Users,
@@ -25,13 +30,61 @@ import {
   TrendingUp,
   Package,
   Network,
+  CheckCircle2,
+  AlertCircle,
+  Rocket,
 } from "lucide-react"
+
+interface SetupStatus {
+  company_profile_complete: boolean
+  extended_profile_complete: boolean
+  departments_exist: boolean
+  designations_exist: boolean
+  overall_complete: boolean
+  completion_percentage: number
+}
 
 // ============================================================================
 // Settings Overview Page
 // ============================================================================
 
 export default function SettingsPage() {
+  const { accessToken } = useAuthStore()
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+
+  const [status, setStatus] = useState<SetupStatus | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE}/company/setup-status`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setStatus({
+          company_profile_complete: data.company_profile_complete || false,
+          extended_profile_complete: data.extended_profile_complete || false,
+          departments_exist: data.departments_exist || false,
+          designations_exist: data.designations_exist || false,
+          overall_complete: data.overall_complete || false,
+          completion_percentage: data.completion_percentage || 0,
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch setup status:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [API_BASE, accessToken])
+
+  useEffect(() => {
+    fetchStatus()
+  }, [fetchStatus])
+
+  const isSetupComplete = status?.overall_complete || false
+  const completionPercent = status?.completion_percentage || 0
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -42,6 +95,48 @@ export default function SettingsPage() {
           { label: "Settings" }
         ]}
       />
+
+      {/* Setup Progress Indicator */}
+      {!isLoading && !isSetupComplete && (
+        <Card className="border-yellow-200 bg-yellow-50/50 dark:border-yellow-900 dark:bg-yellow-950/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium">Complete Your Setup</h3>
+                  <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">{completionPercent}%</span>
+                </div>
+                <Progress value={completionPercent} className="h-2 mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  Complete the setup wizard to start using all features
+                </p>
+              </div>
+              <Link href="/settings/setup-wizard">
+                <Button size="sm" className="flex-shrink-0">
+                  <Rocket className="h-4 w-4 mr-2" />
+                  Setup Wizard
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isLoading && isSetupComplete && (
+        <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <span className="text-green-700 dark:text-green-400 font-medium">
+                Setup complete! Your system is ready to use.
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Main Settings Categories */}
       <SettingsSection
@@ -59,7 +154,7 @@ export default function SettingsPage() {
             title="Organization Setup"
             description="Company profile, org structure, departments, AI recommendations"
             icon={Network}
-            href="/settings/organization-setup"
+            href="/settings/organization"
             badge="AI Powered"
             badgeVariant="success"
           />
@@ -209,18 +304,18 @@ export default function SettingsPage() {
           <CardContent>
             <div className="space-y-2">
               <QuickLink
-                title="Setup Company Profile"
-                href="/settings/company-profile"
-                icon={TrendingUp}
+                title="Organization Setup"
+                href="/settings/organization"
+                icon={Network}
               />
               <QuickLink
                 title="Add Product/Service"
-                href="/settings/company-profile?tab=products"
+                href="/settings/organization?tab=products"
                 icon={Package}
               />
               <QuickLink
                 title="AI Org Builder"
-                href="/org-builder"
+                href="/settings/organization?tab=ai-builder"
                 icon={Sparkles}
               />
               <QuickLink
