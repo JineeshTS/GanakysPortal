@@ -145,6 +145,12 @@ from app.models.exit import (
     ExitType, ExitStatus, ClearanceStatus
 )
 
+# WBS (Work Breakdown Structure)
+from app.models.wbs import (
+    WBSPhase, WBSModule, WBSTask, WBSAgentContext,
+    WBSExecutionLog, WBSQualityGate, WBSAgentConfig
+)
+
 __all__ = [
     # Base
     "BaseModel", "TenantBaseModel",
@@ -225,4 +231,7 @@ __all__ = [
     # Exit Management
     "ExitCase", "ClearanceTask", "FinalSettlement",
     "ExitType", "ExitStatus", "ClearanceStatus",
+    # WBS
+    "WBSPhase", "WBSModule", "WBSTask", "WBSAgentContext",
+    "WBSExecutionLog", "WBSQualityGate", "WBSAgentConfig",
 ]

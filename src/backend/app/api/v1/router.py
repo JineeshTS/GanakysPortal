@@ -33,6 +33,7 @@ from app.api.v1.endpoints import (
     alumni,
     company_profile,
     ai_org_builder,
+    wbs,
 )
 
 api_router = APIRouter()
@@ -112,3 +113,6 @@ api_router.include_router(alumni.router, prefix="/alumni", tags=["Alumni Portal"
 # Company Profile & AI Org Builder
 api_router.include_router(company_profile.router, prefix="/company", tags=["Company Profile"])
 api_router.include_router(ai_org_builder.router, prefix="/ai/org-builder", tags=["AI Org Builder"])
+
+# WBS (Work Breakdown Structure) - Project Management
+api_router.include_router(wbs.router)

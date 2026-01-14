@@ -35,6 +35,10 @@ import {
   Briefcase,
   UserCircle,
   Sparkles,
+  Layers,
+  Bot,
+  Shield,
+  ListTodo,
 } from "lucide-react"
 
 // ============================================================================
@@ -140,6 +144,18 @@ const navigationItems: NavItem[] = [
       { title: "All Projects", href: "/projects", icon: FolderKanban, permission: "projects.view" },
       { title: "Tasks", href: "/tasks", icon: CheckSquare, permission: "projects.view" },
       { title: "Timesheets", href: "/timesheet", icon: Clock, permission: "projects.view" }
+    ]
+  },
+  {
+    title: "WBS Dashboard",
+    icon: Layers,
+    children: [
+      { title: "Overview", href: "/wbs-dashboard", icon: Layers },
+      { title: "Phases", href: "/wbs-dashboard/phases", icon: Target },
+      { title: "Modules", href: "/wbs-dashboard/modules", icon: FolderKanban },
+      { title: "Tasks", href: "/wbs-dashboard/tasks", icon: ListTodo },
+      { title: "Agents", href: "/wbs-dashboard/agents", icon: Bot },
+      { title: "Quality Gates", href: "/wbs-dashboard/quality-gates", icon: Shield }
     ]
   },
   {
