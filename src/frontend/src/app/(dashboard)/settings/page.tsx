@@ -23,7 +23,8 @@ import {
   HelpCircle,
   Sparkles,
   TrendingUp,
-  Package
+  Package,
+  Network,
 } from "lucide-react"
 
 // ============================================================================
@@ -55,18 +56,12 @@ export default function SettingsPage() {
             href="/settings/company"
           />
           <SettingsCard
-            title="Company Profile"
-            description="Industry, stage, funding, and AI org-builder settings"
-            icon={TrendingUp}
-            href="/settings/company-profile"
-            badge="AI Ready"
+            title="Organization Setup"
+            description="Company profile, org structure, departments, AI recommendations"
+            icon={Network}
+            href="/settings/organization-setup"
+            badge="AI Powered"
             badgeVariant="success"
-          />
-          <SettingsCard
-            title="Products & Services"
-            description="Manage your products for team recommendations"
-            icon={Package}
-            href="/settings/company-profile?tab=products"
           />
           <SettingsCard
             title="User Management"

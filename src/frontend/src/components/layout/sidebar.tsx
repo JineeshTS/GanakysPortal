@@ -60,11 +60,9 @@ const navigationItems: NavItem[] = [
     icon: Users,
     permission: "employees.view",
     children: [
-      { title: "AI Org Builder", href: "/org-builder", icon: Sparkles, permission: "employees.manage" },
       { title: "Recruitment", href: "/recruitment", icon: Briefcase, permission: "employees.manage" },
       { title: "Onboarding", href: "/onboarding", icon: UserPlus, permission: "employees.manage" },
       { title: "Employees", href: "/employees", icon: Users, permission: "employees.view" },
-      { title: "Organization", href: "/organization", icon: Network, permission: "employees.view" },
       { title: "Attendance", href: "/attendance", icon: Clock, permission: "attendance.view" },
       { title: "Leave", href: "/leave", icon: Calendar, permission: "leave.view" },
       { title: "Performance", href: "/performance", icon: Award, permission: "employees.view" },
@@ -157,9 +155,19 @@ const navigationItems: NavItem[] = [
   },
   {
     title: "Settings",
-    href: "/settings",
     icon: Settings,
-    permission: "settings.view"
+    permission: "settings.view",
+    children: [
+      { title: "Overview", href: "/settings", icon: Settings, permission: "settings.view" },
+      { title: "Organization Setup", href: "/settings/organization-setup", icon: Network, permission: "settings.view" },
+      { title: "Company", href: "/settings/company", icon: Building2, permission: "settings.view" },
+      { title: "Users & Roles", href: "/settings/users", icon: Users, permission: "settings.view" },
+      { title: "Leave Policies", href: "/settings/leave", icon: Calendar, permission: "settings.view" },
+      { title: "Payroll Config", href: "/settings/payroll", icon: Wallet, permission: "settings.view" },
+      { title: "Attendance", href: "/settings/attendance", icon: Clock, permission: "settings.view" },
+      { title: "Documents", href: "/settings/documents", icon: FileText, permission: "settings.view" },
+      { title: "Email", href: "/settings/email", icon: MessageSquare, permission: "settings.view" }
+    ]
   }
 ]
 
