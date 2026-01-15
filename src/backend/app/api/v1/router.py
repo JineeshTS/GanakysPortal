@@ -34,6 +34,29 @@ from app.api.v1.endpoints import (
     company_profile,
     ai_org_builder,
     wbs,
+    subscription,
+    superadmin,
+    doa,
+    digital_signature,
+    security,
+    anomaly_detection,
+    esg,
+    hsseq,
+    csr,
+    legal,
+    compliance,
+    manufacturing,
+    quality,
+    # MOD-13 to MOD-21
+    supply_chain,
+    ecommerce,
+    analytics,
+    workflow,
+    integration,
+    mobile,
+    currency,
+    fixed_assets,
+    expense,
 )
 
 api_router = APIRouter()
@@ -116,3 +139,67 @@ api_router.include_router(ai_org_builder.router, prefix="/ai/org-builder", tags=
 
 # WBS (Work Breakdown Structure) - Project Management
 api_router.include_router(wbs.router)
+
+# Subscription & Billing (SaaS)
+api_router.include_router(subscription.router)
+
+# Super Admin Portal (Platform Administration)
+api_router.include_router(superadmin.router, prefix="/superadmin", tags=["Super Admin Portal"])
+
+# DOA - Delegation of Authority
+api_router.include_router(doa.router, prefix="/doa", tags=["Delegation of Authority"])
+
+# Digital Signature
+api_router.include_router(digital_signature.router, prefix="/digital-signature", tags=["Digital Signature"])
+
+# Security & Fraud Detection
+api_router.include_router(security.router, prefix="/security", tags=["Security"])
+api_router.include_router(anomaly_detection.router, prefix="/anomaly-detection", tags=["Anomaly Detection"])
+
+# ESG (Environmental, Social, Governance)
+api_router.include_router(esg.router, prefix="/esg", tags=["ESG"])
+
+# HSSEQ (Health, Safety, Security, Environment, Quality)
+api_router.include_router(hsseq.router, prefix="/hsseq", tags=["HSSEQ"])
+
+# CSR (Corporate Social Responsibility)
+api_router.include_router(csr.router, prefix="/csr", tags=["CSR"])
+
+# Legal Case Management
+api_router.include_router(legal.router, prefix="/legal", tags=["Legal"])
+
+# Compliance Master
+api_router.include_router(compliance.router, prefix="/compliance", tags=["Compliance"])
+
+# Manufacturing
+api_router.include_router(manufacturing.router, prefix="/manufacturing", tags=["Manufacturing"])
+
+# Quality Control
+api_router.include_router(quality.router, prefix="/quality", tags=["Quality Control"])
+
+# MOD-13: Supply Chain Advanced
+api_router.include_router(supply_chain.router, prefix="/supply-chain", tags=["Supply Chain"])
+
+# MOD-14: E-commerce & POS
+api_router.include_router(ecommerce.router, prefix="/ecommerce", tags=["E-commerce & POS"])
+
+# MOD-15: Advanced Analytics
+api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
+
+# MOD-16: Workflow Engine
+api_router.include_router(workflow.router, prefix="/workflow", tags=["Workflow Engine"])
+
+# MOD-17: Integration Platform
+api_router.include_router(integration.router, prefix="/integration", tags=["Integration Platform"])
+
+# MOD-18: Mobile Apps API
+api_router.include_router(mobile.router, prefix="/mobile", tags=["Mobile API"])
+
+# MOD-19: Multi-Currency
+api_router.include_router(currency.router, prefix="/currency", tags=["Multi-Currency"])
+
+# MOD-20: Fixed Assets Management
+api_router.include_router(fixed_assets.router, prefix="/fixed-assets", tags=["Fixed Assets"])
+
+# MOD-21: Expense Management
+api_router.include_router(expense.router, prefix="/expenses", tags=["Expense Management"])

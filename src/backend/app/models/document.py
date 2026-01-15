@@ -1,354 +1,194 @@
 """
-Document Management Models - BE-006 & BE-009
-Folder and document management with version control
+Document Management Models
 """
-import uuid
-from datetime import datetime
-from enum import Enum as PyEnum
-from sqlalchemy import (
-    Column, String, Integer, Boolean, DateTime,
-    ForeignKey, Enum, Text, BigInteger, Index
-)
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from datetime import datetime, date
+from typing import Optional, List, TYPE_CHECKING
+from uuid import UUID
+from sqlalchemy import String, Text, Boolean, Integer, Date, DateTime, ForeignKey, Enum as SQLEnum, ARRAY
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.models.base import Base, TimestampMixin, SoftDeleteMixin
+import enum
 
-from app.db.session import Base
-
-
-class Folder(Base):
-    """Folder structure for organizing documents."""
-    __tablename__ = "folders"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True)
-
-    # Folder info
-    name = Column(String(255), nullable=False)
-    description = Column(Text)
-    color = Column(String(20))
-    icon = Column(String(50))
-
-    # Hierarchy
-    parent_id = Column(UUID(as_uuid=True), ForeignKey("folders.id"), index=True)
-    path = Column(String(1000))  # Materialized path: /root/hr/policies
-    level = Column(Integer, default=0)
-
-    # Permissions
-    is_private = Column(Boolean, default=False)
-    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    allowed_users = Column(Text)  # JSON array of user IDs
-    allowed_roles = Column(Text)  # JSON array of roles
-    allowed_departments = Column(Text)  # JSON array of department IDs
-    inherit_permissions = Column(Boolean, default=True)
-
-    # Settings
-    allow_subfolders = Column(Boolean, default=True)
-    max_file_size_mb = Column(Integer)
-    allowed_file_types = Column(Text)  # JSON array
-
-    # Status
-    is_system = Column(Boolean, default=False)
-    is_archived = Column(Boolean, default=False)
-
-    # Audit
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    parent = relationship("Folder", remote_side=[id], backref="children")
-    documents = relationship("Document", back_populates="folder")
-
-    __table_args__ = (
-        Index('ix_folders_company_path', 'company_id', 'path'),
-        Index('ix_folders_company_parent', 'company_id', 'parent_id'),
-    )
+if TYPE_CHECKING:
+    from app.models.employee import Employee
 
 
-class DocumentCategory(str, PyEnum):
-    """Document category."""
-    HR = "hr"
-    FINANCE = "finance"
-    LEGAL = "legal"
-    COMPLIANCE = "compliance"
-    PROJECT = "project"
-    GENERAL = "general"
-    EMPLOYEE = "employee"
-    PAYROLL = "payroll"
-    INVOICE = "invoice"
+class DocumentCategory(str, enum.Enum):
+    POLICY = "policy"
+    PROCEDURE = "procedure"
+    WORK_INSTRUCTION = "work_instruction"
+    FORM = "form"
+    TEMPLATE = "template"
     CONTRACT = "contract"
-
-
-class DocumentType(str, PyEnum):
-    """Document types."""
-    # HR Documents
-    OFFER_LETTER = "offer_letter"
-    APPOINTMENT_LETTER = "appointment_letter"
-    EXPERIENCE_LETTER = "experience_letter"
-    RELIEVING_LETTER = "relieving_letter"
-    SALARY_SLIP = "salary_slip"
-    FORM_16 = "form_16"
-    BONUS_LETTER = "bonus_letter"
-    INCREMENT_LETTER = "increment_letter"
-    WARNING_LETTER = "warning_letter"
-    TERMINATION_LETTER = "termination_letter"
-
-    # Employee Documents
-    RESUME = "resume"
-    PHOTO = "photo"
-    ID_PROOF = "id_proof"
-    ADDRESS_PROOF = "address_proof"
-    PAN_CARD = "pan_card"
-    AADHAAR = "aadhaar"
-    PASSPORT = "passport"
-    EDUCATIONAL_CERT = "educational_cert"
-    EXPERIENCE_CERT = "experience_cert"
-    BANK_DETAILS = "bank_details"
-
-    # Finance Documents
-    INVOICE = "invoice"
-    RECEIPT = "receipt"
-    PURCHASE_ORDER = "purchase_order"
-    QUOTATION = "quotation"
-    CREDIT_NOTE = "credit_note"
-    DEBIT_NOTE = "debit_note"
-    BANK_STATEMENT = "bank_statement"
-    CHALLAN = "challan"
-
-    # Compliance
-    GST_RETURN = "gst_return"
-    TDS_RETURN = "tds_return"
-    PF_CHALLAN = "pf_challan"
-    ESI_CHALLAN = "esi_challan"
-    PT_CHALLAN = "pt_challan"
-    ROC_FILING = "roc_filing"
-
-    # Legal
-    AGREEMENT = "agreement"
-    CONTRACT = "contract"
-    NDA = "nda"
-    MOU = "mou"
-    POWER_OF_ATTORNEY = "power_of_attorney"
-
-    # Others
     REPORT = "report"
-    PRESENTATION = "presentation"
-    SPREADSHEET = "spreadsheet"
+    CERTIFICATE = "certificate"
+    DRAWING = "drawing"
+    SPECIFICATION = "specification"
     OTHER = "other"
 
 
-class DocumentStatus(str, PyEnum):
-    """Document status."""
+class DocumentStatus(str, enum.Enum):
     DRAFT = "draft"
-    ACTIVE = "active"
+    PENDING_REVIEW = "pending_review"
+    PENDING_APPROVAL = "pending_approval"
+    APPROVED = "approved"
+    PUBLISHED = "published"
+    OBSOLETE = "obsolete"
     ARCHIVED = "archived"
-    DELETED = "deleted"
-    EXPIRED = "expired"
 
 
-class Document(Base):
-    """Document storage and management."""
+class DocumentFolder(Base, TimestampMixin, SoftDeleteMixin):
+    """Document folder structure"""
+    __tablename__ = "document_folders"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    company_id: Mapped[UUID] = mapped_column(ForeignKey("companies.id"))
+    parent_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey("document_folders.id"))
+
+    name: Mapped[str] = mapped_column(String(200))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    path: Mapped[str] = mapped_column(String(1000))
+
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    owner_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey("users.id"))
+
+    # Relationships
+    documents: Mapped[List["Document"]] = relationship(back_populates="folder")
+
+
+class Document(Base, TimestampMixin, SoftDeleteMixin):
+    """Document master"""
     __tablename__ = "documents"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True)
-    folder_id = Column(UUID(as_uuid=True), ForeignKey("folders.id"), index=True)
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    company_id: Mapped[UUID] = mapped_column(ForeignKey("companies.id"))
+    folder_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey("document_folders.id"))
 
-    # Document info
-    name = Column(String(255), nullable=False)
-    description = Column(Text)
-    category = Column(String(50), nullable=True)  # Changed from Enum for DB compatibility
-    document_type = Column(String(50), nullable=True)  # Changed from Enum for DB compatibility
+    document_number: Mapped[str] = mapped_column(String(100), unique=True)
+    title: Mapped[str] = mapped_column(String(500))
+    description: Mapped[Optional[str]] = mapped_column(Text)
 
-    # File details
-    file_name = Column(String(255), nullable=False)
-    file_path = Column(String(500), nullable=False)
-    file_size = Column(BigInteger)  # Size in bytes
-    mime_type = Column(String(100))
-    file_extension = Column(String(20))
+    category: Mapped[DocumentCategory] = mapped_column(SQLEnum(DocumentCategory))
+    status: Mapped[DocumentStatus] = mapped_column(SQLEnum(DocumentStatus), default=DocumentStatus.DRAFT)
 
-    # Storage
-    storage_type = Column(String(20), default="local")  # local, s3, azure, gcs
-    storage_bucket = Column(String(255))
-    storage_key = Column(String(500))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    revision: Mapped[str] = mapped_column(String(20), default="A")
 
-    # Version control
-    version = Column(Integer, default=1)
-    parent_document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"))
-    is_latest = Column(Boolean, default=True)
+    file_name: Mapped[str] = mapped_column(String(500))
+    file_path: Mapped[str] = mapped_column(String(1000))
+    file_size: Mapped[int] = mapped_column(Integer, default=0)
+    file_type: Mapped[str] = mapped_column(String(100))
+    mime_type: Mapped[str] = mapped_column(String(200))
 
-    # Reference
-    reference_type = Column(String(50))  # employee, invoice, project, etc.
-    reference_id = Column(UUID(as_uuid=True))
+    tags: Mapped[Optional[List[str]]] = mapped_column(ARRAY(String))
 
-    # Access control
-    is_confidential = Column(Boolean, default=False)
-    access_level = Column(String(20), default="company")  # public, company, department, private
-    allowed_users = Column(Text)  # JSON array of user IDs
-    allowed_roles = Column(Text)  # JSON array of role names
+    effective_date: Mapped[Optional[date]] = mapped_column(Date)
+    expiry_date: Mapped[Optional[date]] = mapped_column(Date)
+    review_date: Mapped[Optional[date]] = mapped_column(Date)
 
-    # Expiry
-    expiry_date = Column(DateTime)
-    reminder_days_before = Column(Integer)
-    reminder_sent = Column(Boolean, default=False)
+    requires_acknowledgment: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_confidential: Mapped[bool] = mapped_column(Boolean, default=False)
+    access_level: Mapped[str] = mapped_column(String(50), default="internal")
 
-    # Status
-    status = Column(String(20), default="active")  # Changed from Enum for DB compatibility
-
-    # Metadata
-    tags = Column(Text)  # JSON array of tags
-    custom_fields = Column(Text)  # JSON object
-
-    # Audit
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    approved_by: Mapped[Optional[UUID]] = mapped_column(ForeignKey("users.id"))
+    approved_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
     # Relationships
-    parent_document = relationship("Document", remote_side=[id], back_populates="versions")
-    versions = relationship("Document", foreign_keys=[parent_document_id], back_populates="parent_document")
-    folder = relationship("Folder", back_populates="documents")
+    folder: Mapped[Optional["DocumentFolder"]] = relationship(back_populates="documents")
+    versions: Mapped[List["DocumentVersion"]] = relationship(back_populates="document")
 
 
-class DocumentTemplate(Base):
-    """Document templates for generation."""
-    __tablename__ = "document_templates"
+class DocumentVersion(Base, TimestampMixin):
+    """Document version history"""
+    __tablename__ = "document_versions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False)
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    document_id: Mapped[UUID] = mapped_column(ForeignKey("documents.id"))
 
-    # Template info
-    name = Column(String(255), nullable=False)
-    description = Column(Text)
-    category = Column(Enum(DocumentCategory), nullable=False)
-    document_type = Column(Enum(DocumentType), nullable=False)
+    version: Mapped[int] = mapped_column(Integer)
+    revision: Mapped[str] = mapped_column(String(20))
 
-    # Template content
-    template_format = Column(String(20), nullable=False)  # html, docx, pdf
-    template_path = Column(String(500))
-    template_content = Column(Text)  # HTML content for simple templates
+    file_name: Mapped[str] = mapped_column(String(500))
+    file_path: Mapped[str] = mapped_column(String(1000))
+    file_size: Mapped[int] = mapped_column(Integer)
 
-    # Variables
-    variables = Column(Text)  # JSON schema of available variables
+    change_notes: Mapped[Optional[str]] = mapped_column(Text)
+    uploaded_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
 
-    # Header/Footer
-    header_content = Column(Text)
-    footer_content = Column(Text)
-    include_letterhead = Column(Boolean, default=True)
-
-    # Status
-    is_active = Column(Boolean, default=True)
-    is_default = Column(Boolean, default=False)
-
-    # Audit
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Relationships
+    document: Mapped["Document"] = relationship(back_populates="versions")
 
 
-class DocumentShare(Base):
-    """Document sharing records."""
+class DocumentType(str, enum.Enum):
+    """Document type enumeration"""
+    PDF = "pdf"
+    DOC = "doc"
+    DOCX = "docx"
+    XLS = "xls"
+    XLSX = "xlsx"
+    PPT = "ppt"
+    PPTX = "pptx"
+    TXT = "txt"
+    CSV = "csv"
+    IMAGE = "image"
+    OTHER = "other"
+
+
+class DocumentShare(Base, TimestampMixin):
+    """Document sharing records"""
     __tablename__ = "document_shares"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=False)
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    document_id: Mapped[UUID] = mapped_column(ForeignKey("documents.id"))
 
-    # Sharing method
-    share_type = Column(String(20), nullable=False)  # user, email, link
+    share_token: Mapped[str] = mapped_column(String(255), unique=True)
+    shared_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    shared_with_email: Mapped[Optional[str]] = mapped_column(String(255))
+    shared_with_user_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey("users.id"))
 
-    # For user sharing
-    shared_with_user = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    permission: Mapped[str] = mapped_column(String(50), default="view")  # view, download, edit
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    access_count: Mapped[int] = mapped_column(Integer, default=0)
+    max_access_count: Mapped[Optional[int]] = mapped_column(Integer)
 
-    # For email sharing
-    shared_with_email = Column(String(255))
-
-    # For link sharing
-    share_token = Column(String(100), unique=True)
-    share_link = Column(String(500))
-
-    # Permissions
-    can_view = Column(Boolean, default=True)
-    can_download = Column(Boolean, default=True)
-    can_edit = Column(Boolean, default=False)
-
-    # Expiry
-    expires_at = Column(DateTime)
-    max_downloads = Column(Integer)
-    download_count = Column(Integer, default=0)
-
-    # Password protection
-    is_password_protected = Column(Boolean, default=False)
-    password_hash = Column(String(255))
-
-    # Status
-    is_active = Column(Boolean, default=True)
-    revoked_at = Column(DateTime)
-    revoked_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-
-    # Audit
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    # Relationships
-    document = relationship("Document")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255))
 
 
-class DocumentAuditLog(Base):
-    """Document access and action audit log."""
+class DocumentAuditLog(Base, TimestampMixin):
+    """Document audit trail"""
     __tablename__ = "document_audit_logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=False)
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    document_id: Mapped[UUID] = mapped_column(ForeignKey("documents.id"))
 
-    # Action details
-    action = Column(String(50), nullable=False)  # view, download, edit, share, delete
-    action_details = Column(Text)  # JSON with additional details
+    action: Mapped[str] = mapped_column(String(50))  # created, viewed, downloaded, updated, shared, deleted
+    action_details: Mapped[Optional[str]] = mapped_column(Text)
 
-    # Actor
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    ip_address = Column(String(45))
-    user_agent = Column(String(500))
-
-    # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    # Relationships
-    document = relationship("Document")
+    performed_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    ip_address: Mapped[Optional[str]] = mapped_column(String(50))
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500))
 
 
-class EmployeeDocument(Base):
-    """Link table for employee documents with additional metadata."""
+class EmployeeDocument(Base, TimestampMixin):
+    """Employee-specific documents"""
     __tablename__ = "employee_documents"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=False)
-    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=False)
-
-    # Document metadata
-    document_type = Column(Enum(DocumentType), nullable=False)
-    document_number = Column(String(100))  # PAN number, Aadhaar number, etc.
-
-    # Validity
-    issue_date = Column(DateTime)
-    expiry_date = Column(DateTime)
-    issuing_authority = Column(String(255))
-
-    # Verification
-    is_verified = Column(Boolean, default=False)
-    verified_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    verified_at = Column(DateTime)
-    verification_remarks = Column(Text)
-
-    # Status
-    is_active = Column(Boolean, default=True)
-
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    employee_id: Mapped[UUID] = mapped_column(ForeignKey("employees.id"))
+    document_type: Mapped[str] = mapped_column(String(100))  # resume, id_proof, address_proof, etc.
+    document_name: Mapped[str] = mapped_column(String(500))
+    file_path: Mapped[str] = mapped_column(String(1000))
+    file_size: Mapped[int] = mapped_column(Integer, default=0)
+    mime_type: Mapped[Optional[str]] = mapped_column(String(200))
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    verified_by: Mapped[Optional[UUID]] = mapped_column(ForeignKey("users.id"))
+    verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    expiry_date: Mapped[Optional[date]] = mapped_column(Date)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
 
     # Relationships
-    employee = relationship("Employee", back_populates="documents")
-    document = relationship("Document")
+    employee: Mapped["Employee"] = relationship(back_populates="documents")

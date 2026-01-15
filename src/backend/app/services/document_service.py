@@ -16,8 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.document import (
-    Folder, Document, DocumentShare, DocumentAuditLog,
-    DocumentCategory, DocumentType, DocumentStatus
+    DocumentFolder, Document, DocumentVersion, DocumentShare, DocumentAuditLog,
+    DocumentCategory, DocumentStatus, DocumentType
 )
 from app.schemas.document import (
     FolderCreate, FolderUpdate, DocumentUpload, DocumentUpdate,
@@ -46,7 +46,7 @@ class DocumentService:
         company_id: uuid.UUID,
         user_id: uuid.UUID,
         data: FolderCreate
-    ) -> Folder:
+    ) -> DocumentFolder:
         """Create a new folder."""
         # Build path
         path = f"/{data.name}"
@@ -58,7 +58,7 @@ class DocumentService:
                 path = f"{parent.path}/{data.name}"
                 level = parent.level + 1
 
-        folder = Folder(
+        folder = DocumentFolder(
             company_id=company_id,
             name=data.name,
             description=data.description,
@@ -90,14 +90,14 @@ class DocumentService:
         self,
         folder_id: uuid.UUID,
         company_id: uuid.UUID
-    ) -> Optional[Folder]:
+    ) -> Optional[DocumentFolder]:
         """Get a folder by ID."""
         result = await self.db.execute(
-            select(Folder).where(
+            select(DocumentFolder).where(
                 and_(
-                    Folder.id == folder_id,
-                    Folder.company_id == company_id,
-                    Folder.is_archived == False
+                    DocumentFolder.id == folder_id,
+                    DocumentFolder.company_id == company_id,
+                    DocumentFolder.is_archived == False
                 )
             )
         )
@@ -108,22 +108,22 @@ class DocumentService:
         company_id: uuid.UUID,
         parent_id: Optional[uuid.UUID] = None,
         include_archived: bool = False
-    ) -> List[Folder]:
+    ) -> List[DocumentFolder]:
         """List folders, optionally within a parent."""
-        conditions = [Folder.company_id == company_id]
+        conditions = [DocumentFolder.company_id == company_id]
 
         if parent_id:
-            conditions.append(Folder.parent_id == parent_id)
+            conditions.append(DocumentFolder.parent_id == parent_id)
         else:
-            conditions.append(Folder.parent_id.is_(None))
+            conditions.append(DocumentFolder.parent_id.is_(None))
 
         if not include_archived:
-            conditions.append(Folder.is_archived == False)
+            conditions.append(DocumentFolder.is_archived == False)
 
         result = await self.db.execute(
-            select(Folder)
+            select(DocumentFolder)
             .where(and_(*conditions))
-            .order_by(Folder.name)
+            .order_by(DocumentFolder.name)
         )
         return list(result.scalars().all())
 
@@ -133,14 +133,14 @@ class DocumentService:
     ) -> List[dict]:
         """Get complete folder tree structure."""
         result = await self.db.execute(
-            select(Folder)
+            select(DocumentFolder)
             .where(
                 and_(
-                    Folder.company_id == company_id,
-                    Folder.is_archived == False
+                    DocumentFolder.company_id == company_id,
+                    DocumentFolder.is_archived == False
                 )
             )
-            .order_by(Folder.path)
+            .order_by(DocumentFolder.path)
         )
         folders = list(result.scalars().all())
 
@@ -163,7 +163,7 @@ class DocumentService:
         company_id: uuid.UUID,
         user_id: uuid.UUID,
         data: FolderUpdate
-    ) -> Optional[Folder]:
+    ) -> Optional[DocumentFolder]:
         """Update a folder."""
         folder = await self.get_folder(folder_id, company_id)
         if not folder or folder.is_system:
@@ -199,8 +199,8 @@ class DocumentService:
             .where(Document.folder_id == folder_id)
         )
         subfolder_count = await self.db.scalar(
-            select(func.count(Folder.id))
-            .where(Folder.parent_id == folder_id)
+            select(func.count(DocumentFolder.id))
+            .where(DocumentFolder.parent_id == folder_id)
         )
 
         if doc_count > 0 or subfolder_count > 0:
@@ -807,7 +807,7 @@ class DocumentService:
         ]
 
         for name, category, description in system_folders:
-            folder = Folder(
+            folder = DocumentFolder(
                 company_id=company_id,
                 name=name,
                 description=description,

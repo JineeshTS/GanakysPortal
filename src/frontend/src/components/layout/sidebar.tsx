@@ -39,6 +39,22 @@ import {
   Bot,
   Shield,
   ListTodo,
+  Scale,
+  ClipboardCheck,
+  Factory,
+  Leaf,
+  HardHat,
+  Heart,
+  Gavel,
+  FileCheck,
+  Cog,
+  GitBranch,
+  Warehouse,
+  ShoppingCart,
+  Link2,
+  Smartphone,
+  Globe,
+  PieChart,
 } from "lucide-react"
 
 // ============================================================================
@@ -159,6 +175,17 @@ const navigationItems: NavItem[] = [
     ]
   },
   {
+    title: "Subscription",
+    icon: CreditCard,
+    permission: "settings.view",
+    children: [
+      { title: "Overview", href: "/subscription", icon: CreditCard },
+      { title: "Plans", href: "/subscription/plans", icon: Layers },
+      { title: "Invoices", href: "/subscription/invoices", icon: Receipt },
+      { title: "Usage", href: "/subscription/usage", icon: TrendingUp }
+    ]
+  },
+  {
     title: "Reports",
     href: "/reports",
     icon: BarChart3,
@@ -168,6 +195,128 @@ const navigationItems: NavItem[] = [
     title: "AI Assistant",
     href: "/ai",
     icon: MessageSquare
+  },
+  {
+    title: "Manufacturing",
+    icon: Factory,
+    children: [
+      { title: "Dashboard", href: "/manufacturing", icon: Factory },
+      { title: "Production Orders", href: "/manufacturing/orders", icon: ClipboardCheck },
+      { title: "Bill of Materials", href: "/manufacturing/bom", icon: FileText },
+      { title: "Work Centers", href: "/manufacturing/work-centers", icon: Cog }
+    ]
+  },
+  {
+    title: "Quality",
+    icon: ClipboardCheck,
+    children: [
+      { title: "Inspections", href: "/quality", icon: ClipboardCheck },
+      { title: "NCR", href: "/quality/ncr", icon: FileText },
+      { title: "CAPA", href: "/quality/capa", icon: CheckSquare }
+    ]
+  },
+  {
+    title: "Legal",
+    icon: Scale,
+    children: [
+      { title: "Cases", href: "/legal", icon: Gavel },
+      { title: "Contracts", href: "/legal/contracts", icon: FileText },
+      { title: "Notices", href: "/legal/notices", icon: FileCheck }
+    ]
+  },
+  {
+    title: "Compliance",
+    href: "/compliance",
+    icon: Shield
+  },
+  {
+    title: "CSR",
+    href: "/csr",
+    icon: Heart
+  },
+  {
+    title: "ESG",
+    href: "/esg",
+    icon: Leaf
+  },
+  {
+    title: "HSSEQ",
+    href: "/hsseq",
+    icon: HardHat
+  },
+  {
+    title: "Documents",
+    href: "/documents",
+    icon: FileText
+  },
+  {
+    title: "Workflow",
+    href: "/workflow",
+    icon: GitBranch
+  },
+  {
+    title: "Supply Chain",
+    icon: Warehouse,
+    children: [
+      { title: "Warehouses", href: "/supply-chain", icon: Warehouse },
+      { title: "Suppliers", href: "/supply-chain?tab=suppliers", icon: Users },
+      { title: "Transfers", href: "/supply-chain?tab=transfers", icon: TrendingUp }
+    ]
+  },
+  {
+    title: "E-commerce",
+    icon: ShoppingCart,
+    children: [
+      { title: "Products", href: "/ecommerce", icon: ShoppingCart },
+      { title: "Orders", href: "/ecommerce?tab=orders", icon: Receipt },
+      { title: "POS Terminals", href: "/ecommerce?tab=pos", icon: CreditCard }
+    ]
+  },
+  {
+    title: "Analytics",
+    icon: PieChart,
+    children: [
+      { title: "Dashboards", href: "/analytics", icon: BarChart3 },
+      { title: "KPIs", href: "/analytics?tab=kpis", icon: Target },
+      { title: "Reports", href: "/analytics?tab=reports", icon: FileText }
+    ]
+  },
+  {
+    title: "Integration",
+    icon: Link2,
+    children: [
+      { title: "Connectors", href: "/integration", icon: Link2 },
+      { title: "Webhooks", href: "/integration?tab=webhooks", icon: Globe },
+      { title: "Sync Jobs", href: "/integration?tab=sync-jobs", icon: TrendingUp }
+    ]
+  },
+  {
+    title: "Mobile",
+    href: "/mobile",
+    icon: Smartphone
+  },
+  {
+    title: "Currency",
+    href: "/currency",
+    icon: Globe
+  },
+  {
+    title: "Fixed Assets",
+    icon: Building2,
+    children: [
+      { title: "Asset Register", href: "/fixed-assets", icon: Building2 },
+      { title: "Depreciation", href: "/fixed-assets?tab=depreciation", icon: TrendingUp },
+      { title: "Maintenance", href: "/fixed-assets?tab=maintenance", icon: Cog }
+    ]
+  },
+  {
+    title: "Expenses",
+    icon: Receipt,
+    children: [
+      { title: "Claims", href: "/expenses", icon: Receipt },
+      { title: "Advances", href: "/expenses?tab=advances", icon: Wallet },
+      { title: "Policies", href: "/expenses?tab=policies", icon: FileText }
+    ]
   },
   {
     title: "Settings",

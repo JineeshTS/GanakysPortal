@@ -38,8 +38,8 @@ from app.models.timesheet import (
 
 # Document
 from app.models.document import (
-    Document, DocumentTemplate, DocumentShare, DocumentAuditLog,
-    EmployeeDocument, DocumentCategory, DocumentType, DocumentStatus, Folder
+    Document, DocumentFolder, DocumentVersion, DocumentShare, DocumentAuditLog,
+    DocumentCategory, DocumentStatus, DocumentType, EmployeeDocument
 )
 
 # Accounting
@@ -52,8 +52,11 @@ from app.models.accounting import (
 # Customer/Vendor
 from app.models.customer import (
     Party, PartyType, PartyAddress, PartyContact,
-    GSTRegistrationType, PaymentTerms, Currency, ExchangeRate
+    GSTRegistrationType, PaymentTerms
 )
+
+# Currency (MOD-19)
+from app.models.currency import Currency, ExchangeRate, CompanyCurrency
 
 # Invoice
 from app.models.invoice import (
@@ -151,6 +154,61 @@ from app.models.wbs import (
     WBSExecutionLog, WBSQualityGate, WBSAgentConfig
 )
 
+# Subscription & Billing
+from app.models.subscription import (
+    SubscriptionPlan, PricingTier, Subscription, BillingCycle,
+    SubscriptionInvoice, SubscriptionPayment, UsageMeter,
+    Discount, SubscriptionDiscount, SubscriptionAuditLog,
+    PlanType, BillingInterval, SubscriptionStatus, InvoiceStatus,
+    PaymentStatus, PaymentMethod, UsageType, DiscountType
+)
+
+# Super Admin Portal
+from app.models.superadmin import (
+    SuperAdmin, SuperAdminSession, SuperAdminRole,
+    TenantProfile, TenantStatus, TenantImpersonation,
+    PlatformSettings, FeatureFlag, FeatureFlagStatus, TenantFeatureOverride,
+    SystemAnnouncement, AnnouncementType, AnnouncementAudience, AnnouncementDismissal,
+    SupportTicket, TicketResponse, TicketStatus, TicketPriority,
+    SuperAdminAuditLog, PlatformMetricsDaily
+)
+
+# Legal
+from app.models.legal import (
+    LegalCase, LegalCounsel, LegalHearing, LegalDocument, LegalParty,
+    LegalTask, LegalExpense, LegalContract, LegalNotice,
+    CaseType, CaseStatus, CasePriority, PartyRole, CourtLevel,
+    HearingType, HearingStatus, DocumentCategory as LegalDocumentCategory,
+    TaskStatus as LegalTaskStatus
+)
+
+# Compliance
+from app.models.compliance import (
+    ComplianceMaster, ComplianceTask, ComplianceCalendar,
+    ComplianceAudit, ComplianceRiskAssessment, CompliancePolicy, ComplianceTraining,
+    ComplianceCategory, ComplianceFrequency, ComplianceStatus, RiskLevel
+)
+
+# Manufacturing
+from app.models.manufacturing import (
+    WorkCenter, BillOfMaterials, BOMLine, ProductionRouting, RoutingOperation,
+    ProductionOrder, WorkOrder, WorkOrderTimeEntry,
+    MaterialIssue, MaterialIssueLine, ProductionReceipt,
+    WorkCenterDowntime, ProductionShift,
+    WorkCenterType, WorkCenterStatus, BOMType, BOMStatus,
+    RoutingStatus, ProductionOrderStatus, ProductionOrderPriority,
+    WorkOrderStatus, ShiftType, DowntimeType
+)
+
+# Quality Control
+from app.models.quality import (
+    QualityParameter, InspectionPlan, InspectionPlanCharacteristic,
+    QualityInspection, InspectionResult_ as InspectionResultRecord,
+    NonConformanceReport, CAPA, CalibrationRecord,
+    InspectionType, InspectionStatus, InspectionResult,
+    NCRStatus, NCRSeverity, CAPAType, CAPAStatus
+)
+
 __all__ = [
     # Base
     "BaseModel", "TenantBaseModel",
@@ -174,15 +232,17 @@ __all__ = [
     "AttendanceStatus", "AttendanceLog", "OvertimeRequest", "OvertimeStatus",
     "ShiftSchedule", "EmployeeShift",
     # Document
-    "Document", "DocumentTemplate", "DocumentShare", "DocumentAuditLog",
-    "EmployeeDocument", "DocumentCategory", "DocumentType", "DocumentStatus", "Folder",
+    "Document", "DocumentFolder", "DocumentVersion",
+    "DocumentCategory", "DocumentStatus",
     # Accounting
     "Account", "AccountType", "AccountSubType", "FinancialYear", "AccountingPeriod",
     "JournalEntry", "JournalLine", "JournalType", "JournalStatus", "GeneralLedger",
     "CostCenter", "BudgetEntry",
     # Customer/Vendor
     "Party", "PartyType", "PartyAddress", "PartyContact",
-    "GSTRegistrationType", "PaymentTerms", "Currency", "ExchangeRate",
+    "GSTRegistrationType", "PaymentTerms",
+    # Currency (MOD-19)
+    "Currency", "ExchangeRate", "CompanyCurrency",
     # Invoice
     "Invoice", "InvoiceItem", "InvoicePayment", "InvoiceType", "InvoiceStatus",
     "GSTTreatment", "PlaceOfSupply",
@@ -234,4 +294,40 @@ __all__ = [
     # WBS
     "WBSPhase", "WBSModule", "WBSTask", "WBSAgentContext",
     "WBSExecutionLog", "WBSQualityGate", "WBSAgentConfig",
+    # Subscription & Billing
+    "SubscriptionPlan", "PricingTier", "Subscription", "BillingCycle",
+    "SubscriptionInvoice", "SubscriptionPayment", "UsageMeter",
+    "Discount", "SubscriptionDiscount", "SubscriptionAuditLog",
+    "PlanType", "BillingInterval", "SubscriptionStatus", "InvoiceStatus",
+    "PaymentStatus", "PaymentMethod", "UsageType", "DiscountType",
+    # Super Admin Portal
+    "SuperAdmin", "SuperAdminSession", "SuperAdminRole",
+    "TenantProfile", "TenantStatus", "TenantImpersonation",
+    "PlatformSettings", "FeatureFlag", "FeatureFlagStatus", "TenantFeatureOverride",
+    "SystemAnnouncement", "AnnouncementType", "AnnouncementAudience", "AnnouncementDismissal",
+    "SupportTicket", "TicketResponse", "TicketStatus", "TicketPriority",
+    "SuperAdminAuditLog", "PlatformMetricsDaily",
+    # Legal
+    "LegalCase", "LegalCounsel", "LegalHearing", "LegalDocument", "LegalParty",
+    "LegalTask", "LegalExpense", "LegalContract", "LegalNotice",
+    "CaseType", "CaseStatus", "CasePriority", "PartyRole", "CourtLevel",
+    "HearingType", "HearingStatus", "LegalDocumentCategory", "LegalTaskStatus",
+    # Compliance
+    "ComplianceMaster", "ComplianceTask", "ComplianceCalendar",
+    "ComplianceAudit", "ComplianceRiskAssessment", "CompliancePolicy", "ComplianceTraining",
+    "ComplianceCategory", "ComplianceFrequency", "ComplianceStatus", "RiskLevel",
+    # Manufacturing
+    "WorkCenter", "BillOfMaterials", "BOMLine", "ProductionRouting", "RoutingOperation",
+    "ProductionOrder", "WorkOrder", "WorkOrderTimeEntry",
+    "MaterialIssue", "MaterialIssueLine", "ProductionReceipt",
+    "WorkCenterDowntime", "ProductionShift",
+    "WorkCenterType", "WorkCenterStatus", "BOMType", "BOMStatus",
+    "RoutingStatus", "ProductionOrderStatus", "ProductionOrderPriority",
+    "WorkOrderStatus", "ShiftType", "DowntimeType",
+    # Quality Control
+    "QualityParameter", "InspectionPlan", "InspectionPlanCharacteristic",
+    "QualityInspection", "InspectionResultRecord",
+    "NonConformanceReport", "CAPA", "CalibrationRecord",
+    "InspectionType", "InspectionStatus", "InspectionResult",
+    "NCRStatus", "NCRSeverity", "CAPAType", "CAPAStatus",
 ]

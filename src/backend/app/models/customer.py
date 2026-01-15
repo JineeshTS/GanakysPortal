@@ -189,45 +189,4 @@ class PartyContact(Base):
     party = relationship("Party", backref="contacts")
 
 
-class Currency(Base):
-    """Currency master."""
-    __tablename__ = "currencies"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    code = Column(String(3), unique=True, nullable=False)  # INR, USD, EUR
-    name = Column(String(100), nullable=False)
-    symbol = Column(String(10))  # ₹, $, €
-    decimal_places = Column(Integer, default=2)
-
-    # Exchange rate (to base currency INR)
-    exchange_rate = Column(Numeric(18, 6), default=1)
-    rate_date = Column(DateTime)
-
-    # Status
-    is_base = Column(Boolean, default=False)  # INR is base
-    is_active = Column(Boolean, default=True)
-
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-
-class ExchangeRate(Base):
-    """Exchange rate history."""
-    __tablename__ = "exchange_rates"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    from_currency = Column(String(3), nullable=False)
-    to_currency = Column(String(3), nullable=False)
-    rate = Column(Numeric(18, 6), nullable=False)
-    rate_date = Column(DateTime, nullable=False)
-
-    # Source
-    source = Column(String(50))  # manual, rbi, oanda, etc.
-
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    __table_args__ = (
-        UniqueConstraint('from_currency', 'to_currency', 'rate_date', name='uq_exchange_rate'),
-    )
+# Note: Currency and ExchangeRate models moved to app.models.currency (MOD-19)
