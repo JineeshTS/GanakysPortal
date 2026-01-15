@@ -8,7 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -18,9 +18,6 @@ from app.db.session import get_db
 from app.models.user import User
 
 router = APIRouter()
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login")
@@ -84,12 +81,22 @@ class UserResponse(BaseModel):
 
 # Helper functions
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash (PBKDF2-HMAC-SHA256 format: salt$hash)."""
+    """Verify password against hash (supports bcrypt and PBKDF2)."""
     if not plain_password or not hashed_password:
         return False
 
-    # Try PBKDF2 format first (salt$hash)
-    if '$' in hashed_password and not hashed_password.startswith('$2'):
+    # Try bcrypt format first (starts with $2)
+    if hashed_password.startswith('$2'):
+        try:
+            return bcrypt.checkpw(
+                plain_password.encode('utf-8'),
+                hashed_password.encode('utf-8')
+            )
+        except Exception:
+            return False
+
+    # Try PBKDF2 format (salt$hash)
+    if '$' in hashed_password:
         try:
             salt, hash_value = hashed_password.split('$', 1)
             new_hash = hashlib.pbkdf2_hmac(
@@ -102,16 +109,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         except Exception:
             pass
 
-    # Fallback to bcrypt for backwards compatibility
-    try:
-        return pwd_context.verify(plain_password, hashed_password)
-    except Exception:
-        return False
+    return False
 
 
 def get_password_hash(password: str) -> str:
-    """Hash password."""
-    return pwd_context.hash(password)
+    """Hash password using bcrypt."""
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
