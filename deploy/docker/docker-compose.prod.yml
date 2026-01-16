@@ -13,6 +13,8 @@ services:
       dockerfile: deploy/docker/Dockerfile.backend
     container_name: ganaportal-backend
     restart: always
+    ports:
+      - "127.0.0.1:8002:8000"
     networks:
       - ganaportal-network
     environment:
@@ -51,10 +53,12 @@ services:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.frontend
       args:
-        - NEXT_PUBLIC_API_URL=https://api.portal.ganakys.com
+        - NEXT_PUBLIC_API_URL=https://portal.ganakys.com/api
         - NEXT_PUBLIC_APP_ENV=production
     container_name: ganaportal-frontend
     restart: always
+    ports:
+      - "127.0.0.1:3000:3000"
     networks:
       - ganaportal-network
     depends_on:
@@ -68,7 +72,7 @@ services:
           cpus: '0.25'
           memory: 256M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -128,30 +132,30 @@ services:
       retries: 5
 
   # ==========================================================================
-  # Nginx Reverse Proxy + SSL
+  # Nginx Reverse Proxy + SSL (DISABLED - Using host nginx)
   # ==========================================================================
-  nginx:
-    image: nginx:alpine
-    container_name: ganaportal-nginx
-    restart: always
-    networks:
-      - ganaportal-network
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ../nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
-      - ../nginx/ssl:/etc/nginx/ssl:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - logs:/var/log/nginx
-    depends_on:
-      - backend
-      - frontend
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: ganaportal-nginx
+  #   restart: always
+  #   networks:
+  #     - ganaportal-network
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ../nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+  #     - ../nginx/ssl:/etc/nginx/ssl:ro
+  #     - /etc/letsencrypt:/etc/letsencrypt:ro
+  #     - logs:/var/log/nginx
+  #   depends_on:
+  #     - backend
+  #     - frontend
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.5'
+  #         memory: 256M
 
   # ==========================================================================
   # Celery Worker (Background Tasks)

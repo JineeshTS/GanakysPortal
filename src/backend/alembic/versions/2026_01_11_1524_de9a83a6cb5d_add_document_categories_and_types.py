@@ -56,10 +56,14 @@ def upgrade() -> None:
         );
     """)
 
-    # Add category_id to folders table
+    # Add category_id to folders table (if folders table exists)
     op.execute("""
-        ALTER TABLE folders
-        ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES document_categories(id);
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'folders') THEN
+                ALTER TABLE folders ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES document_categories(id);
+            END IF;
+        END $$;
     """)
 
     # Seed default categories (system-wide, company_id = NULL)
@@ -133,10 +137,24 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS idx_doc_categories_company ON document_categories(company_id);")
     op.execute("CREATE INDEX IF NOT EXISTS idx_doc_types_company ON document_types(company_id);")
     op.execute("CREATE INDEX IF NOT EXISTS idx_doc_types_category ON document_types(category_id);")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_folders_category ON folders(category_id);")
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'folders') THEN
+                CREATE INDEX IF NOT EXISTS idx_folders_category ON folders(category_id);
+            END IF;
+        END $$;
+    """)
 
 
 def downgrade() -> None:
-    op.execute("ALTER TABLE folders DROP COLUMN IF EXISTS category_id;")
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'folders') THEN
+                ALTER TABLE folders DROP COLUMN IF EXISTS category_id;
+            END IF;
+        END $$;
+    """)
     op.execute("DROP TABLE IF EXISTS document_types;")
     op.execute("DROP TABLE IF EXISTS document_categories;")
