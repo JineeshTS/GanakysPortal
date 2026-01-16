@@ -38,6 +38,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useApi, useToast } from "@/hooks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,6 +78,7 @@ import {
   Paperclip,
   History,
   PenTool,
+  Loader2,
 } from "lucide-react";
 
 // Types
@@ -243,6 +255,35 @@ export default function SignatureRequestsPage() {
   const [filterType, setFilterType] = useState<string>("all");
   const [selectedRequest, setSelectedRequest] = useState<SignatureRequest | null>(null);
   const [activeTab, setActiveTab] = useState("all");
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<SignatureRequest | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (request: SignatureRequest) => {
+    setRequestToDelete(request);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!requestToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/signatures/requests/${requestToDelete.id}`);
+      setRequests(requests.filter(r => r.id !== requestToDelete.id));
+      setDeleteDialogOpen(false);
+      setRequestToDelete(null);
+      showToast("success", "Signature request deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete signature request:", error);
+      showToast("error", "Failed to delete signature request");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Filter requests
   const filteredRequests = requests.filter((request) => {
@@ -555,6 +596,15 @@ export default function SignatureRequestsPage() {
                                   Cancel Request
                                 </DropdownMenuItem>
                               )}
+                              {(request.status === "completed" || request.status === "cancelled" || request.status === "expired" || request.status === "rejected") && (
+                                <DropdownMenuItem
+                                  className="text-red-600"
+                                  onClick={() => handleDeleteClick(request)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -722,6 +772,39 @@ export default function SignatureRequestsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Signature Request
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{requestToDelete?.requestNumber}</strong> ({requestToDelete?.subject})?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

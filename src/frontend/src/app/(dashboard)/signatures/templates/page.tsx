@@ -37,7 +37,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useApi, useToast } from "@/hooks";
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import {
@@ -56,6 +67,8 @@ import {
   Settings,
   PenTool,
   Shield,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 
 // Types
@@ -239,6 +252,35 @@ export default function SignatureTemplatesPage() {
   const [filterSignType, setFilterSignType] = useState<string>("all");
   const [selectedTemplate, setSelectedTemplate] = useState<SignatureTemplate | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<SignatureTemplate | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (template: SignatureTemplate) => {
+    setTemplateToDelete(template);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!templateToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/signatures/templates/${templateToDelete.id}`);
+      setTemplates(templates.filter(t => t.id !== templateToDelete.id));
+      setDeleteDialogOpen(false);
+      setTemplateToDelete(null);
+      showToast("success", "Template deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete template:", error);
+      showToast("error", "Failed to delete template");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Filter templates
   const filteredTemplates = templates.filter((template) => {
@@ -594,10 +636,15 @@ export default function SignatureTemplatesPage() {
                             Configure Fields
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
+                          {(!template.isActive || template.usageCount === 0) && (
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDeleteClick(template)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -688,6 +735,39 @@ export default function SignatureTemplatesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Template
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{templateToDelete?.name}</strong> ({templateToDelete?.templateCode})?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

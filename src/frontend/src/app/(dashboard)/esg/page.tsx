@@ -32,7 +32,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
+import { useApi, useToast } from "@/hooks";
 import {
   Leaf,
   Factory,
@@ -53,7 +64,55 @@ import {
   Building,
   Gauge,
   BarChart3,
+  Loader2,
 } from "lucide-react";
+
+// TypeScript interfaces
+interface Emission {
+  id: string;
+  scope: string;
+  category: string;
+  source_name: string;
+  total_co2e: number;
+  period: string;
+  facility_name: string;
+}
+
+interface Initiative {
+  id: string;
+  name: string;
+  category: string;
+  status: string;
+  progress_pct: number;
+  budget_amount: number;
+  actual_spend: number;
+  sdg_goals: number[];
+  target_end_date: string;
+}
+
+interface ESGTarget {
+  id: string;
+  name: string;
+  category: string;
+  target_year: number;
+  baseline_value: number;
+  target_value: number;
+  current_value: number;
+  progress_pct: number;
+  on_track: boolean;
+  sbti_validated: boolean;
+}
+
+interface ESGRisk {
+  id: string;
+  name: string;
+  category: string;
+  risk_level: string;
+  likelihood: number;
+  impact: number;
+  risk_score: number;
+  financial_impact: number;
+}
 
 // Mock data
 const mockDashboard = {
@@ -328,6 +387,70 @@ const getRiskBadge = (level: string) => {
 
 export default function ESGPage() {
   const [reportingYear, setReportingYear] = useState("2025-26");
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  // Local state for data management
+  const [emissions, setEmissions] = useState<Emission[]>(mockEmissions);
+  const [initiatives, setInitiatives] = useState<Initiative[]>(mockInitiatives);
+  const [targets, setTargets] = useState<ESGTarget[]>(mockTargets);
+  const [risks, setRisks] = useState<ESGRisk[]>(mockRisks);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: "emission" | "initiative" | "target" | "risk"; item: Emission | Initiative | ESGTarget | ESGRisk } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (type: "emission" | "initiative" | "target" | "risk", item: Emission | Initiative | ESGTarget | ESGRisk) => {
+    setItemToDelete({ type, item });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      const endpoints: Record<string, string> = {
+        emission: `/esg/emissions/${itemToDelete.item.id}`,
+        initiative: `/esg/initiatives/${itemToDelete.item.id}`,
+        target: `/esg/targets/${itemToDelete.item.id}`,
+        risk: `/esg/risks/${itemToDelete.item.id}`,
+      };
+
+      await deleteApi.delete(endpoints[itemToDelete.type]);
+
+      if (itemToDelete.type === "emission") {
+        setEmissions(emissions.filter(e => e.id !== itemToDelete.item.id));
+      } else if (itemToDelete.type === "initiative") {
+        setInitiatives(initiatives.filter(i => i.id !== itemToDelete.item.id));
+      } else if (itemToDelete.type === "target") {
+        setTargets(targets.filter(t => t.id !== itemToDelete.item.id));
+      } else {
+        setRisks(risks.filter(r => r.id !== itemToDelete.item.id));
+      }
+
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+      showToast("success", `${itemToDelete.type.charAt(0).toUpperCase() + itemToDelete.type.slice(1)} deleted successfully`);
+    } catch (error) {
+      console.error(`Failed to delete ${itemToDelete.type}:`, error);
+      showToast("error", `Failed to delete ${itemToDelete.type}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const getDeleteItemName = () => {
+    if (!itemToDelete) return "";
+    if (itemToDelete.type === "emission") {
+      return (itemToDelete.item as Emission).source_name;
+    } else if (itemToDelete.type === "initiative") {
+      return (itemToDelete.item as Initiative).name;
+    } else if (itemToDelete.type === "target") {
+      return (itemToDelete.item as ESGTarget).name;
+    }
+    return (itemToDelete.item as ESGRisk).name;
+  };
 
   const formatNumber = (num: number, decimals: number = 1) => {
     return num.toLocaleString("en-IN", { maximumFractionDigits: decimals });
@@ -574,7 +697,7 @@ export default function ESGPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockEmissions.map((emission) => (
+                  {emissions.map((emission) => (
                     <TableRow key={emission.id}>
                       <TableCell>{getScopeBadge(emission.scope)}</TableCell>
                       <TableCell>{emission.category}</TableCell>
@@ -595,6 +718,12 @@ export default function ESGPage() {
                             <DropdownMenuItem>View Details</DropdownMenuItem>
                             <DropdownMenuItem>Edit</DropdownMenuItem>
                             <DropdownMenuItem>Verify</DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDeleteClick("emission", emission)}
+                            >
+                              Delete
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -636,7 +765,7 @@ export default function ESGPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockInitiatives.map((initiative) => (
+                  {initiatives.map((initiative) => (
                     <TableRow key={initiative.id}>
                       <TableCell className="font-medium">{initiative.name}</TableCell>
                       <TableCell>{getCategoryBadge(initiative.category)}</TableCell>
@@ -673,6 +802,14 @@ export default function ESGPage() {
                             <DropdownMenuItem>View Details</DropdownMenuItem>
                             <DropdownMenuItem>Edit</DropdownMenuItem>
                             <DropdownMenuItem>Update Progress</DropdownMenuItem>
+                            {(initiative.status === "completed" || initiative.status === "cancelled") && (
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleDeleteClick("initiative", initiative)}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -715,7 +852,7 @@ export default function ESGPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockTargets.map((target) => (
+                  {targets.map((target) => (
                     <TableRow key={target.id}>
                       <TableCell>
                         <div className="font-medium">{target.name}</div>
@@ -760,6 +897,12 @@ export default function ESGPage() {
                             <DropdownMenuItem>View Details</DropdownMenuItem>
                             <DropdownMenuItem>Edit</DropdownMenuItem>
                             <DropdownMenuItem>Update Progress</DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDeleteClick("target", target)}
+                            >
+                              Delete
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -801,7 +944,7 @@ export default function ESGPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockRisks.map((risk) => (
+                  {risks.map((risk) => (
                     <TableRow key={risk.id}>
                       <TableCell className="font-medium">{risk.name}</TableCell>
                       <TableCell>{getCategoryBadge(risk.category)}</TableCell>
@@ -825,6 +968,14 @@ export default function ESGPage() {
                             <DropdownMenuItem>View Details</DropdownMenuItem>
                             <DropdownMenuItem>Edit</DropdownMenuItem>
                             <DropdownMenuItem>Add Mitigation</DropdownMenuItem>
+                            {risk.risk_level === "low" && (
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleDeleteClick("risk", risk)}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -863,6 +1014,39 @@ export default function ESGPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete {itemToDelete?.type ? itemToDelete.type.charAt(0).toUpperCase() + itemToDelete.type.slice(1) : "Item"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{getDeleteItemName()}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

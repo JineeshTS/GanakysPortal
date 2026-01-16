@@ -36,7 +36,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useApi, useToast } from "@/hooks";
 import {
   AlertTriangle,
   Shield,
@@ -66,6 +77,8 @@ import {
   Shovel,
   ArrowUp,
   Package,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 
 // Dashboard Stats Component
@@ -211,11 +224,26 @@ function KPIDashboard() {
   );
 }
 
+// Incident Interface
+interface Incident {
+  id: string;
+  title: string;
+  category: string;
+  type: string;
+  severity: string;
+  status: string;
+  date: string;
+  location: string;
+  reportedBy: string;
+}
+
 // Incidents Tab Component
 function IncidentsTab() {
   const [showNewDialog, setShowNewDialog] = useState(false);
+  const { showToast } = useToast();
+  const deleteApi = useApi();
 
-  const incidents = [
+  const [incidents, setIncidents] = useState<Incident[]>([
     {
       id: "INC-2026-00045",
       title: "Slip and fall in warehouse",
@@ -249,7 +277,34 @@ function IncidentsTab() {
       location: "Laboratory B",
       reportedBy: "Sarah Wilson",
     },
-  ];
+  ]);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [incidentToDelete, setIncidentToDelete] = useState<Incident | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (incident: Incident) => {
+    setIncidentToDelete(incident);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!incidentToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/hsseq/incidents/${incidentToDelete.id}`);
+      setIncidents(incidents.filter(i => i.id !== incidentToDelete.id));
+      setDeleteDialogOpen(false);
+      setIncidentToDelete(null);
+      showToast("success", "Incident deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete incident:", error);
+      showToast("error", "Failed to delete incident");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getSeverityBadge = (severity: string) => {
     const variants: Record<string, string> = {
@@ -436,24 +491,83 @@ function IncidentsTab() {
                 <TableCell>{incident.date}</TableCell>
                 <TableCell>{incident.location}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="sm">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {incident.status === "closed" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteClick(incident)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Incident
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete incident <strong>{incidentToDelete?.id}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
+}
+
+// Permit Interface
+interface Permit {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+  location: string;
+  validFrom: string;
+  validUntil: string;
+  requestor: string;
 }
 
 // Work Permits Tab Component
 function PermitsTab() {
   const [showNewDialog, setShowNewDialog] = useState(false);
+  const { showToast } = useToast();
+  const deleteApi = useApi();
 
-  const permits = [
+  const [permits, setPermits] = useState<Permit[]>([
     {
       id: "PTW-2026-00123",
       title: "Welding work on storage tank",
@@ -484,7 +598,34 @@ function PermitsTab() {
       validUntil: "2026-01-15 15:00",
       requestor: "Tom Clark",
     },
-  ];
+  ]);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [permitToDelete, setPermitToDelete] = useState<Permit | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (permit: Permit) => {
+    setPermitToDelete(permit);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!permitToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/hsseq/permits/${permitToDelete.id}`);
+      setPermits(permits.filter(p => p.id !== permitToDelete.id));
+      setDeleteDialogOpen(false);
+      setPermitToDelete(null);
+      showToast("success", "Permit deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete permit:", error);
+      showToast("error", "Failed to delete permit");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getPermitTypeIcon = (type: string) => {
     switch (type) {
@@ -645,18 +786,79 @@ function PermitsTab() {
                 {permit.status === "pending_approval" && (
                   <Button size="sm">Approve</Button>
                 )}
+                {(permit.status === "completed" || permit.status === "cancelled") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDeleteClick(permit)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Permit
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete permit <strong>{permitToDelete?.id}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
+// Training Interface
+interface Training {
+  id: string;
+  title: string;
+  type: string;
+  category: string;
+  date: string;
+  time: string;
+  location: string;
+  trainer: string;
+  registered: number;
+  max: number;
+  mandatory: boolean;
+}
+
 // Trainings Tab Component
 function TrainingsTab() {
-  const trainings = [
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  const [trainings, setTrainings] = useState<Training[]>([
     {
       id: "TRN-2026-00089",
       title: "Fire Safety Training",
@@ -696,7 +898,34 @@ function TrainingsTab() {
       max: 50,
       mandatory: false,
     },
-  ];
+  ]);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [trainingToDelete, setTrainingToDelete] = useState<Training | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (training: Training) => {
+    setTrainingToDelete(training);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!trainingToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/hsseq/trainings/${trainingToDelete.id}`);
+      setTrainings(trainings.filter(t => t.id !== trainingToDelete.id));
+      setDeleteDialogOpen(false);
+      setTrainingToDelete(null);
+      showToast("success", "Training deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete training:", error);
+      showToast("error", "Failed to delete training");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -764,18 +993,75 @@ function TrainingsTab() {
               <div className="flex justify-end space-x-2 pt-2">
                 <Button variant="outline" size="sm">View</Button>
                 <Button size="sm">Register</Button>
+                {!training.mandatory && training.registered === 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDeleteClick(training)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Training
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete training <strong>{trainingToDelete?.title}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
+// Hazard Interface
+interface Hazard {
+  id: string;
+  title: string;
+  category: string;
+  location: string;
+  riskLevel: string;
+  riskScore: number;
+  status: string;
+}
+
 // Hazards Tab Component
 function HazardsTab() {
-  const hazards = [
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  const [hazards, setHazards] = useState<Hazard[]>([
     {
       id: "HAZ-2026-00034",
       title: "Slippery floor near water cooler",
@@ -803,7 +1089,34 @@ function HazardsTab() {
       riskScore: 20,
       status: "active",
     },
-  ];
+  ]);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [hazardToDelete, setHazardToDelete] = useState<Hazard | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (hazard: Hazard) => {
+    setHazardToDelete(hazard);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!hazardToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/hsseq/hazards/${hazardToDelete.id}`);
+      setHazards(hazards.filter(h => h.id !== hazardToDelete.id));
+      setDeleteDialogOpen(false);
+      setHazardToDelete(null);
+      showToast("success", "Hazard deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete hazard:", error);
+      showToast("error", "Failed to delete hazard");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getRiskBadge = (level: string) => {
     const variants: Record<string, string> = {
@@ -874,22 +1187,82 @@ function HazardsTab() {
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="sm">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {hazard.status === "mitigated" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteClick(hazard)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Hazard
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete hazard <strong>{hazardToDelete?.id}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
+// Action Interface
+interface Action {
+  id: string;
+  title: string;
+  source: string;
+  priority: string;
+  status: string;
+  assignee: string;
+  dueDate: string;
+  completion: number;
+}
+
 // Corrective Actions Tab Component
 function ActionsTab() {
-  const actions = [
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  const [actions, setActions] = useState<Action[]>([
     {
       id: "ACT-2026-00156",
       title: "Install anti-slip mats",
@@ -920,7 +1293,34 @@ function ActionsTab() {
       dueDate: "2026-01-15",
       completion: 100,
     },
-  ];
+  ]);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [actionToDelete, setActionToDelete] = useState<Action | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (action: Action) => {
+    setActionToDelete(action);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!actionToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/hsseq/actions/${actionToDelete.id}`);
+      setActions(actions.filter(a => a.id !== actionToDelete.id));
+      setDeleteDialogOpen(false);
+      setActionToDelete(null);
+      showToast("success", "Action deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete action:", error);
+      showToast("error", "Failed to delete action");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getPriorityBadge = (priority: string) => {
     const variants: Record<string, string> = {
@@ -1019,15 +1419,60 @@ function ActionsTab() {
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="sm">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {action.status === "closed" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteClick(action)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Action
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete action <strong>{actionToDelete?.id}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

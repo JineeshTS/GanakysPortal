@@ -11,6 +11,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useApi } from '@/hooks'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Plus,
   Download,
   Upload,
@@ -25,7 +35,9 @@ import {
   Clock,
   AlertCircle,
   Eye,
-  Loader2
+  Loader2,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react'
 
 // API Response interfaces
@@ -177,9 +189,55 @@ const mockTransactions: BankTransaction[] = [
 
 export default function BankingPage() {
   const [selectedAccount, setSelectedAccount] = React.useState<BankAccount | null>(null)
+  const [localAccounts, setLocalAccounts] = React.useState<BankAccount[]>(mockBankAccounts)
+  const [localTransactions, setLocalTransactions] = React.useState<BankTransaction[]>(mockTransactions)
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [accountToDelete, setAccountToDelete] = React.useState<BankAccount | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
 
   const { data: accountsData, isLoading: accountsLoading, error: accountsError, get: getAccounts } = useApi<BankAccountsResponse>()
   const { data: transactionsData, isLoading: transactionsLoading, get: getTransactions } = useApi<TransactionsResponse>()
+  const deleteApi = useApi()
+
+  // Update local data when API data changes
+  React.useEffect(() => {
+    if (accountsData?.accounts) {
+      setLocalAccounts(accountsData.accounts)
+    }
+  }, [accountsData])
+
+  React.useEffect(() => {
+    if (transactionsData?.transactions) {
+      setLocalTransactions(transactionsData.transactions)
+    }
+  }, [transactionsData])
+
+  // Delete handlers
+  const handleDeleteAccount = (account: BankAccount, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setAccountToDelete(account)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!accountToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/banking/accounts/${accountToDelete.id}`)
+      setLocalAccounts(prev => prev.filter(a => a.id !== accountToDelete.id))
+      if (selectedAccount?.id === accountToDelete.id) {
+        setSelectedAccount(null)
+      }
+      setDeleteDialogOpen(false)
+      setAccountToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete bank account:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // Fetch bank accounts on mount
   React.useEffect(() => {
@@ -193,8 +251,8 @@ export default function BankingPage() {
     }
   }, [selectedAccount, getTransactions])
 
-  const accounts = accountsData?.accounts || mockBankAccounts
-  const transactions = transactionsData?.transactions || mockTransactions
+  const accounts = localAccounts
+  const transactions = localTransactions
   const isLoading = accountsLoading || transactionsLoading
 
   // Set default selected account when accounts load
@@ -373,9 +431,21 @@ export default function BankingPage() {
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">{account.bank_name}</span>
                 </div>
-                {account.is_primary && (
-                  <Badge variant="outline" className="text-xs">Primary</Badge>
-                )}
+                <div className="flex items-center gap-1">
+                  {account.is_primary && (
+                    <Badge variant="outline" className="text-xs">Primary</Badge>
+                  )}
+                  {!account.is_primary && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={(e) => handleDeleteAccount(account, e)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mb-1">{account.account_name}</p>
               <p className="text-xs font-mono text-muted-foreground mb-2">
@@ -565,6 +635,39 @@ export default function BankingPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Bank Account
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the bank account <strong>{accountToDelete?.account_name}</strong>?
+              This will also remove all associated transactions. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -43,6 +43,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useApi, useToast } from "@/hooks";
 import {
   ArrowLeft,
   Plus,
@@ -54,10 +55,27 @@ import {
   Trash2,
   AlertTriangle,
   CheckCircle,
+  Loader2,
 } from "lucide-react";
 
+// Types
+interface Token {
+  id: string;
+  name: string;
+  description: string;
+  tokenType: string;
+  tokenPrefix: string;
+  scopes: string[];
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string | null;
+  usageCount: number;
+  isActive: boolean;
+  revokedAt?: string;
+}
+
 // Mock tokens data
-const tokens = [
+const mockTokens: Token[] = [
   {
     id: "1",
     name: "Production API Key",
@@ -139,12 +157,67 @@ const availableScopes = [
 ];
 
 export default function APITokensPage() {
+  const [tokens, setTokens] = useState<Token[]>(mockTokens);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
-  const [selectedToken, setSelectedToken] = useState<typeof tokens[0] | null>(null);
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [newToken, setNewToken] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
   const [selectedScopes, setSelectedScopes] = useState<string[]>([]);
+  const { showToast } = useToast();
+  const revokeApi = useApi();
+  const deleteApi = useApi();
+
+  // Revoke state
+  const [isRevoking, setIsRevoking] = useState(false);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [tokenToDelete, setTokenToDelete] = useState<Token | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (token: Token) => {
+    setTokenToDelete(token);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!tokenToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/security/tokens/${tokenToDelete.id}`);
+      setTokens(tokens.filter(t => t.id !== tokenToDelete.id));
+      setDeleteDialogOpen(false);
+      setTokenToDelete(null);
+      showToast("success", "Token deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete token:", error);
+      showToast("error", "Failed to delete token");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleRevokeConfirm = async () => {
+    if (!selectedToken) return;
+    setIsRevoking(true);
+    try {
+      await revokeApi.post(`/security/tokens/${selectedToken.id}/revoke`);
+      setTokens(tokens.map(t =>
+        t.id === selectedToken.id
+          ? { ...t, isActive: false, revokedAt: new Date().toISOString() }
+          : t
+      ));
+      setIsRevokeDialogOpen(false);
+      setSelectedToken(null);
+      showToast("success", "Token revoked successfully");
+    } catch (error) {
+      console.error("Failed to revoke token:", error);
+      showToast("error", "Failed to revoke token");
+    } finally {
+      setIsRevoking(false);
+    }
+  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Never";
@@ -175,7 +248,7 @@ export default function APITokensPage() {
     setIsCreateDialogOpen(false);
   };
 
-  const handleRevokeToken = (token: typeof tokens[0]) => {
+  const handleRevokeToken = (token: Token) => {
     setSelectedToken(token);
     setIsRevokeDialogOpen(true);
   };
@@ -449,12 +522,23 @@ export default function APITokensPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {token.isActive && (
+                    {token.isActive ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-yellow-600 hover:text-yellow-700"
+                        onClick={() => handleRevokeToken(token)}
+                        title="Revoke token"
+                      >
+                        <AlertTriangle className="h-4 w-4" />
+                      </Button>
+                    ) : (
                       <Button
                         variant="ghost"
                         size="icon"
                         className="text-red-600 hover:text-red-700"
-                        onClick={() => handleRevokeToken(token)}
+                        onClick={() => handleDeleteClick(token)}
+                        title="Delete token"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -471,7 +555,10 @@ export default function APITokensPage() {
       <AlertDialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revoke API Token</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Revoke API Token
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to revoke this token? Any applications using this
               token will immediately lose access.
@@ -489,9 +576,53 @@ export default function APITokensPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700">
-              Revoke Token
+            <AlertDialogCancel disabled={isRevoking}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRevokeConfirm}
+              disabled={isRevoking}
+              className="bg-yellow-600 hover:bg-yellow-700"
+            >
+              {isRevoking ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Revoking...
+                </>
+              ) : (
+                "Revoke Token"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Token
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete <strong>{tokenToDelete?.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

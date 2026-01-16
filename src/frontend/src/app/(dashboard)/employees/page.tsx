@@ -34,9 +34,48 @@ import {
   Building2,
   Calendar,
   Briefcase,
-  Loader2
+  Loader2,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import type { Employee, EmploymentStatus, EmploymentType } from '@/types'
+
+// Department and Designation mappings (fetched from API in production)
+const departments: Record<string, string> = {
+  '1': 'Engineering',
+  '2': 'Human Resources',
+  '3': 'Finance',
+  '4': 'Marketing',
+  '5': 'Sales',
+  '6': 'Operations',
+  '7': 'Product',
+  '8': 'Design',
+  '9': 'Legal',
+  '10': 'Admin'
+}
+
+const designations: Record<string, string> = {
+  '1': 'Software Engineer',
+  '2': 'Senior Software Engineer',
+  '3': 'Tech Lead',
+  '4': 'Engineering Manager',
+  '5': 'HR Executive',
+  '6': 'HR Manager',
+  '7': 'Accountant',
+  '8': 'Finance Manager',
+  '9': 'Marketing Executive',
+  '10': 'Sales Executive'
+}
 
 // API response type
 interface EmployeeApiResponse {
@@ -128,6 +167,12 @@ export default function EmployeesPage() {
 
   // Quick view sidebar
   const [quickViewEmployee, setQuickViewEmployee] = React.useState<QuickViewEmployee | null>(null)
+
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [employeeToDelete, setEmployeeToDelete] = React.useState<EmployeeApiResponse | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const deleteApi = useApi()
 
   const debouncedSearch = useDebounce(searchQuery, 300)
 
@@ -234,6 +279,31 @@ export default function EmployeesPage() {
     ))
     setSelectedEmployees([])
     setSelectAll(false)
+  }
+
+  // Delete employee
+  const handleDeleteClick = (emp: EmployeeApiResponse, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEmployeeToDelete(emp)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!employeeToDelete) return
+
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/employees/${employeeToDelete.id}`)
+      // Remove from local state
+      setEmployees(employees.filter(emp => emp.id !== employeeToDelete.id))
+      setTotal(prev => prev - 1)
+      setDeleteDialogOpen(false)
+      setEmployeeToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete employee:', error)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   // Export functions
@@ -414,6 +484,15 @@ export default function EmployeesPage() {
             <Link href={`/employees/${row.id}/edit`}>
               <Edit className="h-4 w-4" />
             </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => handleDeleteClick(row, e)}
+            title="Delete"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       )
@@ -821,6 +900,42 @@ export default function EmployeesPage() {
           </div>
         </>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Delete Employee
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{employeeToDelete?.full_name}</strong> ({employeeToDelete?.employee_code})?
+              This action cannot be undone. All associated data including payroll history, leave records, and documents will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Employee
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

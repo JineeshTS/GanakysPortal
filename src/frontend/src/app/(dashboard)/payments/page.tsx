@@ -14,6 +14,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useDebounce, useApi } from '@/hooks'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Plus,
   Download,
   ArrowUpRight,
@@ -26,7 +36,9 @@ import {
   XCircle,
   RefreshCw,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react'
 import type { Payment } from '@/types'
 
@@ -162,11 +174,47 @@ export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = React.useState('')
   const [typeFilter, setTypeFilter] = React.useState<string>('all')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
+  const [localPayments, setLocalPayments] = React.useState<PaymentRecord[]>(mockPayments)
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [paymentToDelete, setPaymentToDelete] = React.useState<PaymentRecord | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
 
   const debouncedSearch = useDebounce(searchQuery, 300)
 
   const { data: paymentsData, isLoading: paymentsLoading, error: paymentsError, get: getPayments } = useApi<PaymentsListResponse>()
   const { data: summaryData, isLoading: summaryLoading, get: getSummary } = useApi<PaymentsSummary>()
+  const deleteApi = useApi()
+
+  // Update local payments when API data changes
+  React.useEffect(() => {
+    if (paymentsData?.payments) {
+      setLocalPayments(paymentsData.payments)
+    }
+  }, [paymentsData])
+
+  // Delete handlers
+  const handleDeleteClick = (payment: PaymentRecord, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPaymentToDelete(payment)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!paymentToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/payments/${paymentToDelete.id}`)
+      setLocalPayments(prev => prev.filter(p => p.id !== paymentToDelete.id))
+      setDeleteDialogOpen(false)
+      setPaymentToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete payment:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // Fetch payments and summary on mount
   React.useEffect(() => {
@@ -179,11 +227,10 @@ export default function PaymentsPage() {
     getSummary('/payments/summary')
   }, [debouncedSearch, typeFilter, statusFilter, getPayments, getSummary])
 
-  const payments = paymentsData?.payments || mockPayments
   const isLoading = paymentsLoading || summaryLoading
 
   const filteredPayments = React.useMemo(() => {
-    let result = [...payments]
+    let result = [...localPayments]
 
     if (debouncedSearch) {
       const query = debouncedSearch.toLowerCase()
@@ -203,7 +250,7 @@ export default function PaymentsPage() {
     }
 
     return result
-  }, [payments, debouncedSearch, typeFilter, statusFilter])
+  }, [localPayments, debouncedSearch, typeFilter, statusFilter])
 
   // Use API data for stats with fallback to mock
   const statsData = {
@@ -351,6 +398,20 @@ export default function PaymentsPage() {
           )}
         </div>
       )
+    },
+    {
+      key: 'actions',
+      header: '',
+      accessor: (row) => row.status !== 'reconciled' ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          onClick={(e) => handleDeleteClick(row, e)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      ) : null
     }
   ]
 
@@ -555,6 +616,40 @@ export default function PaymentsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Payment
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete payment{' '}
+              <strong>{paymentToDelete?.payment_number}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

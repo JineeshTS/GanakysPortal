@@ -28,6 +28,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useApi, useToast } from "@/hooks";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -52,29 +63,123 @@ import {
   TrendingUp,
   BarChart3,
   Calendar,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 
+// Interfaces
+interface Inspection {
+  id: string;
+  number: string;
+  type: string;
+  product: string;
+  lotNumber: string;
+  result: string;
+  status: string;
+  date: string;
+  inspector: string;
+}
+
+interface NCR {
+  id: string;
+  number: string;
+  title: string;
+  severity: string;
+  status: string;
+  product: string;
+  detectedDate: string;
+  assignedTo: string;
+}
+
+interface CAPA {
+  id: string;
+  number: string;
+  title: string;
+  type: string;
+  status: string;
+  targetDate: string;
+  assignedTo: string;
+}
+
 // Mock data
-const inspections = [
+const initialInspections: Inspection[] = [
   { id: "1", number: "QI-000001", type: "incoming", product: "Raw Material A", lotNumber: "LOT-001", result: "pass", status: "completed", date: "2026-01-14", inspector: "Raj Kumar" },
   { id: "2", number: "QI-000002", type: "in_process", product: "Assembly B", lotNumber: "LOT-002", result: "fail", status: "completed", date: "2026-01-14", inspector: "Priya Singh" },
   { id: "3", number: "QI-000003", type: "final", product: "Finished Good C", lotNumber: "LOT-003", result: "pending", status: "pending", date: "2026-01-15", inspector: "Assigned" },
 ];
 
-const ncrs = [
+const initialNCRs: NCR[] = [
   { id: "1", number: "NCR-000001", title: "Dimension out of spec", severity: "major", status: "corrective_action", product: "Assembly B", detectedDate: "2026-01-14", assignedTo: "Quality Team" },
   { id: "2", number: "NCR-000002", title: "Surface finish defect", severity: "minor", status: "open", product: "Component D", detectedDate: "2026-01-13", assignedTo: "Production" },
-  { id: "3", number: "NCR-000003", title: "Material hardness failure", severity: "critical", status: "under_review", product: "Raw Material E", detectedDate: "2026-01-12", assignedTo: "Supplier QA" },
+  { id: "3", number: "NCR-000003", title: "Material hardness failure", severity: "critical", status: "closed", product: "Raw Material E", detectedDate: "2026-01-12", assignedTo: "Supplier QA" },
 ];
 
-const capas = [
+const initialCAPAs: CAPA[] = [
   { id: "1", number: "CAPA-000001", title: "Root cause analysis for dimension issues", type: "corrective", status: "in_progress", targetDate: "2026-01-25", assignedTo: "Engineering" },
-  { id: "2", number: "CAPA-000002", title: "Preventive maintenance schedule update", type: "preventive", status: "open", targetDate: "2026-02-01", assignedTo: "Maintenance" },
+  { id: "2", number: "CAPA-000002", title: "Preventive maintenance schedule update", type: "preventive", status: "closed", targetDate: "2026-02-01", assignedTo: "Maintenance" },
 ];
 
 export default function QualityPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  // Local state for data management
+  const [inspections, setInspections] = useState<Inspection[]>(initialInspections);
+  const [ncrs, setNCRs] = useState<NCR[]>(initialNCRs);
+  const [capas, setCAPAs] = useState<CAPA[]>(initialCAPAs);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: string; item: Inspection | NCR | CAPA } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (type: string, item: Inspection | NCR | CAPA) => {
+    setItemToDelete({ type, item });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      const endpoint = itemToDelete.type === "inspection"
+        ? `/quality/inspections/${itemToDelete.item.id}`
+        : itemToDelete.type === "ncr"
+        ? `/quality/ncrs/${itemToDelete.item.id}`
+        : `/quality/capas/${itemToDelete.item.id}`;
+
+      await deleteApi.delete(endpoint);
+
+      if (itemToDelete.type === "inspection") {
+        setInspections(inspections.filter(i => i.id !== itemToDelete.item.id));
+      } else if (itemToDelete.type === "ncr") {
+        setNCRs(ncrs.filter(n => n.id !== itemToDelete.item.id));
+      } else {
+        setCAPAs(capas.filter(c => c.id !== itemToDelete.item.id));
+      }
+
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+      showToast("success", `${itemToDelete.type.toUpperCase()} deleted successfully`);
+    } catch (error) {
+      console.error("Failed to delete:", error);
+      showToast("error", `Failed to delete ${itemToDelete.type}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const getItemName = () => {
+    if (!itemToDelete) return "";
+    if (itemToDelete.type === "inspection") {
+      return (itemToDelete.item as Inspection).number;
+    } else if (itemToDelete.type === "ncr") {
+      return (itemToDelete.item as NCR).number;
+    }
+    return (itemToDelete.item as CAPA).number;
+  };
 
   const getResultBadge = (result: string) => {
     const styles: Record<string, string> = {
@@ -343,7 +448,21 @@ export default function QualityPage() {
                     <TableCell><Badge className={getStatusBadge(insp.status)}>{insp.status}</Badge></TableCell>
                     <TableCell>{insp.date}</TableCell>
                     <TableCell>{insp.inspector}</TableCell>
-                    <TableCell><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
+                        {insp.status === "completed" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick("inspection", insp)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -379,7 +498,21 @@ export default function QualityPage() {
                     <TableCell>{ncr.product}</TableCell>
                     <TableCell>{ncr.detectedDate}</TableCell>
                     <TableCell>{ncr.assignedTo}</TableCell>
-                    <TableCell><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
+                        {ncr.status === "closed" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick("ncr", ncr)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -413,7 +546,21 @@ export default function QualityPage() {
                     <TableCell><Badge className={getStatusBadge(capa.status)}>{capa.status.replace("_", " ")}</Badge></TableCell>
                     <TableCell>{capa.targetDate}</TableCell>
                     <TableCell>{capa.assignedTo}</TableCell>
-                    <TableCell><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
+                        {capa.status === "closed" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick("capa", capa)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -435,6 +582,39 @@ export default function QualityPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete {itemToDelete?.type.toUpperCase()}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{getItemName()}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

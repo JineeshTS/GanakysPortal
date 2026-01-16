@@ -1,14 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, BarChart3, PieChart, TrendingUp, FileText, Download, Settings, Loader2, Calendar, RefreshCw } from 'lucide-react';
+import { Plus, BarChart3, PieChart, TrendingUp, FileText, Download, Settings, Loader2, Calendar, RefreshCw, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/layout/page-header';
 import { StatCard } from '@/components/layout/stat-card';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useApi } from '@/hooks';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useApi, useToast } from '@/hooks';
 
 interface Dashboard {
   id: string;
@@ -57,9 +67,70 @@ const trendColors: Record<string, string> = {
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState('dashboards');
+  const { showToast } = useToast();
   const { data: dashboardsData, isLoading: dashboardsLoading, get: getDashboards } = useApi<{ data: Dashboard[] }>();
   const { data: kpisData, isLoading: kpisLoading, get: getKPIs } = useApi<{ data: KPI[] }>();
   const { data: reportsData, isLoading: reportsLoading, get: getReports } = useApi<{ data: ReportTemplate[] }>();
+  const deleteDashboardApi = useApi();
+  const deleteReportApi = useApi();
+
+  // Local state for data management
+  const [localDashboards, setLocalDashboards] = useState<Dashboard[]>([]);
+  const [localReports, setLocalReports] = useState<ReportTemplate[]>([]);
+
+  // Delete state for dashboards
+  const [deleteDashboardDialogOpen, setDeleteDashboardDialogOpen] = useState(false);
+  const [dashboardToDelete, setDashboardToDelete] = useState<Dashboard | null>(null);
+  const [isDeletingDashboard, setIsDeletingDashboard] = useState(false);
+
+  // Delete state for reports
+  const [deleteReportDialogOpen, setDeleteReportDialogOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<ReportTemplate | null>(null);
+  const [isDeletingReport, setIsDeletingReport] = useState(false);
+
+  const handleDeleteDashboardClick = (dashboard: Dashboard) => {
+    setDashboardToDelete(dashboard);
+    setDeleteDashboardDialogOpen(true);
+  };
+
+  const handleDeleteDashboardConfirm = async () => {
+    if (!dashboardToDelete) return;
+    setIsDeletingDashboard(true);
+    try {
+      await deleteDashboardApi.delete(`/analytics/dashboards/${dashboardToDelete.id}`);
+      setLocalDashboards(localDashboards.filter(d => d.id !== dashboardToDelete.id));
+      setDeleteDashboardDialogOpen(false);
+      setDashboardToDelete(null);
+      showToast('success', 'Dashboard deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete dashboard:', error);
+      showToast('error', 'Failed to delete dashboard');
+    } finally {
+      setIsDeletingDashboard(false);
+    }
+  };
+
+  const handleDeleteReportClick = (report: ReportTemplate) => {
+    setReportToDelete(report);
+    setDeleteReportDialogOpen(true);
+  };
+
+  const handleDeleteReportConfirm = async () => {
+    if (!reportToDelete) return;
+    setIsDeletingReport(true);
+    try {
+      await deleteReportApi.delete(`/analytics/reports/templates/${reportToDelete.id}`);
+      setLocalReports(localReports.filter(r => r.id !== reportToDelete.id));
+      setDeleteReportDialogOpen(false);
+      setReportToDelete(null);
+      showToast('success', 'Report template deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete report template:', error);
+      showToast('error', 'Failed to delete report template');
+    } finally {
+      setIsDeletingReport(false);
+    }
+  };
 
   useEffect(() => {
     getDashboards('/analytics/dashboards');
@@ -67,9 +138,22 @@ export default function AnalyticsPage() {
     getReports('/analytics/reports/templates');
   }, [getDashboards, getKPIs, getReports]);
 
-  const dashboards = dashboardsData?.data || [];
+  // Sync API data to local state
+  useEffect(() => {
+    if (dashboardsData?.data) {
+      setLocalDashboards(dashboardsData.data);
+    }
+  }, [dashboardsData]);
+
+  useEffect(() => {
+    if (reportsData?.data) {
+      setLocalReports(reportsData.data);
+    }
+  }, [reportsData]);
+
+  const dashboards = localDashboards.length > 0 ? localDashboards : (dashboardsData?.data || []);
   const kpis = kpisData?.data || [];
-  const reports = reportsData?.data || [];
+  const reports = localReports.length > 0 ? localReports : (reportsData?.data || []);
   const isLoading = dashboardsLoading || kpisLoading || reportsLoading;
 
   const stats = {
@@ -160,6 +244,20 @@ export default function AnalyticsPage() {
                     <span className="text-muted-foreground">{dashboard.widgets_count} widgets</span>
                     <span className="text-muted-foreground">Last viewed: {dashboard.last_accessed}</span>
                   </div>
+                  {!dashboard.is_default && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteDashboardClick(dashboard);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -240,10 +338,20 @@ export default function AnalyticsPage() {
                     <td className="p-4">{report.schedule || '-'}</td>
                     <td className="p-4 text-muted-foreground">{report.last_generated || 'Never'}</td>
                     <td className="p-4 text-right">
-                      <Button variant="ghost" size="sm" className="gap-1">
-                        <Download className="h-3 w-3" />
-                        Generate
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" className="gap-1">
+                          <Download className="h-3 w-3" />
+                          Generate
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteReportClick(report)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -278,6 +386,72 @@ export default function AnalyticsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Dashboard Confirmation Dialog */}
+      <AlertDialog open={deleteDashboardDialogOpen} onOpenChange={setDeleteDashboardDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Dashboard
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{dashboardToDelete?.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingDashboard}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteDashboardConfirm}
+              disabled={isDeletingDashboard}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingDashboard ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Report Template Confirmation Dialog */}
+      <AlertDialog open={deleteReportDialogOpen} onOpenChange={setDeleteReportDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Report Template
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{reportToDelete?.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingReport}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteReportConfirm}
+              disabled={isDeletingReport}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingReport ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

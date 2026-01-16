@@ -10,6 +10,16 @@ import { Input } from '@/components/ui/input'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useApi } from '@/hooks'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Plus,
   Search,
   FileText,
@@ -19,7 +29,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Loader2,
-  Eye
+  Eye,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react'
 
 interface JournalEntry {
@@ -105,6 +117,32 @@ export default function JournalEntriesPage() {
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [isLoading, setIsLoading] = React.useState(false)
   const api = useApi()
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [entryToDelete, setEntryToDelete] = React.useState<JournalEntry | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const deleteApi = useApi()
+
+  const handleDeleteClick = (entry: JournalEntry) => {
+    setEntryToDelete(entry)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!entryToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/journals/${entryToDelete.id}`)
+      setEntries(entries.filter(e => e.id !== entryToDelete.id))
+      setDeleteDialogOpen(false)
+      setEntryToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete journal entry:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const filteredEntries = React.useMemo(() => {
     return entries.filter(entry => {
@@ -317,9 +355,21 @@ export default function JournalEntriesPage() {
                         {getStatusBadge(entry.status)}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="icon">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {entry.status === 'draft' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteClick(entry)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -336,6 +386,39 @@ export default function JournalEntriesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Journal Entry
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete journal entry <strong>{entryToDelete?.entry_number}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

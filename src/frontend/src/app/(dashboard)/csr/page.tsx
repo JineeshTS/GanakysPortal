@@ -36,9 +36,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { useApi, useToast } from "@/hooks";
 import {
   Heart,
   Plus,
@@ -69,7 +80,51 @@ import {
   Clock,
   AlertTriangle,
   XCircle,
+  Trash2,
+  Loader2,
 } from "lucide-react";
+
+// TypeScript interfaces
+interface CSRProject {
+  id: string;
+  project_code: string;
+  name: string;
+  category: string;
+  status: string;
+  state: string;
+  district: string;
+  approved_budget: number;
+  amount_utilized: number;
+  progress_percentage: number;
+  start_date: string;
+  end_date: string;
+  implementing_agency: string;
+}
+
+interface Beneficiary {
+  id: string;
+  beneficiary_code: string;
+  name: string;
+  beneficiary_type: string;
+  category: string;
+  state: string;
+  district: string;
+  is_active: boolean;
+  support_type: string;
+  verified: boolean;
+}
+
+interface Volunteer {
+  id: string;
+  employee_name: string;
+  employee_id: string;
+  project_name: string;
+  activity_name: string;
+  activity_date: string;
+  hours_contributed: number;
+  status: string;
+  location: string;
+}
 
 // CSR Categories as per Schedule VII
 const CSR_CATEGORIES = [
@@ -315,6 +370,64 @@ export default function CSRTrackingPage() {
   const [isBeneficiaryDialogOpen, setIsBeneficiaryDialogOpen] = useState(false);
   const [isVolunteerDialogOpen, setIsVolunteerDialogOpen] = useState(false);
   const [isMetricDialogOpen, setIsMetricDialogOpen] = useState(false);
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  // Local state for data management
+  const [projects, setProjects] = useState<CSRProject[]>(mockProjects);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>(mockBeneficiaries);
+  const [volunteers, setVolunteers] = useState<Volunteer[]>(mockVolunteers);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: "project" | "beneficiary" | "volunteer"; item: CSRProject | Beneficiary | Volunteer } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (type: "project" | "beneficiary" | "volunteer", item: CSRProject | Beneficiary | Volunteer) => {
+    setItemToDelete({ type, item });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      const endpoints: Record<string, string> = {
+        project: `/csr/projects/${itemToDelete.item.id}`,
+        beneficiary: `/csr/beneficiaries/${itemToDelete.item.id}`,
+        volunteer: `/csr/volunteers/${itemToDelete.item.id}`,
+      };
+
+      await deleteApi.delete(endpoints[itemToDelete.type]);
+
+      if (itemToDelete.type === "project") {
+        setProjects(projects.filter(p => p.id !== itemToDelete.item.id));
+      } else if (itemToDelete.type === "beneficiary") {
+        setBeneficiaries(beneficiaries.filter(b => b.id !== itemToDelete.item.id));
+      } else {
+        setVolunteers(volunteers.filter(v => v.id !== itemToDelete.item.id));
+      }
+
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+      showToast("success", `${itemToDelete.type.charAt(0).toUpperCase() + itemToDelete.type.slice(1)} deleted successfully`);
+    } catch (error) {
+      console.error(`Failed to delete ${itemToDelete.type}:`, error);
+      showToast("error", `Failed to delete ${itemToDelete.type}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const getDeleteItemName = () => {
+    if (!itemToDelete) return "";
+    if (itemToDelete.type === "project") {
+      return (itemToDelete.item as CSRProject).project_code;
+    } else if (itemToDelete.type === "beneficiary") {
+      return (itemToDelete.item as Beneficiary).name;
+    }
+    return (itemToDelete.item as Volunteer).employee_name;
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -751,7 +864,7 @@ export default function CSRTrackingPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockProjects.map((project) => (
+                  {projects.map((project) => (
                     <TableRow key={project.id}>
                       <TableCell className="font-medium">{project.project_code}</TableCell>
                       <TableCell>
@@ -794,6 +907,16 @@ export default function CSRTrackingPage() {
                           <Button variant="ghost" size="icon">
                             <Edit className="h-4 w-4" />
                           </Button>
+                          {(project.status === "completed" || project.status === "cancelled") && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteClick("project", project)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -945,7 +1068,7 @@ export default function CSRTrackingPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockBeneficiaries.map((beneficiary) => (
+                  {beneficiaries.map((beneficiary) => (
                     <TableRow key={beneficiary.id}>
                       <TableCell className="font-medium">{beneficiary.beneficiary_code}</TableCell>
                       <TableCell>{beneficiary.name}</TableCell>
@@ -979,6 +1102,16 @@ export default function CSRTrackingPage() {
                           <Button variant="ghost" size="icon">
                             <Edit className="h-4 w-4" />
                           </Button>
+                          {!beneficiary.is_active && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteClick("beneficiary", beneficiary)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1078,7 +1211,7 @@ export default function CSRTrackingPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockVolunteers.map((volunteer) => (
+                  {volunteers.map((volunteer) => (
                     <TableRow key={volunteer.id}>
                       <TableCell>
                         <div>
@@ -1116,6 +1249,16 @@ export default function CSRTrackingPage() {
                           <Button variant="ghost" size="icon">
                             <Edit className="h-4 w-4" />
                           </Button>
+                          {volunteer.status === "completed" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteClick("volunteer", volunteer)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1487,6 +1630,39 @@ export default function CSRTrackingPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete {itemToDelete?.type ? itemToDelete.type.charAt(0).toUpperCase() + itemToDelete.type.slice(1) : "Item"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{getDeleteItemName()}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

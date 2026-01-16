@@ -14,6 +14,16 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useDebounce, useApi } from '@/hooks'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Plus,
   Download,
   Upload,
@@ -26,7 +36,9 @@ import {
   Clock,
   IndianRupee,
   FileText,
-  Loader2
+  Loader2,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react'
 import type { Bill, BillStatus, TDSSection } from '@/types'
 
@@ -220,8 +232,44 @@ export default function BillsPage() {
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(20)
 
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [billToDelete, setBillToDelete] = React.useState<Bill | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const [localBills, setLocalBills] = React.useState<Bill[]>(mockBills)
+
   const { data: billsData, isLoading: billsLoading, error: billsError, get: getBills } = useApi<BillListResponse>()
   const { data: summaryData, isLoading: summaryLoading, get: getSummary } = useApi<BillSummaryResponse>()
+  const deleteApi = useApi()
+
+  // Delete handlers
+  const handleDeleteClick = (bill: Bill, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setBillToDelete(bill)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!billToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/bills/${billToDelete.id}`)
+      setLocalBills(prev => prev.filter(b => b.id !== billToDelete.id))
+      setDeleteDialogOpen(false)
+      setBillToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete bill:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // Update local bills when API data changes
+  React.useEffect(() => {
+    if (billsData?.bills) {
+      setLocalBills(billsData.bills)
+    }
+  }, [billsData])
 
   const debouncedSearch = useDebounce(searchQuery, 300)
 
@@ -237,11 +285,10 @@ export default function BillsPage() {
     getSummary('/bills/summary')
   }, [page, pageSize, statusFilter, debouncedSearch, getBills, getSummary])
 
-  const bills = billsData?.bills || mockBills
   const isLoading = billsLoading || summaryLoading
 
   const filteredBills = React.useMemo(() => {
-    let result = [...bills]
+    let result = [...localBills]
 
     if (debouncedSearch) {
       const query = debouncedSearch.toLowerCase()
@@ -258,7 +305,7 @@ export default function BillsPage() {
     }
 
     return result
-  }, [bills, debouncedSearch, statusFilter])
+  }, [localBills, debouncedSearch, statusFilter])
 
   const stats = [
     {
@@ -413,11 +460,21 @@ export default function BillsPage() {
             </Link>
           </Button>
           {row.status === 'draft' && (
-            <Button variant="ghost" size="icon" asChild>
-              <Link href={`/dashboard/bills/${row.id}/edit`}>
-                <Edit className="h-4 w-4" />
-              </Link>
-            </Button>
+            <>
+              <Button variant="ghost" size="icon" asChild>
+                <Link href={`/dashboard/bills/${row.id}/edit`}>
+                  <Edit className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={(e) => handleDeleteClick(row, e)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
           )}
         </div>
       )
@@ -586,6 +643,41 @@ export default function BillsPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Bill
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete bill{' '}
+              <strong>{billToDelete?.bill_number}</strong> from{' '}
+              <strong>{billToDelete?.vendor_name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Folder, Upload, Search, Plus, Download, Filter, Eye, Share2, Clock, CheckCircle, FileWarning, Settings } from "lucide-react";
+import { FileText, Folder, Upload, Search, Plus, Download, Filter, Eye, Share2, Clock, CheckCircle, FileWarning, Settings, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useApi } from "@/hooks";
 
 const documents = [
   { id: "1", number: "DOC-000001", title: "Quality Policy Manual", category: "policy", status: "published", version: "3.0", lastModified: "2026-01-10", owner: "Quality Dept" },
@@ -25,9 +28,47 @@ const folders = [
   { id: "4", name: "Engineering Drawings", count: 156, lastModified: "2026-01-14" },
 ];
 
+interface Document {
+  id: string;
+  number: string;
+  title: string;
+  category: string;
+  status: string;
+  version: string;
+  lastModified: string;
+  owner: string;
+}
+
 export default function DocumentsPage() {
   const [activeTab, setActiveTab] = useState("browse");
   const [searchTerm, setSearchTerm] = useState("");
+  const [docsList, setDocsList] = useState<Document[]>(documents);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<Document | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteApi = useApi();
+
+  const handleDeleteClick = (doc: Document) => {
+    setDocToDelete(doc);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!docToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/documents/${docToDelete.id}`);
+      setDocsList(docsList.filter(d => d.id !== docToDelete.id));
+      setDeleteDialogOpen(false);
+      setDocToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -152,7 +193,7 @@ export default function DocumentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {documents.map((doc) => (
+                {docsList.map((doc) => (
                   <TableRow key={doc.id}>
                     <TableCell className="font-medium">{doc.number}</TableCell>
                     <TableCell>{doc.title}</TableCell>
@@ -166,6 +207,11 @@ export default function DocumentsPage() {
                         <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="sm"><Download className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="sm"><Share2 className="h-4 w-4" /></Button>
+                        {doc.status === "draft" && (
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteClick(doc)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -199,6 +245,38 @@ export default function DocumentsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Document
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{docToDelete?.title}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

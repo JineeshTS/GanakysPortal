@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { PageHeader, DataTable } from "@/components/layout";
 import { Button, Card, Input, Select, Badge } from "@/components/ui";
@@ -145,6 +146,13 @@ export default function TimesheetPage() {
     ]);
   };
 
+  const removeRow = (index: number) => {
+    if (entries.length > 1) {
+      const newEntries = entries.filter((_, i) => i !== index);
+      setEntries(newEntries);
+    }
+  };
+
   const getDailyTotals = () => {
     return weekDays.map((_, dayIndex) =>
       entries.reduce((sum, entry) => sum + entry.hours[dayIndex], 0)
@@ -264,6 +272,7 @@ export default function TimesheetPage() {
                   </th>
                 ))}
                 <th className="px-4 py-3 text-center font-medium w-20">Total</th>
+                <th className="px-2 py-3 text-center font-medium w-12"></th>
               </tr>
             </thead>
             <tbody>
@@ -328,6 +337,18 @@ export default function TimesheetPage() {
                     </td>
                   ))}
                   <td className="px-4 py-2 text-center font-semibold">{entry.total}h</td>
+                  <td className="px-2 py-2 text-center">
+                    {status === "draft" && entries.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRow(entryIndex)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-8 w-8"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               ))}
 
@@ -347,6 +368,7 @@ export default function TimesheetPage() {
                   </td>
                 ))}
                 <td className="px-4 py-3 text-center text-primary">{weeklyTotal}h</td>
+                <td></td>
               </tr>
             </tbody>
           </table>

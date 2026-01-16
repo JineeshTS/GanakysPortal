@@ -18,6 +18,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { formatDate } from '@/lib/format'
 import type { Task } from '@/types'
 import {
@@ -41,6 +51,8 @@ import {
   FolderKanban,
   Loader2,
   AlertCircle,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react'
 
 // Task status columns for kanban
@@ -687,6 +699,34 @@ export default function TasksPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null)
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
+  const [localTasks, setLocalTasks] = useState<TaskItem[]>(mockTasks)
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<TaskItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const deleteApi = useApi()
+
+  const handleDeleteClick = (task: TaskItem, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setTaskToDelete(task)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!taskToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/tasks/${taskToDelete.id}`)
+      setLocalTasks(localTasks.filter(t => t.id !== taskToDelete.id))
+      setDeleteDialogOpen(false)
+      setTaskToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete task:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const { data: tasksData, isLoading: tasksLoading, error: tasksError, get: getTasks } = useApi<TasksListResponse>()
   const { data: summaryData, isLoading: summaryLoading, get: getSummary } = useApi<TasksSummary>()
@@ -702,7 +742,14 @@ export default function TasksPage() {
     getSummary('/tasks/summary')
   }, [searchQuery, projectFilter, priorityFilter, getTasks, getSummary])
 
-  const tasks = tasksData?.tasks || mockTasks
+  // Sync API data to local state
+  useEffect(() => {
+    if (tasksData?.tasks) {
+      setLocalTasks(tasksData.tasks)
+    }
+  }, [tasksData])
+
+  const tasks = localTasks
   const isLoading = tasksLoading || summaryLoading
 
   const filteredTasks = tasks.filter((task) => {
@@ -915,9 +962,19 @@ export default function TasksPage() {
                           </span>
                         </td>
                         <td className="p-3 text-right">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={(e) => handleDeleteClick(task, e)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     )
@@ -936,6 +993,39 @@ export default function TasksPage() {
         open={detailDialogOpen}
         onOpenChange={setDetailDialogOpen}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Task
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the task <strong>{taskToDelete?.title}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

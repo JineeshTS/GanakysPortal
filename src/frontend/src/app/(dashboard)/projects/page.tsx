@@ -19,6 +19,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useApi } from '@/hooks'
 import type { Project, ProjectStatus, Task, Milestone } from '@/types'
@@ -42,6 +52,8 @@ import {
   ChevronRight,
   BarChart3,
   Loader2,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react'
 
 // API Response interfaces
@@ -209,9 +221,11 @@ const statusConfig: Record<ProjectStatus, { color: string; icon: React.ReactNode
 function ProjectCard({
   project,
   onClick,
+  onDelete,
 }: {
   project: typeof mockProjects[0]
   onClick: () => void
+  onDelete?: (project: typeof mockProjects[0]) => void
 }) {
   const status = statusConfig[project.status]
   const completionPercent = project.tasks_count > 0
@@ -298,10 +312,25 @@ function ProjectCard({
               {project.team_members.length}
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-7 text-xs">
-            View Details
-            <ChevronRight className="h-3.5 w-3.5 ml-1" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {project.status === 'cancelled' && onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(project)
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" className="h-7 text-xs">
+              View Details
+              <ChevronRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -556,6 +585,33 @@ export default function ProjectsPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [selectedProject, setSelectedProject] = useState<typeof mockProjects[0] | null>(null)
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
+  const [localProjects, setLocalProjects] = useState<typeof mockProjects>(mockProjects)
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [projectToDelete, setProjectToDelete] = useState<typeof mockProjects[0] | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const deleteApi = useApi()
+
+  const handleDeleteClick = (project: typeof mockProjects[0]) => {
+    setProjectToDelete(project)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!projectToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/projects/${projectToDelete.id}`)
+      setLocalProjects(localProjects.filter(p => p.id !== projectToDelete.id))
+      setDeleteDialogOpen(false)
+      setProjectToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete project:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const { data: projectsData, isLoading: projectsLoading, error: projectsError, get: getProjects } = useApi<ProjectListResponse>()
   const { data: dashboardData, isLoading: dashboardLoading, get: getDashboard } = useApi<ProjectDashboard>()
@@ -570,7 +626,14 @@ export default function ProjectsPage() {
     getDashboard('/projects/dashboard')
   }, [statusFilter, searchQuery, getProjects, getDashboard])
 
-  const projects = projectsData?.projects || mockProjects
+  // Sync API data to local state
+  useEffect(() => {
+    if (projectsData?.projects) {
+      setLocalProjects(projectsData.projects)
+    }
+  }, [projectsData])
+
+  const projects = localProjects
   const isLoading = projectsLoading || dashboardLoading
 
   const filteredProjects = projects.filter((project) => {
@@ -686,6 +749,7 @@ export default function ProjectsPage() {
             key={project.id}
             project={project}
             onClick={() => handleProjectClick(project)}
+            onDelete={handleDeleteClick}
           />
         ))}
       </div>
@@ -704,6 +768,39 @@ export default function ProjectsPage() {
         open={detailDialogOpen}
         onOpenChange={setDetailDialogOpen}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Project
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the project <strong>{projectToDelete?.name}</strong>?
+              This will remove all associated tasks and milestones. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

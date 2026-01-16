@@ -28,6 +28,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -35,6 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useApi, useToast } from "@/hooks";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -57,7 +68,44 @@ import {
   FileText,
   Users,
   Eye,
+  Trash2,
+  Loader2,
 } from "lucide-react";
+
+// TypeScript interfaces
+interface ComplianceRequirement {
+  id: string;
+  name: string;
+  category: string;
+  act: string;
+  frequency: string;
+  dueDate: string;
+  status: string;
+  entity: string;
+  riskLevel: string;
+}
+
+interface ComplianceTask {
+  id: string;
+  requirementId: string;
+  requirementName: string;
+  task: string;
+  assignee: string;
+  dueDate: string;
+  status: string;
+  priority: string;
+}
+
+interface Audit {
+  id: string;
+  name: string;
+  type: string;
+  auditor: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  findings: number;
+}
 
 // Mock data for compliance requirements
 const complianceRequirements = [
@@ -191,6 +239,61 @@ export default function CompliancePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  // Local state for data management
+  const [requirements, setRequirements] = useState<ComplianceRequirement[]>(complianceRequirements);
+  const [tasks, setTasks] = useState<ComplianceTask[]>(complianceTasks);
+  const [auditList, setAuditList] = useState<Audit[]>(audits);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: "requirement" | "task" | "audit"; item: ComplianceRequirement | ComplianceTask | Audit } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (type: "requirement" | "task" | "audit", item: ComplianceRequirement | ComplianceTask | Audit) => {
+    setItemToDelete({ type, item });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      const endpoint = itemToDelete.type === "requirement"
+        ? `/compliance/requirements/${itemToDelete.item.id}`
+        : itemToDelete.type === "task"
+        ? `/compliance/tasks/${itemToDelete.item.id}`
+        : `/compliance/audits/${itemToDelete.item.id}`;
+
+      await deleteApi.delete(endpoint);
+
+      if (itemToDelete.type === "requirement") {
+        setRequirements(requirements.filter(r => r.id !== itemToDelete.item.id));
+      } else if (itemToDelete.type === "task") {
+        setTasks(tasks.filter(t => t.id !== itemToDelete.item.id));
+      } else {
+        setAuditList(auditList.filter(a => a.id !== itemToDelete.item.id));
+      }
+
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+      showToast("success", `${itemToDelete.type.charAt(0).toUpperCase() + itemToDelete.type.slice(1)} deleted successfully`);
+    } catch (error) {
+      console.error(`Failed to delete ${itemToDelete.type}:`, error);
+      showToast("error", `Failed to delete ${itemToDelete.type}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const getDeleteItemName = () => {
+    if (!itemToDelete) return "";
+    return (itemToDelete.item as ComplianceRequirement).name ||
+           (itemToDelete.item as ComplianceTask).task ||
+           (itemToDelete.item as Audit).name;
+  };
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -212,7 +315,7 @@ export default function CompliancePage() {
     return styles[risk] || "bg-gray-100 text-gray-800";
   };
 
-  const filteredRequirements = complianceRequirements.filter((req) => {
+  const filteredRequirements = requirements.filter((req) => {
     const matchesSearch =
       req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       req.act.toLowerCase().includes(searchTerm.toLowerCase());
@@ -225,10 +328,10 @@ export default function CompliancePage() {
 
   // Dashboard stats
   const stats = {
-    totalRequirements: complianceRequirements.length,
-    completed: complianceRequirements.filter((r) => r.status === "completed").length,
-    pending: complianceRequirements.filter((r) => r.status === "pending").length,
-    overdue: complianceRequirements.filter((r) => r.status === "overdue").length,
+    totalRequirements: requirements.length,
+    completed: requirements.filter((r) => r.status === "completed").length,
+    pending: requirements.filter((r) => r.status === "pending").length,
+    overdue: requirements.filter((r) => r.status === "overdue").length,
     complianceRate: 85,
   };
 
@@ -503,7 +606,7 @@ export default function CompliancePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {complianceRequirements
+                  {requirements
                     .filter((r) => r.status !== "completed")
                     .slice(0, 5)
                     .map((req) => (
@@ -603,9 +706,21 @@ export default function CompliancePage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {req.status === "completed" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick("requirement", req)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -636,7 +751,7 @@ export default function CompliancePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {complianceTasks.map((task) => (
+                  {tasks.map((task) => (
                     <TableRow key={task.id}>
                       <TableCell className="font-medium">{task.task}</TableCell>
                       <TableCell>{task.requirementName}</TableCell>
@@ -661,9 +776,21 @@ export default function CompliancePage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {task.status === "completed" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteClick("task", task)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -748,7 +875,7 @@ export default function CompliancePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {audits.map((audit) => (
+                {auditList.map((audit) => (
                   <TableRow key={audit.id}>
                     <TableCell className="font-medium">{audit.name}</TableCell>
                     <TableCell className="capitalize">{audit.type}</TableCell>
@@ -768,9 +895,21 @@ export default function CompliancePage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {audit.status === "completed" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick("audit", audit)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -795,6 +934,39 @@ export default function CompliancePage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete {itemToDelete?.type === "requirement" ? "Requirement" : itemToDelete?.type === "task" ? "Task" : "Audit"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{getDeleteItemName()}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

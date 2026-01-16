@@ -39,6 +39,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { useApi, useToast } from '@/hooks'
+import {
   Megaphone,
   Plus,
   MoreHorizontal,
@@ -54,6 +65,7 @@ import {
   AlertTriangle,
   Send,
   Clock,
+  Loader2,
 } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 
@@ -175,6 +187,13 @@ export default function AnnouncementsPage() {
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
   const [filterType, setFilterType] = useState<AnnouncementType | 'all'>('all')
+  const { showToast } = useToast()
+  const deleteApi = useApi()
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // New announcement form state
   const [formData, setFormData] = useState({
@@ -221,8 +240,26 @@ export default function AnnouncementsPage() {
     ))
   }
 
-  const handleDelete = (id: string) => {
-    setAnnouncements(announcements.filter(a => a.id !== id))
+  const handleDeleteClick = (announcement: Announcement) => {
+    setAnnouncementToDelete(announcement)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!announcementToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/superadmin/announcements/${announcementToDelete.id}`)
+      setAnnouncements(announcements.filter(a => a.id !== announcementToDelete.id))
+      setDeleteDialogOpen(false)
+      setAnnouncementToDelete(null)
+      showToast("success", "Announcement deleted successfully")
+    } catch (error) {
+      console.error("Failed to delete announcement:", error)
+      showToast("error", "Failed to delete announcement")
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const resetForm = () => {
@@ -568,7 +605,7 @@ export default function AnnouncementsPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-red-600"
-                            onClick={() => handleDelete(announcement.id)}
+                            onClick={() => handleDeleteClick(announcement)}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
@@ -633,6 +670,39 @@ export default function AnnouncementsPage() {
           })}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Announcement
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{announcementToDelete?.title}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

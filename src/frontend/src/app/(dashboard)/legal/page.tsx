@@ -36,6 +36,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useApi, useToast } from "@/hooks";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
@@ -62,6 +73,8 @@ import {
   TrendingUp,
   BarChart3,
   UserCheck,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 
 const CASE_TYPES = [
@@ -108,6 +121,35 @@ const PRIORITIES = [
   { value: "medium", label: "Medium", color: "bg-yellow-500" },
   { value: "low", label: "Low", color: "bg-green-500" },
 ];
+
+// TypeScript interfaces
+interface LegalCase {
+  id: string;
+  case_number: string;
+  case_title: string;
+  case_type: string;
+  status: string;
+  priority: string;
+  court_level: string;
+  court_name: string;
+  our_role: string;
+  opposing_party: string;
+  claim_amount: number;
+  next_hearing_date: string;
+  external_counsel: string;
+}
+
+interface Contract {
+  id: string;
+  contract_number: string;
+  title: string;
+  contract_type: string;
+  party_name: string;
+  status: string;
+  effective_date: string;
+  expiry_date: string;
+  contract_value: number;
+}
 
 // Mock data
 const mockDashboardStats = {
@@ -280,6 +322,57 @@ export default function LegalManagementPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isCaseDialogOpen, setIsCaseDialogOpen] = useState(false);
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  // Local state for data management
+  const [cases, setCases] = useState<LegalCase[]>(mockCases);
+  const [contracts, setContracts] = useState<Contract[]>(mockContracts);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: "case" | "contract"; item: LegalCase | Contract } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (type: "case" | "contract", item: LegalCase | Contract) => {
+    setItemToDelete({ type, item });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      const endpoint = itemToDelete.type === "case"
+        ? `/legal/cases/${itemToDelete.item.id}`
+        : `/legal/contracts/${itemToDelete.item.id}`;
+
+      await deleteApi.delete(endpoint);
+
+      if (itemToDelete.type === "case") {
+        setCases(cases.filter(c => c.id !== itemToDelete.item.id));
+      } else {
+        setContracts(contracts.filter(c => c.id !== itemToDelete.item.id));
+      }
+
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+      showToast("success", `${itemToDelete.type === "case" ? "Case" : "Contract"} deleted successfully`);
+    } catch (error) {
+      console.error(`Failed to delete ${itemToDelete.type}:`, error);
+      showToast("error", `Failed to delete ${itemToDelete.type}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const getDeleteItemName = () => {
+    if (!itemToDelete) return "";
+    if (itemToDelete.type === "case") {
+      return (itemToDelete.item as LegalCase).case_number;
+    }
+    return (itemToDelete.item as Contract).contract_number;
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -715,7 +808,7 @@ export default function LegalManagementPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockCases.map((legalCase) => (
+                  {cases.map((legalCase) => (
                     <TableRow key={legalCase.id}>
                       <TableCell className="font-medium">{legalCase.case_number}</TableCell>
                       <TableCell>
@@ -751,6 +844,16 @@ export default function LegalManagementPage() {
                           <Button variant="ghost" size="icon">
                             <Edit className="h-4 w-4" />
                           </Button>
+                          {(legalCase.status === "closed" || legalCase.status === "dismissed" || legalCase.status === "settled") && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteClick("case", legalCase)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1019,7 +1122,7 @@ export default function LegalManagementPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockContracts.map((contract) => (
+                  {contracts.map((contract) => (
                     <TableRow key={contract.id}>
                       <TableCell className="font-medium">{contract.contract_number}</TableCell>
                       <TableCell>{contract.title}</TableCell>
@@ -1042,7 +1145,9 @@ export default function LegalManagementPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Badge className="bg-green-500">{contract.status}</Badge>
+                        <Badge className={contract.status === "active" ? "bg-green-500" : contract.status === "expired" ? "bg-red-500" : "bg-gray-500"}>
+                          {contract.status}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -1052,6 +1157,16 @@ export default function LegalManagementPage() {
                           <Button variant="ghost" size="icon">
                             <Edit className="h-4 w-4" />
                           </Button>
+                          {(contract.status === "expired" || contract.status === "terminated") && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteClick("contract", contract)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1172,6 +1287,39 @@ export default function LegalManagementPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete {itemToDelete?.type === "case" ? "Case" : "Contract"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{getDeleteItemName()}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

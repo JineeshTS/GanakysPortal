@@ -31,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useApi, useToast } from "@/hooks";
 import {
   ArrowLeft,
   Search,
@@ -43,10 +44,31 @@ import {
   Globe,
   User,
   RefreshCw,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 
+// Types
+interface Session {
+  id: string;
+  userName: string;
+  userEmail: string;
+  deviceType: string;
+  deviceOs: string;
+  deviceBrowser: string;
+  ipAddress: string;
+  geoCountry: string;
+  geoCity: string;
+  createdAt: string;
+  lastActivityAt: string;
+  expiresAt: string;
+  isActive: boolean;
+  mfaVerified: boolean;
+  isCurrent: boolean;
+}
+
 // Mock session data
-const sessions = [
+const mockSessions: Session[] = [
   {
     id: "1",
     userName: "Amit Patel",
@@ -135,12 +157,53 @@ const sessions = [
 ];
 
 export default function SessionsPage() {
+  const [sessions, setSessions] = useState<Session[]>(mockSessions);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
   const [deviceFilter, setDeviceFilter] = useState("all");
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
-  const [selectedSession, setSelectedSession] = useState<typeof sessions[0] | null>(null);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [revokeAllDialogOpen, setRevokeAllDialogOpen] = useState(false);
+  const { showToast } = useToast();
+  const revokeApi = useApi();
+
+  // Revoke states
+  const [isRevoking, setIsRevoking] = useState(false);
+  const [isRevokingAll, setIsRevokingAll] = useState(false);
+
+  const handleRevokeConfirm = async () => {
+    if (!selectedSession) return;
+    setIsRevoking(true);
+    try {
+      await revokeApi.post(`/security/sessions/${selectedSession.id}/revoke`);
+      setSessions(sessions.map(s =>
+        s.id === selectedSession.id ? { ...s, isActive: false } : s
+      ));
+      setRevokeDialogOpen(false);
+      setSelectedSession(null);
+      showToast("success", "Session revoked successfully");
+    } catch (error) {
+      console.error("Failed to revoke session:", error);
+      showToast("error", "Failed to revoke session");
+    } finally {
+      setIsRevoking(false);
+    }
+  };
+
+  const handleRevokeAllConfirm = async () => {
+    setIsRevokingAll(true);
+    try {
+      await revokeApi.post("/security/sessions/revoke-all");
+      setSessions(sessions.map(s => s.isCurrent ? s : { ...s, isActive: false }));
+      setRevokeAllDialogOpen(false);
+      showToast("success", "All other sessions revoked successfully");
+    } catch (error) {
+      console.error("Failed to revoke all sessions:", error);
+      showToast("error", "Failed to revoke all sessions");
+    } finally {
+      setIsRevokingAll(false);
+    }
+  };
 
   const getDeviceIcon = (deviceType: string) => {
     switch (deviceType) {
@@ -196,7 +259,7 @@ export default function SessionsPage() {
     return matchesSearch && matchesStatus && matchesDevice;
   });
 
-  const handleRevokeSession = (session: typeof sessions[0]) => {
+  const handleRevokeSession = (session: Session) => {
     setSelectedSession(session);
     setRevokeDialogOpen(true);
   };
@@ -422,7 +485,10 @@ export default function SessionsPage() {
       <AlertDialog open={revokeDialogOpen} onOpenChange={setRevokeDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revoke Session</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Revoke Session
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to revoke this session? The user will be logged out
               immediately.
@@ -438,9 +504,20 @@ export default function SessionsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700">
-              Revoke Session
+            <AlertDialogCancel disabled={isRevoking}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRevokeConfirm}
+              disabled={isRevoking}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isRevoking ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Revoking...
+                </>
+              ) : (
+                "Revoke Session"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -450,16 +527,30 @@ export default function SessionsPage() {
       <AlertDialog open={revokeAllDialogOpen} onOpenChange={setRevokeAllDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revoke All Sessions</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Revoke All Sessions
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to revoke all sessions except your current one?
               All users will be logged out immediately.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700">
-              Revoke All Sessions
+            <AlertDialogCancel disabled={isRevokingAll}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRevokeAllConfirm}
+              disabled={isRevokingAll}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isRevokingAll ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Revoking...
+                </>
+              ) : (
+                "Revoke All Sessions"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

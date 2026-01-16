@@ -2,13 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { useApi } from '@/hooks';
-import { Plus, Search, Filter, FileText, Send, Copy, MoreVertical, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Search, Filter, FileText, Send, Copy, MoreVertical, Loader2, AlertCircle, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/page-header';
 import { DataTable } from '@/components/layout/data-table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // API Response interfaces
 interface Quotation {
@@ -76,6 +86,33 @@ const statusColors: Record<string, string> = {
 
 export default function QuotationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [localQuotations, setLocalQuotations] = useState<Quotation[]>([]);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [quotationToDelete, setQuotationToDelete] = useState<Quotation | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteApi = useApi();
+
+  const handleDeleteClick = (quotation: Quotation) => {
+    setQuotationToDelete(quotation);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!quotationToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/quotations/${quotationToDelete.id}`);
+      setLocalQuotations(localQuotations.filter(q => q.id !== quotationToDelete.id));
+      setDeleteDialogOpen(false);
+      setQuotationToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete quotation:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const { data: quotationsData, isLoading, error, get } = useApi<QuotationsListResponse>();
 
@@ -86,7 +123,14 @@ export default function QuotationsPage() {
     get(`/quotations?${params.toString()}`);
   }, [searchQuery, get]);
 
-  const quotations = quotationsData?.quotations || sampleQuotations;
+  // Sync API data to local state
+  useEffect(() => {
+    if (quotationsData?.quotations) {
+      setLocalQuotations(quotationsData.quotations);
+    }
+  }, [quotationsData]);
+
+  const quotations = localQuotations.length ? localQuotations : sampleQuotations;
 
   return (
     <div className="space-y-6">
@@ -178,6 +222,16 @@ export default function QuotationsPage() {
                     <Button variant="ghost" size="icon">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
+                    {quotation.status === 'expired' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteClick(quotation)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -185,6 +239,39 @@ export default function QuotationsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Quotation
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete quotation <strong>{quotationToDelete?.id}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

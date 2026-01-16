@@ -13,6 +13,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatDate, getFinancialYear } from '@/lib/format'
 import { useApi } from '@/hooks'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Calendar,
   CheckCircle,
   XCircle,
@@ -26,7 +36,9 @@ import {
   Users,
   ArrowRight,
   FileText,
-  Loader2
+  Loader2,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react'
 import type { LeaveRequest, LeaveStatus, LeaveBalance } from '@/types'
 
@@ -57,6 +69,13 @@ interface HolidayApiResponse {
     is_mandatory: boolean
   }[]
   total: number
+}
+
+interface LeaveRequestsApiResponse {
+  items: LeaveRequest[]
+  total: number
+  page: number
+  page_size: number
 }
 
 // ============================================================================
@@ -172,15 +191,22 @@ const leaveStats = {
 // ============================================================================
 
 export default function LeavePage() {
-  const [requests, setRequests] = React.useState(mockLeaveRequests)
+  const [requests, setRequests] = React.useState<LeaveRequest[]>(mockLeaveRequests)
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [leaveBalances, setLeaveBalances] = React.useState<LeaveBalance[]>(mockLeaveBalances)
   const [holidays, setHolidays] = React.useState(mockHolidays)
   const [isLoading, setIsLoading] = React.useState(true)
   const isManager = true // Mock - would come from auth context
 
+  // Delete/Cancel state
+  const [cancelDialogOpen, setCancelDialogOpen] = React.useState(false)
+  const [requestToCancel, setRequestToCancel] = React.useState<LeaveRequest | null>(null)
+  const [isCancelling, setIsCancelling] = React.useState(false)
+
   const balanceApi = useApi<LeaveBalanceApiResponse>()
   const holidayApi = useApi<HolidayApiResponse>()
+  const requestsApi = useApi<LeaveRequestsApiResponse>()
+  const cancelApi = useApi()
 
   // Fetch data from API
   React.useEffect(() => {
@@ -215,6 +241,12 @@ export default function LeavePage() {
           }))
           setHolidays(mappedHolidays)
         }
+
+        // Fetch leave requests
+        const requestsResult = await requestsApi.get('/leave/requests')
+        if (requestsResult && requestsResult.items && requestsResult.items.length > 0) {
+          setRequests(requestsResult.items)
+        }
       } catch (error) {
         console.error('Failed to fetch leave data:', error)
       } finally {
@@ -224,6 +256,30 @@ export default function LeavePage() {
 
     fetchData()
   }, [])
+
+  // Cancel leave request handlers
+  const handleCancelClick = (request: LeaveRequest, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setRequestToCancel(request)
+    setCancelDialogOpen(true)
+  }
+
+  const handleCancelConfirm = async () => {
+    if (!requestToCancel) return
+    setIsCancelling(true)
+    try {
+      await cancelApi.delete(`/leave/requests/${requestToCancel.id}`)
+      setRequests(requests.map(r =>
+        r.id === requestToCancel.id ? { ...r, status: 'cancelled' as LeaveStatus } : r
+      ))
+      setCancelDialogOpen(false)
+      setRequestToCancel(null)
+    } catch (error) {
+      console.error('Failed to cancel leave request:', error)
+    } finally {
+      setIsCancelling(false)
+    }
+  }
 
   const filteredRequests = React.useMemo(() => {
     if (statusFilter === 'all') return requests
@@ -361,32 +417,49 @@ export default function LeavePage() {
     {
       key: 'actions',
       header: '',
-      accessor: (row) => row.status === 'pending' ? (
+      accessor: (row) => (
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleApprove(row.id)
-            }}
-          >
-            <CheckCircle className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleReject(row.id)
-            }}
-          >
-            <XCircle className="h-4 w-4" />
-          </Button>
+          {row.status === 'pending' && isManager && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleApprove(row.id)
+                }}
+                title="Approve"
+              >
+                <CheckCircle className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleReject(row.id)
+                }}
+                title="Reject"
+              >
+                <XCircle className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          {(row.status === 'pending' || row.status === 'approved') && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-600 hover:text-red-700 hover:bg-red-50"
+              onClick={(e) => handleCancelClick(row, e)}
+              title="Cancel Leave"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-      ) : null
+      )
     }
   ]
 
@@ -728,6 +801,42 @@ export default function LeavePage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Cancel Leave Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Cancel Leave Request
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel the leave request for{' '}
+              <strong>
+                {requestToCancel ? `${requestToCancel.employee_name} (${requestToCancel.leave_type_name})` : ''}
+              </strong>
+              ? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>Keep Request</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelConfirm}
+              disabled={isCancelling}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isCancelling ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cancelling...
+                </>
+              ) : (
+                'Cancel Leave'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

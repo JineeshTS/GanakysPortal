@@ -12,6 +12,17 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatCurrency, formatCurrencySmart, getMonthName, formatDate } from '@/lib/format'
+import { useApi } from '@/hooks/use-api'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Play,
   Download,
@@ -31,15 +42,18 @@ import {
   ArrowUpRight,
   Eye,
   BarChart3,
-  Bell
+  Bell,
+  Trash2,
+  AlertTriangle,
+  Loader2
 } from 'lucide-react'
 import type { PayrollRun, PayrollStatus } from '@/types'
 
 // ============================================================================
-// Mock Data
+// Default/Fallback Data
 // ============================================================================
 
-const mockPayrollRuns: PayrollRun[] = [
+const defaultPayrollRuns: PayrollRun[] = [
   {
     id: '1',
     company_id: '1',
@@ -94,23 +108,23 @@ const mockPayrollRuns: PayrollRun[] = [
   }
 ]
 
-// Current month comprehensive stats
-const currentMonthStats = {
+// Default stats when no API data
+const defaultStats = {
   totalEmployees: 47,
   grossSalary: 1895000,
-  pfContribution: 227400, // 12% of basic
-  esiContribution: 75800, // 3.25% employer + 0.75% employee
+  pfContribution: 227400,
+  esiContribution: 75800,
   ptDeduction: 9400,
   tdsDeduction: 156200,
   totalDeductions: 468800,
   netPayable: 1426200,
   employerPF: 227400,
-  employerESI: 61587, // 3.25% of gross (for eligible)
+  employerESI: 61587,
   totalCTC: 2183987
 }
 
 // Quick stats for dashboard cards
-const quickStats = {
+const defaultQuickStats = {
   pendingApprovals: 2,
   pendingReimbursements: 15,
   taxDeclarationsDue: 8,
@@ -118,12 +132,20 @@ const quickStats = {
 }
 
 // Upcoming compliance dates
-const complianceDates = [
+const defaultComplianceDates = [
   { title: 'PF Payment Due', date: '2026-01-15', type: 'pf', amount: 454800 },
   { title: 'ESI Payment Due', date: '2026-01-15', type: 'esi', amount: 75800 },
   { title: 'TDS Payment Due', date: '2026-01-07', type: 'tds', amount: 156200 },
   { title: 'PT Payment Due', date: '2026-01-15', type: 'pt', amount: 9400 }
 ]
+
+// API Response interface
+interface PayrollRunsResponse {
+  items: PayrollRun[]
+  total: number
+  page: number
+  page_size: number
+}
 
 // ============================================================================
 // Component
@@ -134,11 +156,67 @@ export default function PayrollPage() {
   const currentDate = new Date()
   const [selectedMonth, setSelectedMonth] = React.useState(currentDate.getMonth() + 1)
   const [selectedYear, setSelectedYear] = React.useState(currentDate.getFullYear())
-  const [payrollRuns] = React.useState(mockPayrollRuns)
+  const [payrollRuns, setPayrollRuns] = React.useState<PayrollRun[]>(defaultPayrollRuns)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [currentMonthStats, setCurrentMonthStats] = React.useState(defaultStats)
+  const [quickStats, setQuickStats] = React.useState(defaultQuickStats)
+  const [complianceDates, setComplianceDates] = React.useState(defaultComplianceDates)
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [runToDelete, setRunToDelete] = React.useState<PayrollRun | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+
+  // API hooks
+  const api = useApi<PayrollRunsResponse>()
+  const deleteApi = useApi()
+
+  // Fetch payroll runs from API
+  React.useEffect(() => {
+    const fetchPayrollRuns = async () => {
+      setIsLoading(true)
+      try {
+        const companyId = '00000000-0000-0000-0000-000000000001' // Default company ID
+        const response = await api.get(`/payroll/runs?company_id=${companyId}`)
+        if (response && response.items && response.items.length > 0) {
+          setPayrollRuns(response.items)
+        }
+        // If API returns empty, keep default data for demo
+      } catch (error) {
+        console.error('Failed to fetch payroll runs:', error)
+        // Keep default data on error
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchPayrollRuns()
+  }, [])
 
   const currentRun = payrollRuns.find(
     run => run.month === selectedMonth && run.year === selectedYear
   )
+
+  // Delete handlers
+  const handleDeleteClick = (run: PayrollRun, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setRunToDelete(run)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!runToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/payroll/runs/${runToDelete.id}`)
+      setPayrollRuns(payrollRuns.filter(run => run.id !== runToDelete.id))
+      setDeleteDialogOpen(false)
+      setRunToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete payroll run:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // Dashboard Stats
   const stats = [
@@ -243,6 +321,16 @@ export default function PayrollPage() {
               <Eye className="h-4 w-4" />
             </Link>
           </Button>
+          {row.status === 'draft' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={(e) => handleDeleteClick(row, e)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       )
     }
@@ -629,15 +717,57 @@ export default function PayrollPage() {
               <CardDescription>Previous payroll runs</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable
-                data={payrollRuns}
-                columns={columns}
-                keyExtractor={(row) => row.id}
-              />
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <DataTable
+                  data={payrollRuns}
+                  columns={columns}
+                  keyExtractor={(row) => row.id}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Payroll Run
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the payroll run for{' '}
+              <strong>
+                {runToDelete ? `${getMonthName(runToDelete.month)} ${runToDelete.year}` : ''}
+              </strong>
+              ? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

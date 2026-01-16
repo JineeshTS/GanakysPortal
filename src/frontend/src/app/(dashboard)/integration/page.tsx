@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Link2, Webhook, RefreshCw, Database, CheckCircle, XCircle, Clock, MoreVertical, Loader2, Settings, Activity } from 'lucide-react';
+import { Plus, Search, Link2, Webhook, RefreshCw, Database, CheckCircle, XCircle, Clock, MoreVertical, Loader2, Settings, Activity, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,17 @@ import { PageHeader } from '@/components/layout/page-header';
 import { StatCard } from '@/components/layout/stat-card';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useApi } from '@/hooks';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useApi, useToast } from '@/hooks';
 
 interface Connector {
   id: string;
@@ -65,9 +75,20 @@ const providerIcons: Record<string, string> = {
 
 export default function IntegrationPage() {
   const [activeTab, setActiveTab] = useState('connectors');
+  const { showToast } = useToast();
+  const deleteApi = useApi();
   const { data: connectorsData, isLoading: connectorsLoading, get: getConnectors } = useApi<{ data: Connector[] }>();
   const { data: webhooksData, isLoading: webhooksLoading, get: getWebhooks } = useApi<{ data: WebhookConfig[] }>();
   const { data: syncJobsData, isLoading: syncJobsLoading, get: getSyncJobs } = useApi<{ data: SyncJob[] }>();
+
+  // Local state for data management
+  const [localConnectors, setLocalConnectors] = useState<Connector[]>([]);
+  const [localWebhooks, setLocalWebhooks] = useState<WebhookConfig[]>([]);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: string; item: Connector | WebhookConfig } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     getConnectors('/integration/connectors');
@@ -75,8 +96,52 @@ export default function IntegrationPage() {
     getSyncJobs('/integration/sync/jobs');
   }, [getConnectors, getWebhooks, getSyncJobs]);
 
-  const connectors = connectorsData?.data || [];
-  const webhooks = webhooksData?.data || [];
+  useEffect(() => {
+    if (connectorsData?.data) {
+      setLocalConnectors(connectorsData.data);
+    }
+  }, [connectorsData]);
+
+  useEffect(() => {
+    if (webhooksData?.data) {
+      setLocalWebhooks(webhooksData.data);
+    }
+  }, [webhooksData]);
+
+  const handleDeleteClick = (type: string, item: Connector | WebhookConfig) => {
+    setItemToDelete({ type, item });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      const endpoint = itemToDelete.type === "connector"
+        ? `/integration/connectors/${itemToDelete.item.id}`
+        : `/integration/webhooks/${itemToDelete.item.id}`;
+
+      await deleteApi.delete(endpoint);
+
+      if (itemToDelete.type === "connector") {
+        setLocalConnectors(localConnectors.filter(c => c.id !== itemToDelete.item.id));
+      } else {
+        setLocalWebhooks(localWebhooks.filter(w => w.id !== itemToDelete.item.id));
+      }
+
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+      showToast("success", `${itemToDelete.type === "connector" ? "Connector" : "Webhook"} deleted successfully`);
+    } catch (error) {
+      console.error("Failed to delete:", error);
+      showToast("error", `Failed to delete ${itemToDelete.type}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const connectors = localConnectors.length ? localConnectors : connectorsData?.data || [];
+  const webhooks = localWebhooks.length ? localWebhooks : webhooksData?.data || [];
   const syncJobs = syncJobsData?.data || [];
   const isLoading = connectorsLoading || webhooksLoading || syncJobsLoading;
 
@@ -183,6 +248,19 @@ export default function IntegrationPage() {
                     <Button size="sm" variant="ghost">
                       <Settings className="h-3 w-3" />
                     </Button>
+                    {connector.status === 'disconnected' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick('connector', connector);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -224,9 +302,21 @@ export default function IntegrationPage() {
                       </Badge>
                     </td>
                     <td className="p-4 text-right">
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                        {webhook.status === 'inactive' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick('webhook', webhook)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -305,6 +395,40 @@ export default function IntegrationPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete {itemToDelete?.type === 'connector' ? 'Connector' : 'Webhook'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{' '}
+              <strong>{itemToDelete?.item.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

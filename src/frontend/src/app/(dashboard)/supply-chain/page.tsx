@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Warehouse, Truck, Package, Users, TrendingUp, AlertTriangle, MoreVertical, Loader2, BarChart3 } from 'lucide-react';
+import { Plus, Search, Warehouse, Truck, Package, Users, TrendingUp, AlertTriangle, MoreVertical, Loader2, BarChart3, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,17 @@ import { PageHeader } from '@/components/layout/page-header';
 import { StatCard } from '@/components/layout/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useApi } from '@/hooks';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useApi, useToast } from '@/hooks';
 import { formatCurrency } from '@/lib/format';
 
 interface WarehouseSummary {
@@ -65,9 +75,49 @@ const tierColors: Record<string, string> = {
 export default function SupplyChainPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('warehouses');
+  const { showToast } = useToast();
   const { data: warehousesData, isLoading: warehousesLoading, get: getWarehouses } = useApi<{ data: WarehouseSummary[] }>();
   const { data: suppliersData, isLoading: suppliersLoading, get: getSuppliers } = useApi<{ data: SupplierSummary[] }>();
   const { data: transfersData, isLoading: transfersLoading, get: getTransfers } = useApi<{ data: TransferSummary[] }>();
+  const deleteApi = useApi();
+
+  // Local state for data management
+  const [localWarehouses, setLocalWarehouses] = useState<WarehouseSummary[]>([]);
+  const [localSuppliers, setLocalSuppliers] = useState<SupplierSummary[]>([]);
+  const [localTransfers, setLocalTransfers] = useState<TransferSummary[]>([]);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: string; item: WarehouseSummary | SupplierSummary | TransferSummary } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (type: string, item: WarehouseSummary | SupplierSummary | TransferSummary) => {
+    setItemToDelete({ type, item });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/supply-chain/${itemToDelete.type}/${itemToDelete.item.id}`);
+      if (itemToDelete.type === 'warehouses') {
+        setLocalWarehouses(localWarehouses.filter(w => w.id !== itemToDelete.item.id));
+      } else if (itemToDelete.type === 'suppliers') {
+        setLocalSuppliers(localSuppliers.filter(s => s.id !== itemToDelete.item.id));
+      } else if (itemToDelete.type === 'transfers') {
+        setLocalTransfers(localTransfers.filter(t => t.id !== itemToDelete.item.id));
+      }
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+      showToast('success', `${itemToDelete.type.slice(0, -1)} deleted successfully`);
+    } catch (error) {
+      console.error('Failed to delete:', error);
+      showToast('error', 'Failed to delete');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     getWarehouses('/supply-chain/warehouses');
@@ -75,9 +125,20 @@ export default function SupplyChainPage() {
     getTransfers('/supply-chain/transfers');
   }, [getWarehouses, getSuppliers, getTransfers]);
 
-  const warehouses = warehousesData?.data || [];
-  const suppliers = suppliersData?.data || [];
-  const transfers = transfersData?.data || [];
+  // Sync API data to local state
+  useEffect(() => {
+    if (warehousesData?.data) setLocalWarehouses(warehousesData.data);
+  }, [warehousesData]);
+  useEffect(() => {
+    if (suppliersData?.data) setLocalSuppliers(suppliersData.data);
+  }, [suppliersData]);
+  useEffect(() => {
+    if (transfersData?.data) setLocalTransfers(transfersData.data);
+  }, [transfersData]);
+
+  const warehouses = localWarehouses.length > 0 ? localWarehouses : (warehousesData?.data || []);
+  const suppliers = localSuppliers.length > 0 ? localSuppliers : (suppliersData?.data || []);
+  const transfers = localTransfers.length > 0 ? localTransfers : (transfersData?.data || []);
   const isLoading = warehousesLoading || suppliersLoading || transfersLoading;
 
   const stats = {
@@ -246,9 +307,21 @@ export default function SupplyChainPage() {
                       </Badge>
                     </td>
                     <td className="p-4 text-right">
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                        {supplier.status === 'blacklisted' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick('suppliers', supplier)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -289,9 +362,21 @@ export default function SupplyChainPage() {
                     </td>
                     <td className="p-4 text-muted-foreground">{transfer.requested_date}</td>
                     <td className="p-4 text-right">
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                        {transfer.status === 'completed' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick('transfers', transfer)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -320,6 +405,39 @@ export default function SupplyChainPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete {itemToDelete?.type.slice(0, -1)}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this {itemToDelete?.type.slice(0, -1)}?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

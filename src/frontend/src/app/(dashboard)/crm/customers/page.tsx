@@ -10,6 +10,16 @@ import { Input } from '@/components/ui/input'
 import { formatCurrency, formatDate, formatPhone } from '@/lib/format'
 import { useApi } from '@/hooks'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Plus,
   Search,
   Users,
@@ -24,7 +34,9 @@ import {
   Edit,
   MoreHorizontal,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react'
 import type { Customer } from '@/types'
 
@@ -116,6 +128,32 @@ export default function CustomersPage() {
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'active' | 'inactive'>('all')
   const [isLoading, setIsLoading] = React.useState(true)
   const api = useApi()
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [customerToDelete, setCustomerToDelete] = React.useState<Customer | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const deleteApi = useApi()
+
+  const handleDeleteClick = (customer: Customer) => {
+    setCustomerToDelete(customer)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!customerToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/crm/customers/${customerToDelete.id}`)
+      setCustomers(customers.filter(c => c.id !== customerToDelete.id))
+      setDeleteDialogOpen(false)
+      setCustomerToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete customer:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   React.useEffect(() => {
     const fetchCustomers = async () => {
@@ -367,6 +405,16 @@ export default function CustomersPage() {
                           <Button variant="ghost" size="icon">
                             <Edit className="h-4 w-4" />
                           </Button>
+                          {!customer.is_active && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteClick(customer)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -384,6 +432,39 @@ export default function CustomersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Customer
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{customerToDelete?.name}</strong>?
+              This will remove all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

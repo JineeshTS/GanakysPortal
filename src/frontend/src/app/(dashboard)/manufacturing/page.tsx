@@ -28,6 +28,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -36,6 +46,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useApi, useToast } from "@/hooks";
 import {
   Factory,
   Cog,
@@ -55,6 +66,8 @@ import {
   Calendar,
   Eye,
   Settings,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 
 // Mock data
@@ -151,10 +164,55 @@ const boms = [
   },
 ];
 
+interface ProductionOrder {
+  id: string;
+  orderNumber: string;
+  product: string;
+  quantity: number;
+  completed: number;
+  status: string;
+  priority: string;
+  startDate: string;
+  endDate: string;
+  workCenter: string;
+}
+
 export default function ManufacturingPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  // Local state for production orders
+  const [orders, setOrders] = useState<ProductionOrder[]>(productionOrders);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<ProductionOrder | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (order: ProductionOrder) => {
+    setOrderToDelete(order);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!orderToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/manufacturing/orders/${orderToDelete.id}`);
+      setOrders(orders.filter(o => o.id !== orderToDelete.id));
+      setDeleteDialogOpen(false);
+      setOrderToDelete(null);
+      showToast("success", "Production order deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete order:", error);
+      showToast("error", "Failed to delete production order");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -181,7 +239,7 @@ export default function ManufacturingPage() {
     return styles[priority] || "bg-gray-100 text-gray-800";
   };
 
-  const filteredOrders = productionOrders.filter((order) => {
+  const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.product.toLowerCase().includes(searchTerm.toLowerCase());
@@ -547,6 +605,16 @@ export default function ManufacturingPage() {
                             <Pause className="h-4 w-4 text-yellow-500" />
                           </Button>
                         )}
+                        {(order.status === "completed" || order.status === "cancelled") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick(order)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -687,6 +755,39 @@ export default function ManufacturingPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Production Order Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Production Order
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete order <strong>{orderToDelete?.orderNumber}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

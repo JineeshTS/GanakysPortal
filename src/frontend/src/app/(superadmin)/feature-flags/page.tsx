@@ -47,6 +47,17 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { useApi, useToast } from '@/hooks'
+import {
   Flag,
   Plus,
   MoreHorizontal,
@@ -64,6 +75,8 @@ import {
   ToggleRight,
   Percent,
   AlertCircle,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -247,6 +260,13 @@ export default function FeatureFlagsPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [selectedFlag, setSelectedFlag] = useState<FeatureFlag | null>(null)
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false)
+  const { showToast } = useToast()
+  const deleteApi = useApi()
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [flagToDelete, setFlagToDelete] = useState<FeatureFlag | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -301,8 +321,26 @@ export default function FeatureFlagsPage() {
     resetForm()
   }
 
-  const handleDelete = (id: string) => {
-    setFlags(flags.filter(f => f.id !== id))
+  const handleDeleteClick = (flag: FeatureFlag) => {
+    setFlagToDelete(flag)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!flagToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/superadmin/feature-flags/${flagToDelete.id}`)
+      setFlags(flags.filter(f => f.id !== flagToDelete.id))
+      setDeleteDialogOpen(false)
+      setFlagToDelete(null)
+      showToast("success", "Feature flag deleted successfully")
+    } catch (error) {
+      console.error("Failed to delete feature flag:", error)
+      showToast("error", "Failed to delete feature flag")
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const resetForm = () => {
@@ -613,7 +651,7 @@ export default function FeatureFlagsPage() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-red-600"
-                              onClick={() => handleDelete(flag.id)}
+                              onClick={() => handleDeleteClick(flag)}
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete Flag
@@ -726,6 +764,39 @@ export default function FeatureFlagsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Feature Flag
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{flagToDelete?.name}</strong> ({flagToDelete?.key})?
+              This action cannot be undone and may affect tenants currently using this feature.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

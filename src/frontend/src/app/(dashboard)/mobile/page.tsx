@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Smartphone, Bell, RefreshCw, Shield, CheckCircle, XCircle, Clock, MoreVertical, Loader2, Tablet, Wifi, WifiOff } from 'lucide-react';
+import { Plus, Search, Smartphone, Bell, RefreshCw, Shield, CheckCircle, XCircle, Clock, MoreVertical, Loader2, Tablet, Wifi, WifiOff, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,17 @@ import { PageHeader } from '@/components/layout/page-header';
 import { StatCard } from '@/components/layout/stat-card';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useApi } from '@/hooks';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useApi, useToast } from '@/hooks';
 
 interface MobileDevice {
   id: string;
@@ -65,9 +75,19 @@ const platformIcons: Record<string, React.ReactNode> = {
 
 export default function MobilePage() {
   const [activeTab, setActiveTab] = useState('devices');
+  const { showToast } = useToast();
+  const deleteApi = useApi();
   const { data: devicesData, isLoading: devicesLoading, get: getDevices } = useApi<{ data: MobileDevice[] }>();
   const { data: notificationsData, isLoading: notificationsLoading, get: getNotifications } = useApi<{ data: PushNotification[] }>();
   const { data: offlineData, isLoading: offlineLoading, get: getOfflineActions } = useApi<{ data: OfflineAction[] }>();
+
+  // Local state for data management
+  const [localDevices, setLocalDevices] = useState<MobileDevice[]>([]);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deviceToDelete, setDeviceToDelete] = useState<MobileDevice | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     getDevices('/mobile/devices');
@@ -75,7 +95,35 @@ export default function MobilePage() {
     getOfflineActions('/mobile/offline/actions');
   }, [getDevices, getNotifications, getOfflineActions]);
 
-  const devices = devicesData?.data || [];
+  useEffect(() => {
+    if (devicesData?.data) {
+      setLocalDevices(devicesData.data);
+    }
+  }, [devicesData]);
+
+  const handleDeleteClick = (device: MobileDevice) => {
+    setDeviceToDelete(device);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deviceToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/mobile/devices/${deviceToDelete.id}`);
+      setLocalDevices(localDevices.filter(d => d.id !== deviceToDelete.id));
+      setDeleteDialogOpen(false);
+      setDeviceToDelete(null);
+      showToast("success", "Device deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete device:", error);
+      showToast("error", "Failed to delete device");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const devices = localDevices.length ? localDevices : devicesData?.data || [];
   const notifications = notificationsData?.data || [];
   const offlineActions = offlineData?.data || [];
   const isLoading = devicesLoading || notificationsLoading || offlineLoading;
@@ -193,9 +241,21 @@ export default function MobilePage() {
                       </Badge>
                     </td>
                     <td className="p-4 text-right">
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                        {device.status === 'blocked' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick(device)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -326,6 +386,39 @@ export default function MobilePage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Device Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Device
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deviceToDelete?.device_name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -12,6 +12,16 @@ import { Button } from '@/components/ui/button'
 import { formatDate, formatTime } from '@/lib/format'
 import { useApi } from '@/hooks'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Users,
   Clock,
   CheckCircle,
@@ -20,7 +30,10 @@ import {
   Download,
   Upload,
   MapPin,
-  Loader2
+  Loader2,
+  Trash2,
+  Edit,
+  AlertTriangle
 } from 'lucide-react'
 import type { AttendanceLog, AttendanceStatus } from '@/types'
 
@@ -150,8 +163,36 @@ export default function AttendancePage() {
   const [summary, setSummary] = React.useState<AttendanceSummaryResponse | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
 
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [recordToDelete, setRecordToDelete] = React.useState<AttendanceLog | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+
   const attendanceApi = useApi<AttendanceApiResponse>()
   const summaryApi = useApi<AttendanceSummaryResponse>()
+  const deleteApi = useApi()
+
+  // Delete handlers
+  const handleDeleteClick = (record: AttendanceLog, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setRecordToDelete(record)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!recordToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/attendance/${recordToDelete.id}`)
+      setAttendance(attendance.filter(a => a.id !== recordToDelete.id))
+      setDeleteDialogOpen(false)
+      setRecordToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete attendance record:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // Fetch attendance data
   React.useEffect(() => {
@@ -324,6 +365,23 @@ export default function AttendancePage() {
       key: 'source',
       header: 'Source',
       accessor: (row) => getSourceBadge(row.source)
+    },
+    {
+      key: 'actions',
+      header: '',
+      accessor: (row) => row.source === 'manual' || row.source === 'mobile' ? (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-600 hover:text-red-700 hover:bg-red-50"
+            onClick={(e) => handleDeleteClick(row, e)}
+            title="Delete Record"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : null
     }
   ]
 
@@ -480,6 +538,43 @@ export default function AttendancePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Attendance Record
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the attendance record for{' '}
+              <strong>
+                {recordToDelete ? employeeNames[recordToDelete.employee_id] || 'Unknown Employee' : ''}
+              </strong>
+              {' '}on {recordToDelete ? formatDate(recordToDelete.date) : ''}?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

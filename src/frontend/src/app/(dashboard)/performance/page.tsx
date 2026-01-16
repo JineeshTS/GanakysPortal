@@ -8,6 +8,17 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { useApi, useToast } from '@/hooks'
+import {
   Award,
   Plus,
   Target,
@@ -17,10 +28,32 @@ import {
   Users,
   CheckCircle,
   Clock,
-  MessageSquare
+  MessageSquare,
+  Trash2,
+  AlertTriangle,
+  Loader2
 } from 'lucide-react'
 
-const reviews = [
+interface Review {
+  id: string
+  employee: string
+  department: string
+  reviewer: string
+  status: string
+  rating: number | null
+  period: string
+}
+
+interface Goal {
+  id: string
+  title: string
+  employee: string
+  progress: number
+  dueDate: string
+  status: string
+}
+
+const initialReviews: Review[] = [
   { id: '1', employee: 'Rajesh Kumar', department: 'Engineering', reviewer: 'Suresh Iyer', status: 'completed', rating: 4.5, period: 'Q4 2025' },
   { id: '2', employee: 'Priya Sharma', department: 'HR', reviewer: 'Neha Gupta', status: 'in_progress', rating: null, period: 'Q4 2025' },
   { id: '3', employee: 'Amit Patel', department: 'Finance', reviewer: 'Arjun Mehta', status: 'pending', rating: null, period: 'Q4 2025' },
@@ -28,7 +61,7 @@ const reviews = [
   { id: '5', employee: 'Vikram Singh', department: 'Marketing', reviewer: 'Divya Krishnan', status: 'completed', rating: 4.2, period: 'Q4 2025' },
 ]
 
-const goals = [
+const initialGoals: Goal[] = [
   { id: '1', title: 'Increase sales by 20%', employee: 'Sneha Reddy', progress: 85, dueDate: '2026-03-31', status: 'on_track' },
   { id: '2', title: 'Complete AWS certification', employee: 'Rajesh Kumar', progress: 60, dueDate: '2026-02-28', status: 'on_track' },
   { id: '3', title: 'Reduce employee turnover to 10%', employee: 'Priya Sharma', progress: 45, dueDate: '2026-03-31', status: 'at_risk' },
@@ -47,6 +80,67 @@ const statusColors: Record<string, string> = {
 
 export default function PerformancePage() {
   const [activeTab, setActiveTab] = useState('reviews')
+  const { showToast } = useToast()
+
+  // Local state for data management
+  const [reviews, setReviews] = useState<Review[]>(initialReviews)
+  const [goals, setGoals] = useState<Goal[]>(initialGoals)
+
+  // Delete state for reviews
+  const [deleteReviewDialogOpen, setDeleteReviewDialogOpen] = useState(false)
+  const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null)
+  const [isDeletingReview, setIsDeletingReview] = useState(false)
+  const deleteReviewApi = useApi()
+
+  // Delete state for goals
+  const [deleteGoalDialogOpen, setDeleteGoalDialogOpen] = useState(false)
+  const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null)
+  const [isDeletingGoal, setIsDeletingGoal] = useState(false)
+  const deleteGoalApi = useApi()
+
+  const handleDeleteReviewClick = (review: Review) => {
+    setReviewToDelete(review)
+    setDeleteReviewDialogOpen(true)
+  }
+
+  const handleDeleteReviewConfirm = async () => {
+    if (!reviewToDelete) return
+    setIsDeletingReview(true)
+    try {
+      await deleteReviewApi.delete(`/performance/reviews/${reviewToDelete.id}`)
+      setReviews(reviews.filter(r => r.id !== reviewToDelete.id))
+      setDeleteReviewDialogOpen(false)
+      setReviewToDelete(null)
+      showToast('success', 'Review deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete review:', error)
+      showToast('error', 'Failed to delete review')
+    } finally {
+      setIsDeletingReview(false)
+    }
+  }
+
+  const handleDeleteGoalClick = (goal: Goal) => {
+    setGoalToDelete(goal)
+    setDeleteGoalDialogOpen(true)
+  }
+
+  const handleDeleteGoalConfirm = async () => {
+    if (!goalToDelete) return
+    setIsDeletingGoal(true)
+    try {
+      await deleteGoalApi.delete(`/performance/goals/${goalToDelete.id}`)
+      setGoals(goals.filter(g => g.id !== goalToDelete.id))
+      setDeleteGoalDialogOpen(false)
+      setGoalToDelete(null)
+      showToast('success', 'Goal deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete goal:', error)
+      showToast('error', 'Failed to delete goal')
+    } finally {
+      setIsDeletingGoal(false)
+    }
+  }
 
   const stats = {
     reviewsCompleted: reviews.filter(r => r.status === 'completed').length,
@@ -168,9 +262,21 @@ export default function PerformancePage() {
                           ) : '-'}
                         </td>
                         <td className="p-4 text-right">
-                          <Button variant="outline" size="sm">
-                            {review.status === 'completed' ? 'View' : 'Continue'}
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button variant="outline" size="sm">
+                              {review.status === 'completed' ? 'View' : 'Continue'}
+                            </Button>
+                            {review.status === 'completed' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleDeleteReviewClick(review)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -196,9 +302,21 @@ export default function PerformancePage() {
                         <h4 className="font-medium">{goal.title}</h4>
                         <p className="text-sm text-muted-foreground">{goal.employee}</p>
                       </div>
-                      <Badge className={statusColors[goal.status]}>
-                        {goal.status.replace('_', ' ')}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={statusColors[goal.status]}>
+                          {goal.status.replace('_', ' ')}
+                        </Badge>
+                        {goal.status === 'completed' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteGoalClick(goal)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex-1">
@@ -235,6 +353,72 @@ export default function PerformancePage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Review Confirmation Dialog */}
+      <AlertDialog open={deleteReviewDialogOpen} onOpenChange={setDeleteReviewDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Performance Review
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the performance review for <strong>{reviewToDelete?.employee}</strong> ({reviewToDelete?.period})?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingReview}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteReviewConfirm}
+              disabled={isDeletingReview}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingReview ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Goal Confirmation Dialog */}
+      <AlertDialog open={deleteGoalDialogOpen} onOpenChange={setDeleteGoalDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Goal
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the goal <strong>{goalToDelete?.title}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingGoal}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteGoalConfirm}
+              disabled={isDeletingGoal}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingGoal ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

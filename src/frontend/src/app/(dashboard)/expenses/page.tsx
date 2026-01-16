@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Receipt, CreditCard, Plane, Car, FileText, MoreVertical, Loader2, IndianRupee, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Receipt, CreditCard, Plane, Car, FileText, MoreVertical, Loader2, IndianRupee, CheckCircle, Clock, AlertTriangle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,16 @@ import { PageHeader } from '@/components/layout/page-header';
 import { StatCard } from '@/components/layout/stat-card';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useApi } from '@/hooks';
 import { formatCurrency } from '@/lib/format';
 
@@ -80,6 +90,34 @@ const categoryIcons: Record<string, React.ReactNode> = {
 export default function ExpensesPage() {
   const [activeTab, setActiveTab] = useState('claims');
   const [searchQuery, setSearchQuery] = useState('');
+  const [localClaims, setLocalClaims] = useState<ExpenseClaim[]>([]);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [claimToDelete, setClaimToDelete] = useState<ExpenseClaim | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteApi = useApi();
+
+  const handleDeleteClick = (claim: ExpenseClaim) => {
+    setClaimToDelete(claim);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!claimToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/expenses/claims/${claimToDelete.id}`);
+      setLocalClaims(localClaims.filter(c => c.id !== claimToDelete.id));
+      setDeleteDialogOpen(false);
+      setClaimToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete expense claim:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const { data: claimsData, isLoading: claimsLoading, get: getClaims } = useApi<{ data: ExpenseClaim[] }>();
   const { data: advancesData, isLoading: advancesLoading, get: getAdvances } = useApi<{ data: TravelAdvance[] }>();
   const { data: policiesData, isLoading: policiesLoading, get: getPolicies } = useApi<{ data: ExpensePolicy[] }>();
@@ -92,7 +130,14 @@ export default function ExpensesPage() {
     getMileage('/expenses/mileage');
   }, [getClaims, getAdvances, getPolicies, getMileage]);
 
-  const claims = claimsData?.data || [];
+  // Sync API data to local state
+  useEffect(() => {
+    if (claimsData?.data) {
+      setLocalClaims(claimsData.data);
+    }
+  }, [claimsData]);
+
+  const claims = localClaims;
   const advances = advancesData?.data || [];
   const policies = policiesData?.data || [];
   const mileage = mileageData?.data || [];
@@ -211,9 +256,21 @@ export default function ExpensesPage() {
                       </Badge>
                     </td>
                     <td className="p-4 text-right">
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                        {claim.status === 'rejected' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick(claim)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -375,6 +432,39 @@ export default function ExpensesPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Expense Claim
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete expense claim <strong>{claimToDelete?.claim_number}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

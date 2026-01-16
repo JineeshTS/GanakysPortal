@@ -8,6 +8,17 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { useApi, useToast } from '@/hooks'
+import {
   GraduationCap,
   Plus,
   BookOpen,
@@ -17,10 +28,32 @@ import {
   Calendar,
   Play,
   CheckCircle,
-  Star
+  Star,
+  Trash2,
+  AlertTriangle,
+  Loader2
 } from 'lucide-react'
 
-const courses = [
+interface Course {
+  id: string
+  title: string
+  category: string
+  duration: string
+  enrolled: number
+  completed: number
+  mandatory: boolean
+}
+
+interface Certification {
+  id: string
+  name: string
+  employee: string
+  status: string
+  expiry: string | null
+  issuer: string
+}
+
+const initialCourses: Course[] = [
   { id: '1', title: 'India Labour Law Compliance', category: 'Compliance', duration: '4 hours', enrolled: 45, completed: 38, mandatory: true },
   { id: '2', title: 'GST Filing Masterclass', category: 'Finance', duration: '6 hours', enrolled: 28, completed: 22, mandatory: true },
   { id: '3', title: 'Leadership Skills', category: 'Soft Skills', duration: '8 hours', enrolled: 15, completed: 8, mandatory: false },
@@ -29,7 +62,7 @@ const courses = [
   { id: '6', title: 'PF/ESI Regulations 2025', category: 'Compliance', duration: '2 hours', enrolled: 40, completed: 35, mandatory: true },
 ]
 
-const certifications = [
+const initialCertifications: Certification[] = [
   { id: '1', name: 'AWS Solutions Architect', employee: 'Rajesh Kumar', status: 'active', expiry: '2026-06-15', issuer: 'Amazon' },
   { id: '2', name: 'PMP Certified', employee: 'Priya Sharma', status: 'active', expiry: '2027-03-20', issuer: 'PMI' },
   { id: '3', name: 'Chartered Accountant', employee: 'Amit Patel', status: 'active', expiry: null, issuer: 'ICAI' },
@@ -45,6 +78,67 @@ const statusColors: Record<string, string> = {
 
 export default function TrainingPage() {
   const [activeTab, setActiveTab] = useState('courses')
+  const { showToast } = useToast()
+
+  // Local state for data management
+  const [courses, setCourses] = useState<Course[]>(initialCourses)
+  const [certifications, setCertifications] = useState<Certification[]>(initialCertifications)
+
+  // Delete state for courses
+  const [deleteCourseDialogOpen, setDeleteCourseDialogOpen] = useState(false)
+  const [courseToDelete, setCourseToDelete] = useState<Course | null>(null)
+  const [isDeletingCourse, setIsDeletingCourse] = useState(false)
+  const deleteCourseApi = useApi()
+
+  // Delete state for certifications
+  const [deleteCertDialogOpen, setDeleteCertDialogOpen] = useState(false)
+  const [certToDelete, setCertToDelete] = useState<Certification | null>(null)
+  const [isDeletingCert, setIsDeletingCert] = useState(false)
+  const deleteCertApi = useApi()
+
+  const handleDeleteCourseClick = (course: Course) => {
+    setCourseToDelete(course)
+    setDeleteCourseDialogOpen(true)
+  }
+
+  const handleDeleteCourseConfirm = async () => {
+    if (!courseToDelete) return
+    setIsDeletingCourse(true)
+    try {
+      await deleteCourseApi.delete(`/training/courses/${courseToDelete.id}`)
+      setCourses(courses.filter(c => c.id !== courseToDelete.id))
+      setDeleteCourseDialogOpen(false)
+      setCourseToDelete(null)
+      showToast('success', 'Course deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete course:', error)
+      showToast('error', 'Failed to delete course')
+    } finally {
+      setIsDeletingCourse(false)
+    }
+  }
+
+  const handleDeleteCertClick = (cert: Certification) => {
+    setCertToDelete(cert)
+    setDeleteCertDialogOpen(true)
+  }
+
+  const handleDeleteCertConfirm = async () => {
+    if (!certToDelete) return
+    setIsDeletingCert(true)
+    try {
+      await deleteCertApi.delete(`/training/certifications/${certToDelete.id}`)
+      setCertifications(certifications.filter(c => c.id !== certToDelete.id))
+      setDeleteCertDialogOpen(false)
+      setCertToDelete(null)
+      showToast('success', 'Certification deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete certification:', error)
+      showToast('error', 'Failed to delete certification')
+    } finally {
+      setIsDeletingCert(false)
+    }
+  }
 
   const stats = {
     totalCourses: courses.length,
@@ -157,9 +251,21 @@ export default function TrainingPage() {
                     </div>
                     <Progress value={course.completed / course.enrolled * 100} />
                   </div>
-                  <Button className="w-full mt-4" variant="outline">
-                    <Play className="h-4 w-4 mr-2" /> Start Course
-                  </Button>
+                  <div className="flex gap-2 mt-4">
+                    <Button className="flex-1" variant="outline">
+                      <Play className="h-4 w-4 mr-2" /> Start Course
+                    </Button>
+                    {!course.mandatory && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteCourseClick(course)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -182,6 +288,7 @@ export default function TrainingPage() {
                       <th className="text-left p-4 font-medium">Issuer</th>
                       <th className="text-center p-4 font-medium">Status</th>
                       <th className="text-left p-4 font-medium">Expiry</th>
+                      <th className="text-right p-4 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -195,6 +302,18 @@ export default function TrainingPage() {
                         </td>
                         <td className="p-4 text-muted-foreground">
                           {cert.expiry ? new Date(cert.expiry).toLocaleDateString('en-IN') : 'Never'}
+                        </td>
+                        <td className="p-4 text-right">
+                          {cert.status === 'expired' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteCertClick(cert)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -217,6 +336,72 @@ export default function TrainingPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Course Confirmation Dialog */}
+      <AlertDialog open={deleteCourseDialogOpen} onOpenChange={setDeleteCourseDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Course
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the course <strong>{courseToDelete?.title}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingCourse}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCourseConfirm}
+              disabled={isDeletingCourse}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingCourse ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Certification Confirmation Dialog */}
+      <AlertDialog open={deleteCertDialogOpen} onOpenChange={setDeleteCertDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Certification
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the certification <strong>{certToDelete?.name}</strong> for {certToDelete?.employee}?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingCert}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCertConfirm}
+              disabled={isDeletingCert}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingCert ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

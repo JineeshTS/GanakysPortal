@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, DollarSign, RefreshCw, TrendingUp, TrendingDown, Globe, MoreVertical, Loader2, Calculator, ArrowRightLeft } from 'lucide-react';
+import { Plus, Search, DollarSign, RefreshCw, TrendingUp, TrendingDown, Globe, MoreVertical, Loader2, Calculator, ArrowRightLeft, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,16 @@ import { PageHeader } from '@/components/layout/page-header';
 import { StatCard } from '@/components/layout/stat-card';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useApi } from '@/hooks';
 
 interface Currency {
@@ -52,6 +62,34 @@ const statusColors: Record<string, string> = {
 
 export default function CurrencyPage() {
   const [activeTab, setActiveTab] = useState('currencies');
+  const [localCurrencies, setLocalCurrencies] = useState<Currency[]>([]);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [currencyToDelete, setCurrencyToDelete] = useState<Currency | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteApi = useApi();
+
+  const handleDeleteClick = (currency: Currency) => {
+    setCurrencyToDelete(currency);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!currencyToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/currency/currencies/${currencyToDelete.id}`);
+      setLocalCurrencies(localCurrencies.filter(c => c.id !== currencyToDelete.id));
+      setDeleteDialogOpen(false);
+      setCurrencyToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete currency:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const { data: currenciesData, isLoading: currenciesLoading, get: getCurrencies } = useApi<{ data: Currency[] }>();
   const { data: ratesData, isLoading: ratesLoading, get: getRates } = useApi<{ data: ExchangeRate[] }>();
   const { data: revaluationsData, isLoading: revaluationsLoading, get: getRevaluations } = useApi<{ data: Revaluation[] }>();
@@ -62,7 +100,14 @@ export default function CurrencyPage() {
     getRevaluations('/currency/revaluations');
   }, [getCurrencies, getRates, getRevaluations]);
 
-  const currencies = currenciesData?.data || [];
+  // Sync API data to local state
+  useEffect(() => {
+    if (currenciesData?.data) {
+      setLocalCurrencies(currenciesData.data);
+    }
+  }, [currenciesData]);
+
+  const currencies = localCurrencies;
   const rates = ratesData?.data || [];
   const revaluations = revaluationsData?.data || [];
   const isLoading = currenciesLoading || ratesLoading || revaluationsLoading;
@@ -167,6 +212,17 @@ export default function CurrencyPage() {
                       <span className="text-muted-foreground">Updated</span>
                       <span>{currency.last_updated}</span>
                     </div>
+                    {!currency.is_base && !currency.is_active && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteClick(currency)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -330,6 +386,39 @@ export default function CurrencyPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Currency
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{currencyToDelete?.code} - {currencyToDelete?.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -6,7 +6,35 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, PieChart, LineChart, Download, Calendar, Filter, FileText, TrendingUp, DollarSign, Users, Package, Factory, Clock, Search, Play } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useApi, useToast } from "@/hooks";
+import { BarChart3, PieChart, LineChart, Download, Calendar, Filter, FileText, TrendingUp, DollarSign, Users, Package, Factory, Clock, Search, Play, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+
+interface RecentReport {
+  id: string;
+  name: string;
+  category: string;
+  lastRun: string;
+  status: string;
+  format: string;
+}
+
+interface ScheduledReport {
+  id: string;
+  name: string;
+  frequency: string;
+  nextRun: string;
+  recipients: number;
+}
 
 const reportCategories = [
   { id: "finance", name: "Finance Reports", icon: DollarSign, reports: 15, description: "P&L, Balance Sheet, Cash Flow" },
@@ -17,14 +45,14 @@ const reportCategories = [
   { id: "compliance", name: "Compliance Reports", icon: FileText, reports: 7, description: "Statutory, Tax, Audit" },
 ];
 
-const recentReports = [
+const initialRecentReports: RecentReport[] = [
   { id: "1", name: "Monthly Sales Summary", category: "Sales", lastRun: "2026-01-15 09:30", status: "completed", format: "PDF" },
   { id: "2", name: "Stock Valuation Report", category: "Inventory", lastRun: "2026-01-15 08:00", status: "completed", format: "Excel" },
   { id: "3", name: "Payroll Summary - Jan 2026", category: "HR", lastRun: "2026-01-14 17:45", status: "completed", format: "PDF" },
   { id: "4", name: "Production Efficiency Report", category: "Manufacturing", lastRun: "2026-01-14 16:00", status: "completed", format: "Excel" },
 ];
 
-const scheduledReports = [
+const initialScheduledReports: ScheduledReport[] = [
   { id: "1", name: "Daily Sales Report", frequency: "Daily", nextRun: "2026-01-16 06:00", recipients: 5 },
   { id: "2", name: "Weekly Inventory Summary", frequency: "Weekly", nextRun: "2026-01-20 08:00", recipients: 3 },
   { id: "3", name: "Monthly P&L Statement", frequency: "Monthly", nextRun: "2026-02-01 09:00", recipients: 8 },
@@ -33,6 +61,67 @@ const scheduledReports = [
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
+  const { showToast } = useToast();
+
+  // Local state for data management
+  const [recentReports, setRecentReports] = useState<RecentReport[]>(initialRecentReports);
+  const [scheduledReports, setScheduledReports] = useState<ScheduledReport[]>(initialScheduledReports);
+
+  // Delete state for recent reports
+  const [deleteReportDialogOpen, setDeleteReportDialogOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<RecentReport | null>(null);
+  const [isDeletingReport, setIsDeletingReport] = useState(false);
+  const deleteReportApi = useApi();
+
+  // Delete state for scheduled reports
+  const [deleteScheduleDialogOpen, setDeleteScheduleDialogOpen] = useState(false);
+  const [scheduleToDelete, setScheduleToDelete] = useState<ScheduledReport | null>(null);
+  const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
+  const deleteScheduleApi = useApi();
+
+  const handleDeleteReportClick = (report: RecentReport) => {
+    setReportToDelete(report);
+    setDeleteReportDialogOpen(true);
+  };
+
+  const handleDeleteReportConfirm = async () => {
+    if (!reportToDelete) return;
+    setIsDeletingReport(true);
+    try {
+      await deleteReportApi.delete(`/reports/history/${reportToDelete.id}`);
+      setRecentReports(recentReports.filter(r => r.id !== reportToDelete.id));
+      setDeleteReportDialogOpen(false);
+      setReportToDelete(null);
+      showToast("success", "Report deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete report:", error);
+      showToast("error", "Failed to delete report");
+    } finally {
+      setIsDeletingReport(false);
+    }
+  };
+
+  const handleDeleteScheduleClick = (schedule: ScheduledReport) => {
+    setScheduleToDelete(schedule);
+    setDeleteScheduleDialogOpen(true);
+  };
+
+  const handleDeleteScheduleConfirm = async () => {
+    if (!scheduleToDelete) return;
+    setIsDeletingSchedule(true);
+    try {
+      await deleteScheduleApi.delete(`/reports/schedules/${scheduleToDelete.id}`);
+      setScheduledReports(scheduledReports.filter(s => s.id !== scheduleToDelete.id));
+      setDeleteScheduleDialogOpen(false);
+      setScheduleToDelete(null);
+      showToast("success", "Schedule deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete schedule:", error);
+      showToast("error", "Failed to delete schedule");
+    } finally {
+      setIsDeletingSchedule(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -139,6 +228,14 @@ export default function ReportsPage() {
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{report.format}</Badge>
                       <Button variant="ghost" size="sm"><Download className="h-4 w-4" /></Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteReportClick(report)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -189,6 +286,14 @@ export default function ReportsPage() {
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{report.recipients} recipients</Badge>
                       <Button variant="ghost" size="sm"><Play className="h-4 w-4" /></Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteScheduleClick(report)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -209,6 +314,72 @@ export default function ReportsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Report Confirmation Dialog */}
+      <AlertDialog open={deleteReportDialogOpen} onOpenChange={setDeleteReportDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Report
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{reportToDelete?.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingReport}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteReportConfirm}
+              disabled={isDeletingReport}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingReport ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Schedule Confirmation Dialog */}
+      <AlertDialog open={deleteScheduleDialogOpen} onOpenChange={setDeleteScheduleDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Schedule
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the schedule for <strong>{scheduleToDelete?.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingSchedule}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteScheduleConfirm}
+              disabled={isDeletingSchedule}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingSchedule ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

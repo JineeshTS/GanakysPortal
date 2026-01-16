@@ -14,6 +14,16 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useDebounce, useApi } from '@/hooks'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Plus,
   Download,
   Eye,
@@ -23,7 +33,9 @@ import {
   CheckCircle,
   IndianRupee,
   Copy,
-  Loader2
+  Loader2,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react'
 import type { Invoice, InvoiceStatus } from '@/types'
 
@@ -189,8 +201,46 @@ export default function InvoicesPage() {
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(20)
 
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [invoiceToDelete, setInvoiceToDelete] = React.useState<Invoice | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const [localInvoices, setLocalInvoices] = React.useState<Invoice[]>([])
+
   const { data: invoiceData, isLoading, error, get } = useApi<InvoiceListResponse>()
   const { data: summary, get: getSummary } = useApi<InvoiceSummary>()
+  const deleteApi = useApi()
+
+  // Delete handlers
+  const handleDeleteClick = (invoice: Invoice, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setInvoiceToDelete(invoice)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!invoiceToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/invoices/${invoiceToDelete.id}`)
+      setLocalInvoices(prev => prev.filter(inv => inv.id !== invoiceToDelete.id))
+      setDeleteDialogOpen(false)
+      setInvoiceToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete invoice:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // Update local invoices when API data changes
+  React.useEffect(() => {
+    if (invoiceData?.data) {
+      setLocalInvoices(invoiceData.data)
+    } else {
+      setLocalInvoices(mockInvoices)
+    }
+  }, [invoiceData])
 
   const debouncedSearch = useDebounce(searchQuery, 300)
 
@@ -214,17 +264,12 @@ export default function InvoicesPage() {
     getSummary('/invoices/summary')
   }, [getSummary])
 
-  // Use API data or fallback to mock
-  const invoices = invoiceData?.data || mockInvoices
+  // Use local invoices (synced with API or mock)
   const totalPages = invoiceData?.meta?.total_pages || 1
-  const totalInvoices = invoiceData?.meta?.total || invoices.length
+  const totalInvoices = invoiceData?.meta?.total || localInvoices.length
 
   const filteredInvoices = React.useMemo(() => {
-    // If data comes from API with search/filter, just return it
-    if (invoiceData?.data) return invoiceData.data
-
-    // Otherwise filter mock data locally
-    let result = [...invoices]
+    let result = [...localInvoices]
 
     if (debouncedSearch) {
       const query = debouncedSearch.toLowerCase()
@@ -240,7 +285,7 @@ export default function InvoicesPage() {
     }
 
     return result
-  }, [invoices, invoiceData, debouncedSearch, statusFilter])
+  }, [localInvoices, debouncedSearch, statusFilter])
 
   const stats = [
     {
@@ -409,11 +454,21 @@ export default function InvoicesPage() {
             </Link>
           </Button>
           {row.status === 'draft' && (
-            <Button variant="ghost" size="icon" asChild>
-              <Link href={`/dashboard/invoices/${row.id}/edit`}>
-                <Edit className="h-4 w-4" />
-              </Link>
-            </Button>
+            <>
+              <Button variant="ghost" size="icon" asChild>
+                <Link href={`/dashboard/invoices/${row.id}/edit`}>
+                  <Edit className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={(e) => handleDeleteClick(row, e)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
           )}
           <Button variant="ghost" size="icon">
             <Copy className="h-4 w-4" />
@@ -575,6 +630,41 @@ export default function InvoicesPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Invoice
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete invoice{' '}
+              <strong>{invoiceToDelete?.invoice_number}</strong> for{' '}
+              <strong>{invoiceToDelete?.customer_name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -10,6 +10,17 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatCurrency } from '@/lib/format'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useApi } from '@/hooks'
+import {
   Plus,
   ChevronRight,
   ChevronDown,
@@ -19,7 +30,10 @@ import {
   TrendingUp,
   TrendingDown,
   Search,
-  Download
+  Download,
+  Trash2,
+  AlertTriangle,
+  Loader2
 } from 'lucide-react'
 import type { Account, AccountType } from '@/types'
 
@@ -478,6 +492,43 @@ export default function ChartOfAccountsPage() {
   const [expandedIds, setExpandedIds] = React.useState<Set<string>>(new Set(['1', '2', '3', '4', '5']))
   const [searchQuery, setSearchQuery] = React.useState('')
 
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [accountToDelete, setAccountToDelete] = React.useState<AccountNode | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const deleteApi = useApi()
+
+  const handleDeleteClick = (account: AccountNode, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setAccountToDelete(account)
+    setDeleteDialogOpen(true)
+  }
+
+  // Recursively remove account from tree
+  const removeAccountFromTree = (tree: AccountNode[], id: string): AccountNode[] => {
+    return tree
+      .filter(account => account.id !== id)
+      .map(account => ({
+        ...account,
+        children: account.children ? removeAccountFromTree(account.children, id) : undefined
+      }))
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!accountToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteApi.delete(`/accounts/${accountToDelete.id}`)
+      setAccounts(removeAccountFromTree(accounts, accountToDelete.id))
+      setDeleteDialogOpen(false)
+      setAccountToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete account:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => {
       const next = new Set(prev)
@@ -572,6 +623,18 @@ export default function ChartOfAccountsPage() {
               <Badge className="bg-green-100 text-green-800">Active</Badge>
             ) : (
               <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
+            )}
+          </td>
+          <td className="py-3 px-4 text-center">
+            {!account.is_system && !hasChildren && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={(e) => handleDeleteClick(account, e)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             )}
           </td>
         </tr>
@@ -697,6 +760,7 @@ export default function ChartOfAccountsPage() {
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
                   <th className="text-right py-3 px-4 font-medium text-muted-foreground">Balance</th>
                   <th className="text-center py-3 px-4 font-medium text-muted-foreground">Status</th>
+                  <th className="text-center py-3 px-4 font-medium text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -706,6 +770,39 @@ export default function ChartOfAccountsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Account
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the account <strong>{accountToDelete?.code} - {accountToDelete?.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

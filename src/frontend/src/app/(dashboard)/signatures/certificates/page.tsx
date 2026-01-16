@@ -38,7 +38,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useApi, useToast } from "@/hooks";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Shield,
@@ -59,14 +70,32 @@ import {
   Trash2,
   FileText,
   User,
+  Users,
   Building,
   ShieldCheck,
   ShieldAlert,
   Lock,
+  Loader2,
 } from "lucide-react";
 
+// Types
+interface Certificate {
+  id: string;
+  name: string;
+  type: string;
+  holder_name: string;
+  holder_type: string;
+  serial_number: string;
+  issuer: string;
+  issued_at: string;
+  expires_at: string;
+  status: string;
+  provider: string;
+  usage_count: number;
+}
+
 // Mock data
-const certificates = [
+const mockCertificates: Certificate[] = [
   {
     id: "1",
     name: "Organization DSC - Class 3",
@@ -162,12 +191,42 @@ const certificateStats = {
 };
 
 export default function CertificatesPage() {
+  const [certificates, setCertificates] = useState<Certificate[]>(mockCertificates);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [selectedCertificate, setSelectedCertificate] = useState<typeof certificates[0] | null>(null);
+  const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [certToDelete, setCertToDelete] = useState<Certificate | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (cert: Certificate) => {
+    setCertToDelete(cert);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!certToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/signatures/certificates/${certToDelete.id}`);
+      setCertificates(certificates.filter(c => c.id !== certToDelete.id));
+      setDeleteDialogOpen(false);
+      setCertToDelete(null);
+      showToast("success", "Certificate deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete certificate:", error);
+      showToast("error", "Failed to delete certificate");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -224,7 +283,7 @@ export default function CertificatesPage() {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const handleViewCertificate = (cert: typeof certificates[0]) => {
+  const handleViewCertificate = (cert: Certificate) => {
     setSelectedCertificate(cert);
     setIsViewDialogOpen(true);
   };
@@ -542,10 +601,15 @@ export default function CertificatesPage() {
                             Revoke Certificate
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
+                        {(cert.status === "expired" || cert.status === "revoked") && (
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => handleDeleteClick(cert)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -710,29 +774,39 @@ export default function CertificatesPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
 
-// Missing Users import - adding it
-function Users(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Certificate
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{certToDelete?.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

@@ -29,6 +29,16 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useApi, useToast } from '@/hooks'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   UserPlus,
   Users,
   Clock,
@@ -50,7 +60,9 @@ import {
   Building2,
   GraduationCap,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react'
 
 // Types
@@ -220,6 +232,69 @@ export default function OnboardingPage() {
   const { data: employeesData, get: getEmployees } = useApi<EmployeeListResponse>()
   const { isLoading: isCreating, post: createSession } = useApi<OnboardingSession>()
   const { post: completeTask } = useApi<OnboardingTask>()
+  const deleteSessionApi = useApi()
+  const deleteTemplateApi = useApi()
+
+  // Local state for data management
+  const [localSessions, setLocalSessions] = useState<OnboardingSession[]>([])
+  const [localTemplates, setLocalTemplates] = useState<OnboardingTemplate[]>([])
+
+  // Delete state for sessions
+  const [deleteSessionDialogOpen, setDeleteSessionDialogOpen] = useState(false)
+  const [sessionToDelete, setSessionToDelete] = useState<OnboardingSession | null>(null)
+  const [isDeletingSession, setIsDeletingSession] = useState(false)
+
+  // Delete state for templates
+  const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false)
+  const [templateToDelete, setTemplateToDelete] = useState<OnboardingTemplate | null>(null)
+  const [isDeletingTemplate, setIsDeletingTemplate] = useState(false)
+
+  const handleDeleteSessionClick = (session: OnboardingSession) => {
+    setSessionToDelete(session)
+    setDeleteSessionDialogOpen(true)
+  }
+
+  const handleDeleteSessionConfirm = async () => {
+    if (!sessionToDelete) return
+    setIsDeletingSession(true)
+    try {
+      await deleteSessionApi.delete(`/onboarding/sessions/${sessionToDelete.id}`)
+      setLocalSessions(localSessions.filter(s => s.id !== sessionToDelete.id))
+      if (selectedSession?.id === sessionToDelete.id) {
+        setSelectedSession(null)
+      }
+      setDeleteSessionDialogOpen(false)
+      setSessionToDelete(null)
+      showToast('success', 'Onboarding session deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete session:', error)
+      showToast('error', 'Failed to delete onboarding session')
+    } finally {
+      setIsDeletingSession(false)
+    }
+  }
+
+  const handleDeleteTemplateClick = (template: OnboardingTemplate) => {
+    setTemplateToDelete(template)
+    setDeleteTemplateDialogOpen(true)
+  }
+
+  const handleDeleteTemplateConfirm = async () => {
+    if (!templateToDelete) return
+    setIsDeletingTemplate(true)
+    try {
+      await deleteTemplateApi.delete(`/onboarding/templates/${templateToDelete.id}`)
+      setLocalTemplates(localTemplates.filter(t => t.id !== templateToDelete.id))
+      setDeleteTemplateDialogOpen(false)
+      setTemplateToDelete(null)
+      showToast('success', 'Template deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete template:', error)
+      showToast('error', 'Failed to delete template')
+    } finally {
+      setIsDeletingTemplate(false)
+    }
+  }
 
   // Fetch data
   const fetchData = useCallback(() => {
@@ -234,6 +309,19 @@ export default function OnboardingPage() {
     fetchData()
   }, [fetchData])
 
+  // Sync API data to local state
+  useEffect(() => {
+    if (sessionsData?.data) {
+      setLocalSessions(sessionsData.data)
+    }
+  }, [sessionsData])
+
+  useEffect(() => {
+    if (templatesData?.data) {
+      setLocalTemplates(templatesData.data)
+    }
+  }, [templatesData])
+
   // Stats
   const stats = statsData || {
     total: 0,
@@ -244,9 +332,9 @@ export default function OnboardingPage() {
     overdue_tasks: 0
   }
 
-  const sessions = sessionsData?.data || []
+  const sessions = localSessions.length > 0 ? localSessions : (sessionsData?.data || [])
   const tasks = tasksData?.data || []
-  const templates = templatesData?.data || []
+  const templates = localTemplates.length > 0 ? localTemplates : (templatesData?.data || [])
   const employees = employeesData?.data || []
 
   const filteredSessions = sessions.filter(session => {
@@ -725,6 +813,16 @@ export default function OnboardingPage() {
                       <Button variant="outline" size="sm">
                         <Send className="h-4 w-4" />
                       </Button>
+                      {selectedSession.status === 'blocked' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteSessionClick(selectedSession)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -850,6 +948,16 @@ export default function OnboardingPage() {
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </Button>
+                    {!template.is_active && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteTemplateClick(template)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -870,6 +978,72 @@ export default function OnboardingPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Session Confirmation Dialog */}
+      <AlertDialog open={deleteSessionDialogOpen} onOpenChange={setDeleteSessionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Onboarding Session
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the onboarding session for <strong>{sessionToDelete?.employee?.full_name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingSession}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSessionConfirm}
+              disabled={isDeletingSession}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingSession ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Template Confirmation Dialog */}
+      <AlertDialog open={deleteTemplateDialogOpen} onOpenChange={setDeleteTemplateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Template
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the template <strong>{templateToDelete?.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingTemplate}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteTemplateConfirm}
+              disabled={isDeletingTemplate}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingTemplate ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

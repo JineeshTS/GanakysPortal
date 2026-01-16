@@ -29,6 +29,16 @@ import {
 } from '@/components/ui/select'
 import { useApi, useToast } from '@/hooks'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   UserMinus,
   Plus,
   FileText,
@@ -45,7 +55,9 @@ import {
   AlertCircle,
   Building2,
   User,
-  CheckSquare
+  CheckSquare,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react'
 
 // Types
@@ -296,6 +308,37 @@ export default function ExitPage() {
   const { isLoading: isCompletingTask, post: completeTask } = useApi<ClearanceTask>()
   const { isLoading: isCalculatingFnf, post: calculateFnf } = useApi<FinalSettlement>()
   const { post: completeExit } = useApi()
+  const deleteExitApi = useApi()
+
+  // Local state for data management
+  const [localExitCases, setLocalExitCases] = useState<ExitCase[]>([])
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [exitCaseToDelete, setExitCaseToDelete] = useState<ExitCase | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDeleteClick = (exitCase: ExitCase) => {
+    setExitCaseToDelete(exitCase)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!exitCaseToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteExitApi.delete(`/exit/cases/${exitCaseToDelete.id}`)
+      setLocalExitCases(localExitCases.filter(e => e.id !== exitCaseToDelete.id))
+      setDeleteDialogOpen(false)
+      setExitCaseToDelete(null)
+      showToast('success', 'Exit case deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete exit case:', error)
+      showToast('error', 'Failed to delete exit case')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // Fetch data
   const fetchData = useCallback(() => {
@@ -307,6 +350,13 @@ export default function ExitPage() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // Sync API data to local state
+  useEffect(() => {
+    if (casesData?.data) {
+      setLocalExitCases(casesData.data)
+    }
+  }, [casesData])
 
   // Stats
   const stats = statsData || {
@@ -320,7 +370,7 @@ export default function ExitPage() {
     this_month: 0,
   }
 
-  const exitCases = casesData?.data || []
+  const exitCases = localExitCases.length > 0 ? localExitCases : (casesData?.data || [])
   const employees = employeesData?.data || []
 
   // Filter employees to exclude those already in exit process
@@ -791,9 +841,11 @@ export default function ExitPage() {
                             {exitCase.reason_category || '-'}
                           </td>
                           <td className="p-4 text-right">
-                            <Button variant="outline" size="sm" onClick={() => handleViewDetail(exitCase.id)}>
-                              <Eye className="h-3 w-3 mr-1" /> View
-                            </Button>
+                            <div className="flex justify-end gap-1">
+                              <Button variant="outline" size="sm" onClick={() => handleViewDetail(exitCase.id)}>
+                                <Eye className="h-3 w-3 mr-1" /> View
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -804,6 +856,42 @@ export default function ExitPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Cancelled Exits - Hidden tab for delete functionality */}
+        {exitCases.filter(e => e.status === 'cancelled').length > 0 && (
+          <div className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-red-600">Cancelled Exits</CardTitle>
+                <CardDescription>Exit cases that were cancelled</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {exitCases.filter(e => e.status === 'cancelled').map((exitCase) => (
+                    <div key={exitCase.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{exitCase.employee?.full_name || 'Unknown'}</p>
+                        <p className="text-sm text-muted-foreground">{exitCase.employee?.employee_code}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-red-100 text-red-800">Cancelled</Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteClick(exitCase)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </Tabs>
 
       {/* Exit Detail Dialog */}
@@ -1171,6 +1259,39 @@ export default function ExitPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Exit Case Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Exit Case
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the exit case for <strong>{exitCaseToDelete?.employee?.full_name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

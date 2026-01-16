@@ -28,6 +28,16 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useApi, useToast } from '@/hooks'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Briefcase,
   Plus,
   Search,
@@ -50,7 +60,8 @@ import {
   Building2,
   Globe,
   FileText,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react'
 
 // Types
@@ -308,6 +319,66 @@ export default function RecruitmentPage() {
   const { isLoading: isHiring, post: hireCandidate } = useApi<HireResponse>()
   const { put: updateJob } = useApi<JobOpening>()
   const { put: updateApplication } = useApi<JobApplication>()
+  const deleteJobApi = useApi()
+  const deleteCandidateApi = useApi()
+
+  // Local state for data management
+  const [localJobs, setLocalJobs] = useState<JobOpening[]>([])
+  const [localCandidates, setLocalCandidates] = useState<Candidate[]>([])
+
+  // Delete state for jobs
+  const [deleteJobDialogOpen, setDeleteJobDialogOpen] = useState(false)
+  const [jobToDelete, setJobToDelete] = useState<JobOpening | null>(null)
+  const [isDeletingJob, setIsDeletingJob] = useState(false)
+
+  // Delete state for candidates
+  const [deleteCandidateDialogOpen, setDeleteCandidateDialogOpen] = useState(false)
+  const [candidateToDelete, setCandidateToDelete] = useState<Candidate | null>(null)
+  const [isDeletingCandidate, setIsDeletingCandidate] = useState(false)
+
+  const handleDeleteJobClick = (job: JobOpening) => {
+    setJobToDelete(job)
+    setDeleteJobDialogOpen(true)
+  }
+
+  const handleDeleteJobConfirm = async () => {
+    if (!jobToDelete) return
+    setIsDeletingJob(true)
+    try {
+      await deleteJobApi.delete(`/recruitment/jobs/${jobToDelete.id}`)
+      setLocalJobs(localJobs.filter(j => j.id !== jobToDelete.id))
+      setDeleteJobDialogOpen(false)
+      setJobToDelete(null)
+      showToast('success', 'Job opening deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete job:', error)
+      showToast('error', 'Failed to delete job opening')
+    } finally {
+      setIsDeletingJob(false)
+    }
+  }
+
+  const handleDeleteCandidateClick = (candidate: Candidate) => {
+    setCandidateToDelete(candidate)
+    setDeleteCandidateDialogOpen(true)
+  }
+
+  const handleDeleteCandidateConfirm = async () => {
+    if (!candidateToDelete) return
+    setIsDeletingCandidate(true)
+    try {
+      await deleteCandidateApi.delete(`/recruitment/candidates/${candidateToDelete.id}`)
+      setLocalCandidates(localCandidates.filter(c => c.id !== candidateToDelete.id))
+      setDeleteCandidateDialogOpen(false)
+      setCandidateToDelete(null)
+      showToast('success', 'Candidate deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete candidate:', error)
+      showToast('error', 'Failed to delete candidate')
+    } finally {
+      setIsDeletingCandidate(false)
+    }
+  }
 
   // Fetch data
   const fetchData = useCallback(() => {
@@ -321,6 +392,19 @@ export default function RecruitmentPage() {
     fetchData()
   }, [fetchData])
 
+  // Sync API data to local state
+  useEffect(() => {
+    if (jobsData?.data) {
+      setLocalJobs(jobsData.data)
+    }
+  }, [jobsData])
+
+  useEffect(() => {
+    if (candidatesData?.data) {
+      setLocalCandidates(candidatesData.data)
+    }
+  }, [candidatesData])
+
   // Stats
   const stats = statsData || {
     total_openings: 0,
@@ -332,8 +416,8 @@ export default function RecruitmentPage() {
     hired_this_month: 0,
   }
 
-  const jobs = jobsData?.data || []
-  const candidates = candidatesData?.data || []
+  const jobs = localJobs.length > 0 ? localJobs : (jobsData?.data || [])
+  const candidates = localCandidates.length > 0 ? localCandidates : (candidatesData?.data || [])
   const applications = applicationsData?.data || []
 
   // Filter jobs by search
@@ -871,6 +955,16 @@ export default function RecruitmentPage() {
                             <Button variant="outline" size="sm">
                               <Eye className="h-3 w-3 mr-1" /> View
                             </Button>
+                            {job.status === 'cancelled' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleDeleteJobClick(job)}
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" /> Delete
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1128,6 +1222,16 @@ export default function RecruitmentPage() {
                               >
                                 Apply to Job
                               </Button>
+                              {candidate.status === 'withdrawn' && !candidate.employee_id && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleDeleteCandidateClick(candidate)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1350,6 +1454,72 @@ export default function RecruitmentPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Job Confirmation Dialog */}
+      <AlertDialog open={deleteJobDialogOpen} onOpenChange={setDeleteJobDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Job Opening
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the job opening <strong>{jobToDelete?.title}</strong> ({jobToDelete?.job_code})?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingJob}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteJobConfirm}
+              disabled={isDeletingJob}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingJob ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Candidate Confirmation Dialog */}
+      <AlertDialog open={deleteCandidateDialogOpen} onOpenChange={setDeleteCandidateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Candidate
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{candidateToDelete?.full_name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingCandidate}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCandidateConfirm}
+              disabled={isDeletingCandidate}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeletingCandidate ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

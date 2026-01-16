@@ -6,13 +6,34 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GitBranch, Clock, CheckCircle, XCircle, Play, Pause, Settings, Users, FileText, Search, Filter, Eye, BarChart3 } from "lucide-react";
+import { GitBranch, Clock, CheckCircle, XCircle, Play, Pause, Settings, Users, FileText, Search, Filter, Eye, BarChart3, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useApi, useToast } from "@/hooks";
 
-const workflows = [
+interface Workflow {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  steps: number;
+  pendingTasks: number;
+  avgTime: string;
+}
+
+const initialWorkflows: Workflow[] = [
   { id: "1", name: "Purchase Requisition Approval", type: "approval", status: "active", steps: 3, pendingTasks: 5, avgTime: "2.5 days" },
   { id: "2", name: "Leave Request", type: "approval", status: "active", steps: 2, pendingTasks: 12, avgTime: "1 day" },
-  { id: "3", name: "Sales Order Processing", type: "process", status: "active", steps: 5, pendingTasks: 8, avgTime: "3 days" },
-  { id: "4", name: "Document Review", type: "approval", status: "active", steps: 4, pendingTasks: 3, avgTime: "4 days" },
+  { id: "3", name: "Sales Order Processing", type: "process", status: "inactive", steps: 5, pendingTasks: 0, avgTime: "3 days" },
+  { id: "4", name: "Document Review", type: "approval", status: "draft", steps: 4, pendingTasks: 0, avgTime: "4 days" },
 ];
 
 const pendingTasks = [
@@ -24,6 +45,38 @@ const pendingTasks = [
 export default function WorkflowPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
+  const { showToast } = useToast();
+  const deleteApi = useApi();
+
+  // Local state for data management
+  const [workflows, setWorkflows] = useState<Workflow[]>(initialWorkflows);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [workflowToDelete, setWorkflowToDelete] = useState<Workflow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = (workflow: Workflow) => {
+    setWorkflowToDelete(workflow);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!workflowToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteApi.delete(`/workflow/definitions/${workflowToDelete.id}`);
+      setWorkflows(workflows.filter(w => w.id !== workflowToDelete.id));
+      setDeleteDialogOpen(false);
+      setWorkflowToDelete(null);
+      showToast("success", "Workflow deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete workflow:", error);
+      showToast("error", "Failed to delete workflow");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -211,6 +264,16 @@ export default function WorkflowPage() {
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="sm"><Settings className="h-4 w-4" /></Button>
+                        {(wf.status === "inactive" || wf.status === "draft") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick(wf)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -232,6 +295,39 @@ export default function WorkflowPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Workflow Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Workflow
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{workflowToDelete?.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
