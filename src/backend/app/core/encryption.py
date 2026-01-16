@@ -1,6 +1,7 @@
 """
 QA-003: Data Encryption Service
 Encryption utilities for sensitive data at rest and in transit
+Using AES-256-GCM for authenticated encryption
 """
 from typing import Optional, Union
 import base64
@@ -10,13 +11,24 @@ import secrets
 import os
 from datetime import datetime, timedelta
 
+# Import cryptography library for proper AES-256-GCM
+try:
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.backends import default_backend
+    CRYPTO_AVAILABLE = True
+except ImportError:
+    CRYPTO_AVAILABLE = False
+
 
 class EncryptionService:
     """
     Encryption service for sensitive data.
 
     Features:
-    - AES-256 encryption for data at rest
+    - AES-256-GCM authenticated encryption for data at rest
+    - Secure key derivation using PBKDF2
     - Secure hashing
     - Token generation
     - Key management
@@ -25,7 +37,8 @@ class EncryptionService:
     # Key derivation parameters
     PBKDF2_ITERATIONS = 100000
     SALT_LENGTH = 32
-    KEY_LENGTH = 32  # 256 bits
+    KEY_LENGTH = 32  # 256 bits for AES-256
+    NONCE_LENGTH = 12  # 96 bits for GCM
 
     def __init__(self, master_key: Optional[str] = None):
         """Initialize with master key."""
@@ -33,39 +46,51 @@ class EncryptionService:
             'ENCRYPTION_KEY',
             secrets.token_hex(32)
         )
+        if not CRYPTO_AVAILABLE:
+            raise ImportError(
+                "cryptography library is required for encryption. "
+                "Install with: pip install cryptography"
+            )
 
     def encrypt(self, plaintext: str, key: Optional[str] = None) -> str:
         """
         Encrypt plaintext using AES-256-GCM.
+
+        AES-GCM provides both confidentiality and authenticity.
+        The authentication tag is automatically appended to the ciphertext.
 
         Args:
             plaintext: Text to encrypt
             key: Optional encryption key (uses master key if not provided)
 
         Returns:
-            Base64-encoded encrypted data with salt and nonce
+            Base64-encoded encrypted data: salt (32) + nonce (12) + ciphertext + tag (16)
         """
         # Generate salt and derive key
         salt = secrets.token_bytes(self.SALT_LENGTH)
         derived_key = self._derive_key(key or self.master_key, salt)
 
-        # Generate nonce
-        nonce = secrets.token_bytes(12)
+        # Generate nonce (must be unique per encryption with same key)
+        nonce = secrets.token_bytes(self.NONCE_LENGTH)
 
-        # In production, use cryptography library for AES-GCM
-        # This is a simplified implementation using XOR for demonstration
+        # Create AES-GCM cipher and encrypt
+        aesgcm = AESGCM(derived_key)
         plaintext_bytes = plaintext.encode('utf-8')
-        key_stream = self._generate_key_stream(derived_key, nonce, len(plaintext_bytes))
-        ciphertext = bytes(a ^ b for a, b in zip(plaintext_bytes, key_stream))
 
-        # Combine salt + nonce + ciphertext
+        # Encrypt with authentication - tag is automatically appended
+        ciphertext = aesgcm.encrypt(nonce, plaintext_bytes, None)
+
+        # Combine salt + nonce + ciphertext (includes auth tag)
         combined = salt + nonce + ciphertext
 
         return base64.b64encode(combined).decode('utf-8')
 
     def decrypt(self, ciphertext: str, key: Optional[str] = None) -> str:
         """
-        Decrypt ciphertext.
+        Decrypt ciphertext using AES-256-GCM.
+
+        Verifies authenticity before returning plaintext.
+        Raises exception if data has been tampered with.
 
         Args:
             ciphertext: Base64-encoded encrypted data
@@ -73,23 +98,29 @@ class EncryptionService:
 
         Returns:
             Decrypted plaintext
+
+        Raises:
+            ValueError: If decryption fails or data is tampered
         """
-        # Decode from base64
-        combined = base64.b64decode(ciphertext.encode('utf-8'))
+        try:
+            # Decode from base64
+            combined = base64.b64decode(ciphertext.encode('utf-8'))
 
-        # Extract components
-        salt = combined[:self.SALT_LENGTH]
-        nonce = combined[self.SALT_LENGTH:self.SALT_LENGTH + 12]
-        encrypted_data = combined[self.SALT_LENGTH + 12:]
+            # Extract components
+            salt = combined[:self.SALT_LENGTH]
+            nonce = combined[self.SALT_LENGTH:self.SALT_LENGTH + self.NONCE_LENGTH]
+            encrypted_data = combined[self.SALT_LENGTH + self.NONCE_LENGTH:]
 
-        # Derive key
-        derived_key = self._derive_key(key or self.master_key, salt)
+            # Derive key
+            derived_key = self._derive_key(key or self.master_key, salt)
 
-        # Decrypt using XOR (simplified)
-        key_stream = self._generate_key_stream(derived_key, nonce, len(encrypted_data))
-        plaintext_bytes = bytes(a ^ b for a, b in zip(encrypted_data, key_stream))
+            # Create AES-GCM cipher and decrypt (also verifies auth tag)
+            aesgcm = AESGCM(derived_key)
+            plaintext_bytes = aesgcm.decrypt(nonce, encrypted_data, None)
 
-        return plaintext_bytes.decode('utf-8')
+            return plaintext_bytes.decode('utf-8')
+        except Exception as e:
+            raise ValueError(f"Decryption failed - data may be corrupted or tampered: {e}")
 
     def hash_value(self, value: str, salt: Optional[str] = None) -> str:
         """
@@ -147,25 +178,19 @@ class EncryptionService:
         return ''.join(secrets.choice('0123456789') for _ in range(length))
 
     def _derive_key(self, password: str, salt: bytes) -> bytes:
-        """Derive encryption key from password."""
-        return hashlib.pbkdf2_hmac(
-            'sha256',
-            password.encode(),
-            salt,
-            self.PBKDF2_ITERATIONS,
-            dklen=self.KEY_LENGTH
-        )
+        """
+        Derive encryption key from password using PBKDF2.
 
-    def _generate_key_stream(self, key: bytes, nonce: bytes, length: int) -> bytes:
-        """Generate key stream for XOR encryption."""
-        # Simplified key stream generation
-        stream = b''
-        counter = 0
-        while len(stream) < length:
-            block = hashlib.sha256(key + nonce + counter.to_bytes(4, 'big')).digest()
-            stream += block
-            counter += 1
-        return stream[:length]
+        Uses PBKDF2 with SHA-256 and 100,000 iterations for key derivation.
+        """
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=self.KEY_LENGTH,
+            salt=salt,
+            iterations=self.PBKDF2_ITERATIONS,
+            backend=default_backend()
+        )
+        return kdf.derive(password.encode())
 
 
 class TokenManager:
@@ -179,8 +204,8 @@ class TokenManager:
     - Session management
     """
 
-    # Token configuration
-    ACCESS_TOKEN_EXPIRE_MINUTES = 30
+    # Token configuration - Secure defaults
+    ACCESS_TOKEN_EXPIRE_MINUTES = 15  # Reduced from 30 for security
     REFRESH_TOKEN_EXPIRE_DAYS = 7
     ALGORITHM = "HS256"
 

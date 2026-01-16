@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any, Callable
 from datetime import datetime, timedelta
 from functools import wraps
 import hashlib
+import hmac
 import secrets
 import re
 import ipaddress
@@ -324,31 +325,67 @@ class PasswordPolicy:
 
     @staticmethod
     def hash_password(password: str) -> str:
-        """Hash password using secure algorithm."""
-        # In production, use bcrypt or argon2
-        salt = secrets.token_hex(16)
-        hashed = hashlib.pbkdf2_hmac(
-            'sha256',
-            password.encode(),
-            salt.encode(),
-            100000
-        )
-        return f"{salt}${hashed.hex()}"
+        """
+        Hash password using Argon2id (memory-hard algorithm).
+
+        Argon2id is the recommended password hashing algorithm by OWASP.
+        Falls back to PBKDF2 if argon2 is not available.
+        """
+        try:
+            from argon2 import PasswordHasher
+            from argon2.profiles import RFC_9106_LOW_MEMORY
+            ph = PasswordHasher.from_parameters(RFC_9106_LOW_MEMORY)
+            return ph.hash(password)
+        except ImportError:
+            # Fallback to PBKDF2 if argon2 not installed
+            salt = secrets.token_hex(16)
+            hashed = hashlib.pbkdf2_hmac(
+                'sha256',
+                password.encode(),
+                salt.encode(),
+                100000
+            )
+            return f"pbkdf2${salt}${hashed.hex()}"
 
     @staticmethod
     def verify_password(password: str, hashed: str) -> bool:
-        """Verify password against hash."""
+        """
+        Verify password against hash.
+
+        Supports both Argon2 and legacy PBKDF2 hashes for migration.
+        """
         try:
-            salt, hash_value = hashed.split('$')
+            # Check if it's an Argon2 hash (starts with $argon2)
+            if hashed.startswith('$argon2'):
+                from argon2 import PasswordHasher
+                from argon2.exceptions import VerifyMismatchError
+                ph = PasswordHasher()
+                try:
+                    ph.verify(hashed, password)
+                    return True
+                except VerifyMismatchError:
+                    return False
+            # Legacy PBKDF2 hash (format: pbkdf2$salt$hash or salt$hash)
+            elif hashed.startswith('pbkdf2$'):
+                parts = hashed.split('$')
+                salt, hash_value = parts[1], parts[2]
+            else:
+                salt, hash_value = hashed.split('$')
+
             new_hash = hashlib.pbkdf2_hmac(
                 'sha256',
                 password.encode(),
                 salt.encode(),
                 100000
             )
-            return new_hash.hex() == hash_value
+            return hmac.compare_digest(new_hash.hex(), hash_value)
         except Exception:
             return False
+
+    @staticmethod
+    def needs_rehash(hashed: str) -> bool:
+        """Check if password hash needs to be upgraded to Argon2."""
+        return not hashed.startswith('$argon2')
 
 
 # =============================================================================

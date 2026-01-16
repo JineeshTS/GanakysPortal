@@ -64,13 +64,19 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 50
     ALLOWED_FILE_TYPES: List[str] = ["pdf", "jpg", "jpeg", "png", "xlsx", "csv", "doc", "docx"]
 
-    # Email (AWS SES / SendGrid)
-    EMAIL_PROVIDER: str = "ses"  # ses, sendgrid
-    AWS_SES_REGION: str = "ap-south-1"
-    AWS_ACCESS_KEY_ID: Optional[str] = None
-    AWS_SECRET_ACCESS_KEY: Optional[str] = None
-    SENDGRID_API_KEY: Optional[str] = None
+    # Email (SMTP - Hostinger)
+    SMTP_HOST: str = "smtp.hostinger.com"
+    SMTP_PORT: int = 465
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_USE_SSL: bool = True
+    SMTP_USE_TLS: bool = False
     EMAIL_FROM: str = "noreply@ganakys.com"
+    EMAIL_FROM_NAME: str = "GanaPortal"
+
+    # Password Reset
+    PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 24
+    FRONTEND_URL: str = "https://portal.ganakys.com"
 
     # SMS (MSG91)
     MSG91_AUTH_KEY: Optional[str] = None
