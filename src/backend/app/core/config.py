@@ -5,6 +5,18 @@ Environment-based settings with Pydantic
 from functools import lru_cache
 from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
+
+
+# Weak/default secrets that should never be used in production
+INSECURE_SECRETS = {
+    "your-super-secret-key-change-in-production",
+    "ganaportal-dev-secret-key-change-in-production-2026",
+    "super-secret-key",
+    "secret",
+    "changeme",
+    "change-me",
+}
 
 
 class Settings(BaseSettings):
@@ -38,10 +50,27 @@ class Settings(BaseSettings):
     REDIS_CACHE_DB: int = 2
 
     # JWT Authentication
-    JWT_SECRET_KEY: str = "your-super-secret-key-change-in-production"
+    # SECURITY: JWT_SECRET_KEY must be set via environment variable
+    # Generate with: openssl rand -base64 64
+    JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    @field_validator("JWT_SECRET_KEY")
+    @classmethod
+    def validate_jwt_secret(cls, v: str) -> str:
+        """Validate that JWT secret is secure."""
+        if not v:
+            raise ValueError(
+                "JWT_SECRET_KEY must be set. Generate with: openssl rand -base64 64"
+            )
+        if v.lower() in INSECURE_SECRETS or len(v) < 32:
+            raise ValueError(
+                "JWT_SECRET_KEY is insecure. Use a cryptographically random secret "
+                "of at least 32 characters. Generate with: openssl rand -base64 64"
+            )
+        return v
 
     # AI Providers (Fallback Chain)
     CLAUDE_API_KEY: Optional[str] = None

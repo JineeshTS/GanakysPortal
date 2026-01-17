@@ -3,14 +3,22 @@ Super Admin Portal API Endpoints
 Platform-level administration for multi-tenant SaaS management
 """
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional, List, Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
 from app.db.session import get_db
+from app.services.superadmin.auth_service import SuperAdminAuthService
+
+# Security scheme for JWT Bearer token authentication
+super_admin_bearer = HTTPBearer(
+    scheme_name="SuperAdminAuth",
+    description="JWT Bearer token for super admin authentication"
+)
 from app.models.superadmin import (
     SuperAdmin, SuperAdminSession, TenantProfile, TenantImpersonation,
     PlatformSettings, FeatureFlag, TenantFeatureOverride,
@@ -58,26 +66,63 @@ router = APIRouter()
 # Helper Functions
 # ============================================================================
 
-async def get_current_super_admin(request: Request, db: AsyncSession = Depends(get_db)) -> SuperAdmin:
-    """Get current authenticated super admin from request"""
-    # In production, this would verify JWT token and return the admin
-    # For now, returning a placeholder for development
-    admin_id = request.headers.get("X-Admin-ID")
-    if not admin_id:
+async def get_current_super_admin(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(super_admin_bearer)],
+    db: AsyncSession = Depends(get_db)
+) -> SuperAdmin:
+    """
+    Get current authenticated super admin from JWT Bearer token.
+
+    Security: Uses proper JWT verification instead of spoofable headers.
+    The token must be obtained through the /superadmin/auth/login endpoint.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate super admin credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    token = credentials.credentials
+
+    # Decode and verify JWT token
+    auth_service = SuperAdminAuthService()
+    payload = auth_service.decode_token(token)
+
+    if payload is None:
+        raise credentials_exception
+
+    # Verify token type is access token
+    if payload.get("type") != "access":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Super admin authentication required"
+            detail="Invalid token type. Use access token.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-    result = await db.execute(
-        select(SuperAdmin).where(SuperAdmin.id == admin_id, SuperAdmin.is_active == True)
-    )
-    admin = result.scalar_one_or_none()
+    # Extract admin ID from token
+    admin_id = payload.get("sub")
+    if not admin_id:
+        raise credentials_exception
+
+    # Verify admin exists and is active
+    try:
+        result = await db.execute(
+            select(SuperAdmin).where(
+                SuperAdmin.id == UUID(admin_id),
+                SuperAdmin.is_active == True
+            )
+        )
+        admin = result.scalar_one_or_none()
+    except ValueError:
+        raise credentials_exception
+
     if not admin:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or inactive super admin"
+            detail="Super admin account not found or inactive",
+            headers={"WWW-Authenticate": "Bearer"},
         )
+
     return admin
 
 
@@ -1210,3 +1255,280 @@ async def list_audit_logs(
         page_size=page_size,
         total_pages=(total + page_size - 1) // page_size
     )
+
+
+# ============================================================================
+# Authentication Endpoints
+# ============================================================================
+
+@router.post("/auth/login", response_model=SuperAdminLoginResponse)
+async def super_admin_login(
+    request: Request,
+    login_data: SuperAdminLogin,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Authenticate super admin and return JWT tokens.
+
+    Returns access_token (1 hour) and refresh_token (7 days).
+    If MFA is enabled, the mfa_code field is required.
+    """
+    auth_service = SuperAdminAuthService()
+
+    # Get client info for audit logging
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+
+    # Authenticate
+    admin, error_message, error_code = await auth_service.authenticate(
+        db=db,
+        email=login_data.email,
+        password=login_data.password,
+        mfa_code=login_data.mfa_code,
+        ip_address=ip_address,
+        user_agent=user_agent
+    )
+
+    if not admin:
+        if error_code == "MFA_REQUIRED":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=error_message,
+                headers={"X-MFA-Required": "true"}
+            )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=error_message,
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    # Create session and tokens
+    access_token, refresh_token = await auth_service.create_session(
+        db=db,
+        admin_id=admin.id,
+        device_info=user_agent,
+        ip_address=ip_address
+    )
+
+    return SuperAdminLoginResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="Bearer",
+        expires_in=auth_service.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        admin={
+            "id": str(admin.id),
+            "email": admin.email,
+            "name": admin.name,
+            "role": admin.role,
+            "mfa_enabled": admin.mfa_enabled
+        }
+    )
+
+
+@router.post("/auth/refresh")
+async def refresh_super_admin_token(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Refresh access token using a valid refresh token.
+
+    Send refresh_token in request body: {"refresh_token": "..."}
+    """
+    try:
+        body = await request.json()
+        refresh_token = body.get("refresh_token")
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid request body. Expected: {\"refresh_token\": \"...\"}"
+        )
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="refresh_token is required"
+        )
+
+    auth_service = SuperAdminAuthService()
+    new_access_token = await auth_service.refresh_access_token(db, refresh_token)
+
+    if not new_access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    return {
+        "access_token": new_access_token,
+        "token_type": "Bearer",
+        "expires_in": auth_service.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    }
+
+
+@router.post("/auth/logout")
+async def super_admin_logout(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Logout super admin and invalidate current session.
+
+    Optionally send refresh_token in body to invalidate specific session,
+    otherwise all sessions will be invalidated.
+    """
+    auth_service = SuperAdminAuthService()
+
+    refresh_token = None
+    try:
+        body = await request.json()
+        refresh_token = body.get("refresh_token")
+    except Exception:
+        pass
+
+    await auth_service.logout(db, current_admin.id, refresh_token)
+
+    # Audit log
+    await log_audit(
+        db, current_admin.id, "logout", "auth",
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent")
+    )
+    await db.commit()
+
+    return {"message": "Successfully logged out"}
+
+
+@router.post("/auth/mfa/setup", response_model=MFASetupResponse)
+async def setup_mfa(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Setup MFA for the current super admin.
+
+    Returns QR code URL and backup codes. The MFA is not enabled
+    until verified with /auth/mfa/enable endpoint.
+    """
+    auth_service = SuperAdminAuthService()
+    result = await auth_service.setup_mfa(db, current_admin.id)
+
+    await log_audit(
+        db, current_admin.id, "mfa.setup_initiated", "auth",
+        ip_address=request.client.host if request.client else None
+    )
+    await db.commit()
+
+    return MFASetupResponse(
+        secret=result["secret"],
+        qr_code_url=result["qr_code_url"],
+        backup_codes=result["backup_codes"]
+    )
+
+
+@router.post("/auth/mfa/enable")
+async def enable_mfa(
+    request: Request,
+    mfa_data: MFAVerify,
+    db: AsyncSession = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Verify and enable MFA for the current super admin.
+
+    Requires the TOTP code from authenticator app to verify setup.
+    """
+    auth_service = SuperAdminAuthService()
+    success = await auth_service.enable_mfa(db, current_admin.id, mfa_data.code)
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid MFA code. Please try again."
+        )
+
+    await log_audit(
+        db, current_admin.id, "mfa.enabled", "auth",
+        ip_address=request.client.host if request.client else None
+    )
+    await db.commit()
+
+    return {"message": "MFA enabled successfully"}
+
+
+@router.post("/auth/mfa/disable")
+async def disable_mfa(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Disable MFA for the current super admin.
+
+    Requires password verification. Send: {"password": "..."}
+    """
+    try:
+        body = await request.json()
+        password = body.get("password")
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid request body. Expected: {\"password\": \"...\"}"
+        )
+
+    if not password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password is required to disable MFA"
+        )
+
+    auth_service = SuperAdminAuthService()
+    success = await auth_service.disable_mfa(db, current_admin.id, password)
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid password"
+        )
+
+    await log_audit(
+        db, current_admin.id, "mfa.disabled", "auth",
+        ip_address=request.client.host if request.client else None
+    )
+    await db.commit()
+
+    return {"message": "MFA disabled successfully"}
+
+
+@router.post("/auth/change-password")
+async def change_super_admin_password(
+    request: Request,
+    password_data: SuperAdminPasswordChange,
+    db: AsyncSession = Depends(get_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """
+    Change password for current super admin.
+
+    This will invalidate all existing sessions.
+    """
+    auth_service = SuperAdminAuthService()
+
+    success, error = await auth_service.change_password(
+        db=db,
+        admin_id=current_admin.id,
+        current_password=password_data.current_password,
+        new_password=password_data.new_password,
+        ip_address=request.client.host if request.client else None
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error
+        )
+
+    return {"message": "Password changed successfully. Please login again."}

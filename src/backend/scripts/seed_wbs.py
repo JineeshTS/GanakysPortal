@@ -8,10 +8,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 import os
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://ganaportal_user:ganaportal123@127.0.0.1:5432/ganaportal_db"
-)
+# Database URL - must be set via environment variable (no hardcoded fallback for security)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable must be set")
 
 # ============================================================================
 # Seed Data
@@ -302,34 +302,46 @@ async def seed_wbs():
         # Seed Quality Gates
         print("Seeding quality gates...")
         for gate in QUALITY_GATES:
-            await session.execute(text("""
+            # Format criteria as PostgreSQL array literal for raw SQL
+            criteria_items = ", ".join(f"'{c}'" for c in gate["criteria"])
+            criteria_sql = f"ARRAY[{criteria_items}]"
+            # Use raw SQL with array constructor
+            await session.execute(text(f"""
                 INSERT INTO wbs_quality_gates (gate_code, name, is_blocking, criteria, status)
-                VALUES (:gate_code, :name, :is_blocking, :criteria, 'pending')
+                VALUES (:gate_code, :name, :is_blocking, {criteria_sql}, 'pending')
                 ON CONFLICT (gate_code) DO UPDATE SET
                     name = EXCLUDED.name,
                     is_blocking = EXCLUDED.is_blocking,
-                    criteria = EXCLUDED.criteria
-            """), {**gate, "criteria": gate["criteria"]})
+                    criteria = {criteria_sql}
+            """), {"gate_code": gate["gate_code"], "name": gate["name"], "is_blocking": gate["is_blocking"]})
 
         # Seed Agent Configs
         print("Seeding agent configs...")
         for agent in AGENT_CONFIGS:
-            await session.execute(text("""
+            # Format arrays as PostgreSQL ARRAY[] for raw SQL
+            triggers_items = ", ".join(f"'{t}'" for t in agent["triggers"])
+            output_types_items = ", ".join(f"'{o}'" for o in agent["output_types"])
+            pattern_files_items = ", ".join(f"'{p}'" for p in agent["pattern_files"])
+            triggers_sql = f"ARRAY[{triggers_items}]"
+            output_types_sql = f"ARRAY[{output_types_items}]"
+            pattern_files_sql = f"ARRAY[{pattern_files_items}]"
+            await session.execute(text(f"""
                 INSERT INTO wbs_agent_configs (agent_code, name, description, purpose, triggers, output_types, pattern_files, system_prompt, is_active)
-                VALUES (:agent_code, :name, :description, :purpose, :triggers, :output_types, :pattern_files, :system_prompt, true)
+                VALUES (:agent_code, :name, :description, :purpose, {triggers_sql}, {output_types_sql}, {pattern_files_sql}, :system_prompt, true)
                 ON CONFLICT (agent_code) DO UPDATE SET
                     name = EXCLUDED.name,
                     description = EXCLUDED.description,
                     purpose = EXCLUDED.purpose,
-                    triggers = EXCLUDED.triggers,
-                    output_types = EXCLUDED.output_types,
-                    pattern_files = EXCLUDED.pattern_files,
+                    triggers = {triggers_sql},
+                    output_types = {output_types_sql},
+                    pattern_files = {pattern_files_sql},
                     system_prompt = EXCLUDED.system_prompt
             """), {
-                **agent,
-                "triggers": agent["triggers"],
-                "output_types": agent["output_types"],
-                "pattern_files": agent["pattern_files"]
+                "agent_code": agent["agent_code"],
+                "name": agent["name"],
+                "description": agent["description"],
+                "purpose": agent["purpose"],
+                "system_prompt": agent["system_prompt"]
             })
 
         await session.commit()

@@ -11,10 +11,10 @@ import os
 import uuid
 from typing import List, Dict, Any
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://ganaportal_user:ganaportal123@127.0.0.1:5432/ganaportal_db"
-)
+# Database URL - must be set via environment variable (no hardcoded fallback for security)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable must be set")
 
 # ============================================================================
 # Task Templates by Agent Type
@@ -221,6 +221,54 @@ MODULE_FEATURES = {
             "data_source", "visualization", "scheduled_report"
         ],
         "ai_features": ["insight_generator", "trend_analyzer", "prediction_engine"]
+    },
+    "MOD-16": {  # Workflow Engine
+        "code": "WFL",
+        "entities": [
+            "workflow_definition", "workflow_instance", "workflow_step",
+            "workflow_action", "workflow_trigger", "workflow_history"
+        ],
+        "ai_features": ["workflow_optimizer", "bottleneck_detector", "auto_routing"]
+    },
+    "MOD-17": {  # Integration Platform
+        "code": "INTG",
+        "entities": [
+            "integration_config", "integration_mapping", "webhook",
+            "api_key", "sync_log", "transformation_rule"
+        ],
+        "ai_features": ["data_mapper", "error_predictor", "schema_matcher"]
+    },
+    "MOD-18": {  # Mobile Apps
+        "code": "MOBI",
+        "entities": [
+            "mobile_device", "push_notification", "sync_queue",
+            "offline_data", "mobile_attendance", "device_config"
+        ],
+        "ai_features": ["sync_optimizer", "notification_scheduler", "usage_analyzer"]
+    },
+    "MOD-19": {  # Multi-Currency
+        "code": "CURR",
+        "entities": [
+            "currency", "exchange_rate", "currency_conversion",
+            "multi_currency_transaction", "hedging_contract"
+        ],
+        "ai_features": ["rate_predictor", "exposure_analyzer", "hedge_optimizer"]
+    },
+    "MOD-20": {  # Fixed Assets
+        "code": "FAAS",
+        "entities": [
+            "asset", "asset_category", "depreciation_schedule",
+            "asset_transfer", "asset_disposal", "asset_maintenance", "asset_valuation"
+        ],
+        "ai_features": ["depreciation_optimizer", "maintenance_predictor", "valuation_analyzer"]
+    },
+    "MOD-21": {  # Expense Management
+        "code": "EXPN",
+        "entities": [
+            "expense_report", "expense_line", "expense_category",
+            "expense_policy", "mileage_claim", "per_diem", "reimbursement"
+        ],
+        "ai_features": ["receipt_extractor", "policy_checker", "fraud_detector"]
     }
 }
 

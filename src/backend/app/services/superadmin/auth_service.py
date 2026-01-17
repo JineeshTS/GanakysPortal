@@ -23,9 +23,10 @@ from app.core.config import settings
 class SuperAdminAuthService:
     """Service for super admin authentication"""
 
-    JWT_SECRET = settings.SECRET_KEY if hasattr(settings, 'SECRET_KEY') else "super-secret-key"
-    JWT_ALGORITHM = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES = 60
+    # Use the main JWT secret from settings - NEVER use a hardcoded fallback in production
+    JWT_SECRET = settings.JWT_SECRET_KEY
+    JWT_ALGORITHM = settings.JWT_ALGORITHM
+    ACCESS_TOKEN_EXPIRE_MINUTES = 60  # Super admin tokens expire in 1 hour (more restrictive)
     REFRESH_TOKEN_EXPIRE_DAYS = 7
 
     @staticmethod

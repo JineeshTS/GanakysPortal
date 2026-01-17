@@ -33,7 +33,11 @@ from app.db.session import get_db
 # =============================================================================
 
 # Use PostgreSQL for testing (matches production, supports JSONB/UUID)
-TEST_DATABASE_URL = "postgresql+asyncpg://ganaportal_user:ganaportal123@127.0.0.1:5432/ganaportal_test"
+# Get database URL from environment or use settings (never hardcode credentials)
+TEST_DATABASE_URL = os.environ.get(
+    "TEST_DATABASE_URL",
+    settings.DATABASE_URL.replace("/ganaportal_db", "/ganaportal_test")
+)
 
 # Use NullPool to avoid connection pool issues with asyncio tests
 from sqlalchemy.pool import NullPool

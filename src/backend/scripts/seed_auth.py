@@ -17,11 +17,10 @@ import bcrypt
 from uuid import uuid4
 from datetime import datetime
 
-# Database URL
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://ganaportal_user:ganaportal123@127.0.0.1:5432/ganaportal_db"
-)
+# Database URL - must be set via environment variable (no hardcoded fallback for security)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable must be set")
 
 
 def get_password_hash(password: str) -> str:
