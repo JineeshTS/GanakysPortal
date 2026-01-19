@@ -10,6 +10,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.datetime_utils import utc_now
 from app.models.security import SecurityPolicy
 from app.schemas.security import (
     SecurityPolicyResponse, SecurityPolicyUpdate, PasswordValidationResult
@@ -54,7 +55,7 @@ class SecurityPolicyService:
         for key, value in update_data.items():
             setattr(policy, key, value)
 
-        policy.updated_at = datetime.utcnow()
+        policy.updated_at = utc_now()
         policy.updated_by = updated_by
 
         await db.commit()

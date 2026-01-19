@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
+import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -276,7 +277,7 @@ export default function InvoicesPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
       const params = new URLSearchParams({
         skip: String(page * pageSize),
         limit: String(pageSize),
@@ -285,7 +286,7 @@ export default function InvoicesPage() {
         params.append('status', statusFilter)
       }
 
-      const res = await fetch(`${apiUrl}/subscriptions/invoices?${params}`)
+      const res = await fetchWithAuth(`${apiUrl}/subscriptions/invoices?${params}`)
       if (res.ok) {
         const data = await res.json()
         setInvoices(data)

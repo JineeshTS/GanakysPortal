@@ -7,11 +7,12 @@ from typing import Optional, List, Dict, Any
 from uuid import UUID
 from decimal import Decimal
 import secrets
-import jwt
+from jose import jwt
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
+from app.core.datetime_utils import utc_now
 from app.models.superadmin import (
     TenantProfile, TenantImpersonation, SuperAdmin, SuperAdminAuditLog,
     TenantStatus
@@ -19,12 +20,12 @@ from app.models.superadmin import (
 from app.models.company import CompanyProfile
 from app.models.user import User
 from app.models.subscription import Subscription
+from app.core.config import settings
 
 
 class TenantService:
     """Service for tenant management"""
 
-    JWT_SECRET = "impersonation-secret-key"  # Should be from settings
     IMPERSONATION_TOKEN_EXPIRE_MINUTES = 60
 
     async def get_tenant_by_company(
@@ -92,9 +93,9 @@ class TenantService:
         old_status = tenant.status
         tenant.status = status
         tenant.status_reason = reason
-        tenant.status_changed_at = datetime.utcnow()
+        tenant.status_changed_at = utc_now()
         tenant.status_changed_by = admin_id
-        tenant.updated_at = datetime.utcnow()
+        tenant.updated_at = utc_now()
 
         if admin_id:
             audit = SuperAdminAuditLog(
@@ -135,9 +136,9 @@ class TenantService:
         all_complete = all(checklist.values())
         if all_complete and not tenant.onboarding_completed:
             tenant.onboarding_completed = True
-            tenant.onboarding_completed_at = datetime.utcnow()
+            tenant.onboarding_completed_at = utc_now()
 
-        tenant.updated_at = datetime.utcnow()
+        tenant.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(tenant)
@@ -167,7 +168,7 @@ class TenantService:
 
         # Factor 2: Days since last activity
         if tenant.last_active_at:
-            days_inactive = (datetime.utcnow() - tenant.last_active_at).days
+            days_inactive = (utc_now() - tenant.last_active_at).days
             if days_inactive > 14:
                 score -= 25
                 factors.append({"factor": "inactive", "impact": -25, "message": f"Inactive for {days_inactive} days"})
@@ -244,7 +245,7 @@ class TenantService:
         await db.flush()
 
         # Create impersonation token
-        expire = datetime.utcnow() + timedelta(minutes=self.IMPERSONATION_TOKEN_EXPIRE_MINUTES)
+        expire = utc_now() + timedelta(minutes=self.IMPERSONATION_TOKEN_EXPIRE_MINUTES)
         payload = {
             "sub": str(user_id),
             "company_id": str(company_id),
@@ -252,9 +253,9 @@ class TenantService:
             "admin_id": str(admin_id),
             "type": "impersonation",
             "exp": expire,
-            "iat": datetime.utcnow()
+            "iat": utc_now()
         }
-        token = jwt.encode(payload, self.JWT_SECRET, algorithm="HS256")
+        token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
 
         # Audit log
         audit = SuperAdminAuditLog(
@@ -298,7 +299,7 @@ class TenantService:
         if impersonation.admin_id != admin_id:
             raise ValueError("You can only end your own impersonation sessions")
 
-        impersonation.ended_at = datetime.utcnow()
+        impersonation.ended_at = utc_now()
 
         # Audit log
         audit = SuperAdminAuditLog(
@@ -337,7 +338,7 @@ class TenantService:
         actions_log.append({
             "action": action,
             "details": details,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": utc_now().isoformat()
         })
         impersonation.actions_log = actions_log
 
@@ -416,7 +417,7 @@ class TenantService:
                     current_tags -= set(tags_to_remove)
 
                 tenant.tags = list(current_tags)
-                tenant.updated_at = datetime.utcnow()
+                tenant.updated_at = utc_now()
                 updated_count += 1
 
         if admin_id:

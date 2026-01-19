@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.anomaly_detection import AnomalyRule, AnomalyCategory
 from app.schemas.anomaly_detection import AnomalyRuleCreate, AnomalyRuleUpdate
+from app.core.datetime_utils import utc_now
 
 
 class RuleService:
@@ -125,7 +126,7 @@ class RuleService:
         for field, value in update_data.items():
             setattr(rule, field, value)
 
-        rule.updated_at = datetime.utcnow()
+        rule.updated_at = utc_now()
         await db.commit()
         await db.refresh(rule)
         return rule
@@ -157,7 +158,7 @@ class RuleService:
             return None
 
         rule.is_active = not rule.is_active
-        rule.updated_at = datetime.utcnow()
+        rule.updated_at = utc_now()
         await db.commit()
         await db.refresh(rule)
         return rule

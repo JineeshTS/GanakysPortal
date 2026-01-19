@@ -191,44 +191,44 @@ class GSTR1(Base):
     return_id = Column(UUID(as_uuid=True), ForeignKey("gst_returns.id"), nullable=False, unique=True)
 
     # B2B Invoices (>Rs.2.5L) - stored as JSON array
-    b2b_invoices = Column(JSONB, default=[])
+    b2b_invoices = Column(JSONB, default=list)
     b2b_count = Column(Integer, default=0)
     b2b_taxable_value = Column(Numeric(18, 2), default=0)
     b2b_tax = Column(Numeric(18, 2), default=0)
 
     # B2C Large Invoices (>Rs.2.5L to unregistered) - inter-state only
-    b2cl_invoices = Column(JSONB, default=[])
+    b2cl_invoices = Column(JSONB, default=list)
     b2cl_count = Column(Integer, default=0)
     b2cl_taxable_value = Column(Numeric(18, 2), default=0)
     b2cl_tax = Column(Numeric(18, 2), default=0)
 
     # B2C Small Invoices (<=Rs.2.5L) - consolidated by state/rate
-    b2cs_invoices = Column(JSONB, default=[])
+    b2cs_invoices = Column(JSONB, default=list)
     b2cs_taxable_value = Column(Numeric(18, 2), default=0)
     b2cs_tax = Column(Numeric(18, 2), default=0)
 
     # Credit Notes
-    credit_notes = Column(JSONB, default=[])
+    credit_notes = Column(JSONB, default=list)
     credit_notes_count = Column(Integer, default=0)
     credit_notes_taxable = Column(Numeric(18, 2), default=0)
     credit_notes_tax = Column(Numeric(18, 2), default=0)
 
     # Debit Notes
-    debit_notes = Column(JSONB, default=[])
+    debit_notes = Column(JSONB, default=list)
     debit_notes_count = Column(Integer, default=0)
     debit_notes_taxable = Column(Numeric(18, 2), default=0)
     debit_notes_tax = Column(Numeric(18, 2), default=0)
 
     # Exports
-    exports = Column(JSONB, default=[])
+    exports = Column(JSONB, default=list)
     exports_taxable_value = Column(Numeric(18, 2), default=0)
     exports_tax = Column(Numeric(18, 2), default=0)
 
     # Nil Rated, Exempt and Non-GST
-    nil_rated = Column(JSONB, default={})
+    nil_rated = Column(JSONB, default=dict)
 
     # Document Summary
-    doc_summary = Column(JSONB, default={})
+    doc_summary = Column(JSONB, default=dict)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -312,7 +312,7 @@ class GSTR3B(Base):
     return_id = Column(UUID(as_uuid=True), ForeignKey("gst_returns.id"), nullable=False, unique=True)
 
     # 3.1 - Outward Supplies (Liability)
-    liability = Column(JSONB, default={})
+    liability = Column(JSONB, default=dict)
     # Structure: {
     #   "taxable_outward": {"taxable": 0, "cgst": 0, "sgst": 0, "igst": 0, "cess": 0},
     #   "zero_rated": {"taxable": 0, "igst": 0},
@@ -327,7 +327,7 @@ class GSTR3B(Base):
     total_liability_cess = Column(Numeric(18, 2), default=0)
 
     # 4 - ITC Claimed
-    itc_claimed = Column(JSONB, default={})
+    itc_claimed = Column(JSONB, default=dict)
     # Structure: {
     #   "itc_available": {
     #     "imports_goods": {"cgst": 0, "sgst": 0, "igst": 0, "cess": 0},
@@ -347,10 +347,10 @@ class GSTR3B(Base):
     total_itc_cess = Column(Numeric(18, 2), default=0)
 
     # 5 - Exempt, Nil, Non-GST Inward
-    exempt_inward = Column(JSONB, default={})
+    exempt_inward = Column(JSONB, default=dict)
 
     # 6 - Tax Payable
-    tax_payable = Column(JSONB, default={})
+    tax_payable = Column(JSONB, default=dict)
     # Structure: {
     #   "cgst": {"liability": 0, "itc_utilized": 0, "cash_paid": 0},
     #   "sgst": {"liability": 0, "itc_utilized": 0, "cash_paid": 0},
@@ -364,16 +364,16 @@ class GSTR3B(Base):
     net_tax_cess = Column(Numeric(18, 2), default=0)
 
     # Cash Ledger Balance (before payment)
-    cash_ledger = Column(JSONB, default={})
+    cash_ledger = Column(JSONB, default=dict)
     # Structure: {"cgst": 0, "sgst": 0, "igst": 0, "cess": 0}
 
     # Credit Ledger Balance
-    credit_ledger = Column(JSONB, default={})
+    credit_ledger = Column(JSONB, default=dict)
     # Structure: {"cgst": 0, "sgst": 0, "igst": 0, "cess": 0}
 
     # Interest and Late Fee
-    interest_payable = Column(JSONB, default={})
-    late_fee_payable = Column(JSONB, default={})
+    interest_payable = Column(JSONB, default=dict)
+    late_fee_payable = Column(JSONB, default=dict)
 
     # Payment Reference
     payment_reference = Column(String(50))
@@ -438,7 +438,7 @@ class GSTReconciliation(Base):
     status = Column(Enum(ReconciliationStatus), default=ReconciliationStatus.PENDING)
 
     # Reconciliation Details (JSON with matched/unmatched invoices)
-    reconciliation_details = Column(JSONB, default={})
+    reconciliation_details = Column(JSONB, default=dict)
 
     # Last reconciliation run
     last_reconciled_at = Column(DateTime)

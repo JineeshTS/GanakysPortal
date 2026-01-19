@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.currency import (
     ExchangeRate, ExchangeRateHistory,
     ExchangeRateSource, ExchangeRateType
@@ -180,7 +181,7 @@ class ExchangeRateService:
 
         for field, value in update_data.items():
             setattr(rate, field, value)
-        rate.updated_at = datetime.utcnow()
+        rate.updated_at = utc_now()
         await db.commit()
         await db.refresh(rate)
         return rate

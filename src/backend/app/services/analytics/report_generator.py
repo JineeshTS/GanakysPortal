@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.analytics import (
     AnalyticsReportTemplate as ReportTemplate,
     AnalyticsScheduledReport as ScheduledReport,
@@ -100,7 +101,7 @@ class ReportGeneratorService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(template, field, value)
-        template.updated_at = datetime.utcnow()
+        template.updated_at = utc_now()
         await db.commit()
         await db.refresh(template)
         return template
@@ -194,7 +195,7 @@ class ReportGeneratorService:
                 scheduled.schedule_config
             )
 
-        scheduled.updated_at = datetime.utcnow()
+        scheduled.updated_at = utc_now()
         await db.commit()
         await db.refresh(scheduled)
         return scheduled
@@ -208,7 +209,7 @@ class ReportGeneratorService:
             select(ScheduledReport).where(
                 and_(
                     ScheduledReport.is_active == True,
-                    ScheduledReport.next_run_at <= datetime.utcnow()
+                    ScheduledReport.next_run_at <= utc_now()
                 )
             )
         )
@@ -221,13 +222,13 @@ class ReportGeneratorService:
         status: str
     ) -> ScheduledReport:
         """Mark schedule as executed and update next run."""
-        scheduled.last_run_at = datetime.utcnow()
+        scheduled.last_run_at = utc_now()
         scheduled.last_status = status
         scheduled.next_run_at = ReportGeneratorService._calculate_next_run(
             scheduled.schedule_frequency,
             scheduled.schedule_config
         )
-        scheduled.updated_at = datetime.utcnow()
+        scheduled.updated_at = utc_now()
         await db.commit()
         await db.refresh(scheduled)
         return scheduled
@@ -245,7 +246,7 @@ class ReportGeneratorService:
             id=uuid4(),
             company_id=company_id,
             generated_by=user_id,
-            generated_at=datetime.utcnow(),
+            generated_at=utc_now(),
             download_count=0,
             **data.model_dump()
         )
@@ -311,7 +312,7 @@ class ReportGeneratorService:
         config: dict
     ) -> datetime:
         """Calculate next run time based on frequency."""
-        now = datetime.utcnow()
+        now = utc_now()
 
         if frequency == ScheduleFrequency.DAILY:
             hour = config.get('hour', 6)

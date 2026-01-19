@@ -171,7 +171,7 @@ export default function TimesheetPage() {
       <PageHeader
         title="Timesheet"
         description="Track your work hours by project and task"
-        icon={<Clock className="h-6 w-6" />}
+        icon={Clock}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => {}}>

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.legal import LegalTask, TaskStatus
 from app.schemas.legal import LegalTaskCreate, LegalTaskUpdate
+from app.core.datetime_utils import utc_now
 
 
 class TaskService:
@@ -39,7 +40,7 @@ class TaskService:
             assigned_to=obj_in.assigned_to,
             assigned_by=user_id,
             hearing_id=obj_in.hearing_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -123,7 +124,7 @@ class TaskService:
         if db_obj.status == TaskStatus.pending and db_obj.due_date < date.today():
             db_obj.status = TaskStatus.overdue
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hsseq import HSEAudit, AuditStatus
 from app.schemas.hsseq import HSEAuditCreate, HSEAuditUpdate, HSEAuditFindings, HSECategory, AuditType
+from app.core.datetime_utils import utc_now
 
 
 class AuditService:
@@ -47,7 +48,7 @@ class AuditService:
             external_auditor_name=obj_in.external_auditor_name,
             external_auditor_organization=obj_in.external_auditor_organization,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -144,7 +145,7 @@ class AuditService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -166,7 +167,7 @@ class AuditService:
         db_obj.recommendations = findings.recommendations
         db_obj.status = AuditStatus.completed
         db_obj.actual_end_date = date.today()
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(db_obj)

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.workflow import WorkflowTask, WorkflowHistory, TaskStatus
 from app.schemas.workflow import WorkflowTaskUpdate
+from app.core.datetime_utils import utc_now
 
 
 class TaskService:
@@ -93,8 +94,8 @@ class TaskService:
 
         task.assignee_id = user_id
         task.status = TaskStatus.ASSIGNED
-        task.assigned_at = datetime.utcnow()
-        task.updated_at = datetime.utcnow()
+        task.assigned_at = utc_now()
+        task.updated_at = utc_now()
 
         # Add to delegation chain
         if task.delegation_chain is None:
@@ -113,8 +114,8 @@ class TaskService:
     ) -> WorkflowTask:
         """Start working on a task."""
         task.status = TaskStatus.IN_PROGRESS
-        task.started_at = datetime.utcnow()
-        task.updated_at = datetime.utcnow()
+        task.started_at = utc_now()
+        task.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(task)
@@ -131,11 +132,11 @@ class TaskService:
     ) -> WorkflowTask:
         """Complete a task."""
         task.status = TaskStatus.COMPLETED
-        task.completed_at = datetime.utcnow()
+        task.completed_at = utc_now()
         task.completed_by = user_id
         task.outcome = outcome
         task.comments = comments
-        task.updated_at = datetime.utcnow()
+        task.updated_at = utc_now()
 
         if form_data:
             task.form_data = form_data
@@ -169,8 +170,8 @@ class TaskService:
     ) -> WorkflowTask:
         """Delegate a task to another user."""
         task.assignee_id = to_user_id
-        task.assigned_at = datetime.utcnow()
-        task.updated_at = datetime.utcnow()
+        task.assigned_at = utc_now()
+        task.updated_at = utc_now()
 
         # Track delegation
         if task.delegation_chain is None:
@@ -206,7 +207,7 @@ class TaskService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(task, field, value)
-        task.updated_at = datetime.utcnow()
+        task.updated_at = utc_now()
         await db.commit()
         await db.refresh(task)
         return task
@@ -224,7 +225,7 @@ class TaskService:
                     TaskStatus.ASSIGNED,
                     TaskStatus.IN_PROGRESS
                 ]),
-                WorkflowTask.due_at < datetime.utcnow()
+                WorkflowTask.due_at < utc_now()
             )
         )
 
@@ -268,7 +269,7 @@ class TaskService:
                 and_(
                     WorkflowTask.assignee_id == user_id,
                     WorkflowTask.status.in_([TaskStatus.PENDING, TaskStatus.IN_PROGRESS]),
-                    WorkflowTask.due_at < datetime.utcnow()
+                    WorkflowTask.due_at < utc_now()
                 )
             )
         )

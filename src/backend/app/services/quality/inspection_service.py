@@ -6,6 +6,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.quality import QualityInspection, InspectionResult_, InspectionType, InspectionStatus, InspectionResult
 from app.schemas.quality import InspectionCreate, InspectionUpdate
+from app.core.datetime_utils import utc_now
 
 
 class InspectionService:
@@ -92,9 +93,9 @@ class InspectionService:
         all_pass = all(r.is_pass for r in results)
         inspection.status = InspectionStatus.COMPLETED
         inspection.result = InspectionResult.PASS if all_pass else InspectionResult.FAIL
-        inspection.completed_date = datetime.utcnow()
+        inspection.completed_date = utc_now()
         inspection.reviewed_by = user_id
-        inspection.reviewed_date = datetime.utcnow()
+        inspection.reviewed_date = utc_now()
         await db.commit()
         await db.refresh(inspection)
         return inspection

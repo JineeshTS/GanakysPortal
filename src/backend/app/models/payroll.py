@@ -6,7 +6,9 @@ import uuid
 import enum
 from datetime import datetime, date
 from decimal import Decimal
-from sqlalchemy import Column, String, Boolean, DateTime, Date, Integer, ForeignKey, Enum, Numeric, Text
+from sqlalchemy import Column, String, Boolean, DateTime, Date, Integer, ForeignKey, Enum, Numeric, Text, UniqueConstraint, Index
+
+from app.core.datetime_utils import utc_now
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 
@@ -33,15 +35,23 @@ class SalaryComponent(Base):
     company_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     name = Column(String(100), nullable=False)
     code = Column(String(20), nullable=False)
-    component_type = Column(String(50), nullable=False)  # Changed from Enum for DB compatibility
+    component_type = Column(
+        Enum(ComponentType, name='component_type_enum', native_enum=False),
+        nullable=False
+    )
     is_taxable = Column(Boolean, default=True)
     is_fixed = Column(Boolean, default=True)  # Fixed or calculated
     calculation_formula = Column(String(255), nullable=True)  # e.g., "basic * 0.4" for HRA
     is_statutory = Column(Boolean, default=False)  # PF, ESI, PT, TDS
     is_active = Column(Boolean, default=True)
     display_order = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
 
 
 class EmployeeSalary(Base):
@@ -57,14 +67,21 @@ class EmployeeSalary(Base):
     hra = Column(Numeric(12, 2), default=0)
     special_allowance = Column(Numeric(12, 2), default=0)
     pf_employer = Column(Numeric(12, 2), default=0)
+    pf_employee = Column(Numeric(12, 2), default=0)
     esi_employer = Column(Numeric(12, 2), default=0)
+    esi_employee = Column(Numeric(12, 2), default=0)
     gratuity = Column(Numeric(12, 2), default=0)
     is_pf_applicable = Column(Boolean, default=True)
     is_esi_applicable = Column(Boolean, default=False)
     is_pt_applicable = Column(Boolean, default=True)
     tax_regime = Column(String(10), default="new")  # new, old
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
 
     # Relationships
     employee = relationship("Employee", back_populates="salary")
@@ -79,6 +96,8 @@ class EmployeeSalaryComponent(Base):
     employee_salary_id = Column(UUID(as_uuid=True), ForeignKey("employee_salary.id"), nullable=False)
     component_id = Column(UUID(as_uuid=True), ForeignKey("salary_components.id"), nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     # Relationships
     salary = relationship("EmployeeSalary", back_populates="components")
@@ -88,12 +107,18 @@ class EmployeeSalaryComponent(Base):
 class PayrollRun(Base):
     """Monthly payroll run."""
     __tablename__ = "payroll_runs"
+    __table_args__ = (
+        Index('ix_payroll_runs_company_period', 'company_id', 'year', 'month'),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     company_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     year = Column(Integer, nullable=False)
     month = Column(Integer, nullable=False)
-    status = Column(Enum(PayrollStatus), default=PayrollStatus.draft)
+    status = Column(
+        Enum(PayrollStatus, name='payroll_status_enum', native_enum=False),
+        default=PayrollStatus.draft
+    )
     total_gross = Column(Numeric(14, 2), default=0)
     total_deductions = Column(Numeric(14, 2), default=0)
     total_net = Column(Numeric(14, 2), default=0)
@@ -102,8 +127,8 @@ class PayrollRun(Base):
     run_at = Column(DateTime(timezone=True), nullable=True)
     finalized_by = Column(UUID(as_uuid=True), nullable=True)
     finalized_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     # Relationships
     payslips = relationship("Payslip", back_populates="payroll_run")
@@ -112,6 +137,11 @@ class PayrollRun(Base):
 class Payslip(Base):
     """Employee payslip for a month."""
     __tablename__ = "payslips"
+    __table_args__ = (
+        # Prevent duplicate payslips for same employee in same period
+        UniqueConstraint('employee_id', 'year', 'month', name='uq_payslip_employee_period'),
+        Index('ix_payslip_employee_period', 'employee_id', 'year', 'month'),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     payroll_run_id = Column(UUID(as_uuid=True), ForeignKey("payroll_runs.id"), nullable=False)
@@ -146,7 +176,7 @@ class Payslip(Base):
     earnings_breakdown = Column(JSONB, default=dict)
     deductions_breakdown = Column(JSONB, default=dict)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
     # Relationships
     payroll_run = relationship("PayrollRun", back_populates="payslips")
@@ -155,6 +185,10 @@ class Payslip(Base):
 class PFMonthlyData(Base):
     """PF contribution data for EPFO filing."""
     __tablename__ = "pf_monthly_data"
+    __table_args__ = (
+        Index('ix_pf_monthly_company_period', 'company_id', 'year', 'month'),
+        Index('ix_pf_monthly_employee_period', 'employee_id', 'year', 'month'),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     company_id = Column(UUID(as_uuid=True), nullable=False, index=True)
@@ -167,12 +201,16 @@ class PFMonthlyData(Base):
     employer_epf = Column(Numeric(12, 2), default=0)  # 12% - EPS
     total_employer = Column(Numeric(12, 2), default=0)
     ncp_days = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
 
 class ESIMonthlyData(Base):
     """ESI contribution data."""
     __tablename__ = "esi_monthly_data"
+    __table_args__ = (
+        Index('ix_esi_monthly_company_period', 'company_id', 'year', 'month'),
+        Index('ix_esi_monthly_employee_period', 'employee_id', 'year', 'month'),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     company_id = Column(UUID(as_uuid=True), nullable=False, index=True)
@@ -183,12 +221,16 @@ class ESIMonthlyData(Base):
     employee_esi = Column(Numeric(12, 2), default=0)  # 0.75%
     employer_esi = Column(Numeric(12, 2), default=0)  # 3.25%
     total_esi = Column(Numeric(12, 2), default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
 
 class TDSMonthlyData(Base):
     """TDS deduction data for 24Q."""
     __tablename__ = "tds_monthly_data"
+    __table_args__ = (
+        Index('ix_tds_monthly_company_period', 'company_id', 'year', 'month'),
+        Index('ix_tds_monthly_employee_period', 'employee_id', 'year', 'month'),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     company_id = Column(UUID(as_uuid=True), nullable=False, index=True)
@@ -199,7 +241,7 @@ class TDSMonthlyData(Base):
     taxable_income = Column(Numeric(12, 2), default=0)
     tax_regime = Column(String(10), default="new")
     tds_deducted = Column(Numeric(12, 2), default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
 
 class TaxDeclaration(Base):
@@ -233,5 +275,5 @@ class TaxDeclaration(Base):
     verified_by = Column(UUID(as_uuid=True), nullable=True)
     verified_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)

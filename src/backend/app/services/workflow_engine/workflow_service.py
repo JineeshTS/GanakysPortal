@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.workflow import (
     WorkflowDefinition, WorkflowNode, WorkflowTransition,
     WorkflowStatus, TaskType, GatewayType
@@ -130,7 +131,7 @@ class WorkflowService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(workflow, field, value)
-        workflow.updated_at = datetime.utcnow()
+        workflow.updated_at = utc_now()
         await db.commit()
         await db.refresh(workflow)
         return workflow
@@ -142,7 +143,7 @@ class WorkflowService:
     ) -> WorkflowDefinition:
         """Activate a workflow."""
         workflow.status = WorkflowStatus.ACTIVE
-        workflow.updated_at = datetime.utcnow()
+        workflow.updated_at = utc_now()
         await db.commit()
         await db.refresh(workflow)
         return workflow
@@ -154,7 +155,7 @@ class WorkflowService:
     ) -> WorkflowDefinition:
         """Deactivate a workflow."""
         workflow.status = WorkflowStatus.INACTIVE
-        workflow.updated_at = datetime.utcnow()
+        workflow.updated_at = utc_now()
         await db.commit()
         await db.refresh(workflow)
         return workflow
@@ -165,7 +166,7 @@ class WorkflowService:
         workflow: WorkflowDefinition
     ) -> None:
         """Soft delete workflow."""
-        workflow.deleted_at = datetime.utcnow()
+        workflow.deleted_at = utc_now()
         await db.commit()
 
     # Node Methods
@@ -234,7 +235,7 @@ class WorkflowService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(node, field, value)
-        node.updated_at = datetime.utcnow()
+        node.updated_at = utc_now()
         await db.commit()
         await db.refresh(node)
         return node

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.esg import ESGInitiative, ESGCategory, ESGInitiativeStatus
 from app.schemas.esg import ESGInitiativeCreate, ESGInitiativeUpdate, ESGInitiativeListResponse
+from app.core.datetime_utils import utc_now
 
 
 class InitiativeService:
@@ -101,7 +102,7 @@ class InitiativeService:
         for field, value in update_data.items():
             setattr(initiative, field, value)
 
-        initiative.updated_at = datetime.utcnow()
+        initiative.updated_at = utc_now()
         await db.commit()
         await db.refresh(initiative)
         return initiative

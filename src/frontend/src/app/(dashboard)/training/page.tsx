@@ -152,7 +152,7 @@ export default function TrainingPage() {
       <PageHeader
         title="Training & Development"
         description="Manage courses, certifications, and skill development"
-        icon={<GraduationCap className="h-6 w-6" />}
+        icon={GraduationCap}
         actions={
           <Button>
             <Plus className="h-4 w-4 mr-2" />

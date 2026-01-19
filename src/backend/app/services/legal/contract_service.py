@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.legal import LegalContract
 from app.schemas.legal import LegalContractCreate, LegalContractUpdate
+from app.core.datetime_utils import utc_now
 
 
 class ContractService:
@@ -54,7 +55,7 @@ class ContractService:
             risk_notes=obj_in.risk_notes,
             tags=obj_in.tags,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -152,7 +153,7 @@ class ContractService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -167,7 +168,7 @@ class ContractService:
         db_obj.status = "approved"
         db_obj.approved_by = user_id
         db_obj.approved_date = date.today()
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(db_obj)

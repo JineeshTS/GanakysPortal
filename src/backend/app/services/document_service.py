@@ -15,6 +15,7 @@ from sqlalchemy import select, and_, or_, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.datetime_utils import utc_now
 from app.models.document import (
     DocumentFolder, Document, DocumentVersion, DocumentShare, DocumentAuditLog,
     DocumentCategory, DocumentStatus, DocumentType
@@ -176,7 +177,7 @@ class DocumentService:
             setattr(folder, field, value)
 
         folder.updated_by = user_id
-        folder.updated_at = datetime.utcnow()
+        folder.updated_at = utc_now()
 
         await self.db.commit()
         await self.db.refresh(folder)
@@ -413,7 +414,7 @@ class DocumentService:
             setattr(document, field, value)
 
         document.updated_by = user_id
-        document.updated_at = datetime.utcnow()
+        document.updated_at = utc_now()
 
         await self._log_audit(document_id, user_id, "update", update_data)
         await self.db.commit()
@@ -643,7 +644,7 @@ class DocumentService:
             return False
 
         share.is_active = False
-        share.revoked_at = datetime.utcnow()
+        share.revoked_at = utc_now()
         share.revoked_by = user_id
 
         await self.db.commit()
@@ -687,7 +688,7 @@ class DocumentService:
             raise ValueError("Share not found or expired")
 
         # Check expiry
-        if share.expires_at and share.expires_at < datetime.utcnow():
+        if share.expires_at and share.expires_at < utc_now():
             raise ValueError("Share link has expired")
 
         # Check download limit

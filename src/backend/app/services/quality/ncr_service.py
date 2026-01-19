@@ -6,6 +6,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.quality import NonConformanceReport, NCRStatus, NCRSeverity
 from app.schemas.quality import NCRCreate, NCRUpdate
+from app.core.datetime_utils import utc_now
 
 
 class NCRService:
@@ -78,7 +79,7 @@ class NCRService:
         if not ncr:
             return None
         ncr.status = NCRStatus.CLOSED
-        ncr.closed_date = datetime.utcnow()
+        ncr.closed_date = utc_now()
         ncr.closed_by = user_id
         await db.commit()
         await db.refresh(ncr)

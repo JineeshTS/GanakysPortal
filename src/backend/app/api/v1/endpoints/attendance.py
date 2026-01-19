@@ -15,6 +15,7 @@ from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData
 from app.models.timesheet import AttendanceLog, AttendanceStatus
 from app.models.employee import Employee
+from app.models.leave import LeaveRequest, LeaveStatus, DayType
 
 router = APIRouter()
 
@@ -263,20 +264,87 @@ async def get_attendance_summary(
         avg_minutes = total_minutes // len(check_in_logs)
         avg_check_in = f"{avg_minutes // 60:02d}:{avg_minutes % 60:02d}"
 
+    # Get check-out logs for the date
+    checkout_query = select(AttendanceLog).where(
+        AttendanceLog.log_date == log_date,
+        AttendanceLog.log_type == 'check_out'
+    )
+    checkout_result = await db.execute(checkout_query)
+    check_out_logs = checkout_result.scalars().all()
+
+    # Calculate average check-out time
+    avg_check_out = None
+    if check_out_logs:
+        checkout_minutes = sum(
+            log.log_time.hour * 60 + log.log_time.minute
+            for log in check_out_logs
+        )
+        avg_checkout_mins = checkout_minutes // len(check_out_logs)
+        avg_check_out = f"{avg_checkout_mins // 60:02d}:{avg_checkout_mins % 60:02d}"
+
+    # Calculate early departures (before 6:00 PM)
+    end_time = time(18, 0)
+    early_departures = sum(1 for log in check_out_logs if log.log_time < end_time)
+
+    # Calculate average work hours from matched check-in/check-out pairs
+    employee_checkins = {log.employee_id: log.log_time for log in check_in_logs}
+    total_work_hours = 0.0
+    work_hour_count = 0
+    total_overtime = 0.0
+    for checkout_log in check_out_logs:
+        if checkout_log.employee_id in employee_checkins:
+            checkin_time = employee_checkins[checkout_log.employee_id]
+            checkin_minutes = checkin_time.hour * 60 + checkin_time.minute
+            checkout_minutes = checkout_log.log_time.hour * 60 + checkout_log.log_time.minute
+            work_mins = checkout_minutes - checkin_minutes - 60  # Subtract 1 hour for break
+            if work_mins > 0:
+                work_hours = work_mins / 60.0
+                total_work_hours += work_hours
+                work_hour_count += 1
+                if work_hours > 9:
+                    total_overtime += work_hours - 9
+
+    avg_work_hours = round(total_work_hours / work_hour_count, 1) if work_hour_count > 0 else 0.0
+
+    # Check approved leave requests for the date
+    leave_query = select(LeaveRequest).where(
+        and_(
+            LeaveRequest.company_id == UUID(current_user.company_id),
+            LeaveRequest.from_date <= log_date,
+            LeaveRequest.to_date >= log_date,
+            LeaveRequest.status == LeaveStatus.APPROVED
+        )
+    )
+    leave_result = await db.execute(leave_query)
+    leave_requests = leave_result.scalars().all()
+
+    on_leave = 0
+    half_day = 0
+    for leave in leave_requests:
+        if leave.from_date == log_date and leave.from_day_type == DayType.FIRST_HALF:
+            half_day += 1
+        elif leave.to_date == log_date and leave.to_day_type == DayType.SECOND_HALF:
+            half_day += 1
+        else:
+            on_leave += 1
+
+    # Count work from home
+    work_from_home = sum(1 for log in check_in_logs if log.source in ('mobile', 'wfh', 'remote'))
+
     return AttendanceSummary(
         date=log_date,
         total_employees=total_employees,
         present=present,
-        absent=absent,
-        on_leave=0,  # Would need to check leave requests
-        half_day=0,
-        work_from_home=0,
+        absent=max(0, total_employees - present - on_leave),
+        on_leave=on_leave,
+        half_day=half_day,
+        work_from_home=work_from_home,
         late_arrivals=late_arrivals,
-        early_departures=0,
+        early_departures=early_departures,
         avg_check_in=avg_check_in,
-        avg_check_out=None,
-        avg_work_hours=8.0 if present > 0 else 0,
-        total_overtime_hours=0
+        avg_check_out=avg_check_out,
+        avg_work_hours=avg_work_hours,
+        total_overtime_hours=round(total_overtime, 1)
     )
 
 

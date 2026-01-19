@@ -106,7 +106,7 @@ class CSRPolicy(Base):
     # CSR Committee
     committee_name = Column(String(200), default="CSR Committee")
     chairman_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
-    committee_members = Column(ARRAY(PGUUID(as_uuid=True)), default=[])
+    committee_members = Column(ARRAY(PGUUID(as_uuid=True)), default=list)
 
     # Financial Thresholds (Companies Act 2013)
     net_worth_threshold = Column(Numeric(18, 2), default=5000000000)  # 500 crores
@@ -115,8 +115,8 @@ class CSRPolicy(Base):
     csr_percentage = Column(Float, default=2.0)  # 2% of average net profit
 
     # Focus Areas (Schedule VII activities)
-    focus_areas = Column(ARRAY(String), default=[])
-    geographic_focus = Column(ARRAY(String), default=[])  # States/Districts
+    focus_areas = Column(ARRAY(String), default=list)
+    geographic_focus = Column(ARRAY(String), default=list)  # States/Districts
 
     # Policy Document
     policy_document_url = Column(String(500))
@@ -151,7 +151,7 @@ class CSRBudget(Base):
     voluntary_amount = Column(Numeric(18, 2), default=0)
 
     # Allocation by Category
-    category_allocation = Column(JSONB, default={})  # {category: amount}
+    category_allocation = Column(JSONB, default=dict)  # {category: amount}
 
     # Spending
     amount_spent = Column(Numeric(18, 2), default=0)
@@ -223,12 +223,12 @@ class CSRProject(Base):
     # Impact Targets
     target_beneficiaries = Column(Integer)
     beneficiary_type = Column(String(100))
-    expected_outcomes = Column(JSONB, default=[])
-    sdg_goals = Column(ARRAY(Integer), default=[])  # UN SDG goals 1-17
+    expected_outcomes = Column(JSONB, default=list)
+    sdg_goals = Column(ARRAY(Integer), default=list)  # UN SDG goals 1-17
 
     # Progress
     progress_percentage = Column(Float, default=0)
-    milestones = Column(JSONB, default=[])  # [{name, target_date, completed, completion_date}]
+    milestones = Column(JSONB, default=list)  # [{name, target_date, completed, completion_date}]
     latest_update = Column(Text)
     update_date = Column(Date)
 
@@ -243,9 +243,9 @@ class CSRProject(Base):
     # Documents
     project_proposal_url = Column(String(500))
     mou_url = Column(String(500))
-    progress_reports = Column(ARRAY(String), default=[])
+    progress_reports = Column(ARRAY(String), default=list)
     completion_report_url = Column(String(500))
-    photos = Column(ARRAY(String), default=[])
+    photos = Column(ARRAY(String), default=list)
 
     # Audit
     created_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
@@ -299,7 +299,7 @@ class CSRDisbursement(Base):
     # Attachments
     invoice_url = Column(String(500))
     receipt_url = Column(String(500))
-    attachments = Column(ARRAY(String), default=[])
+    attachments = Column(ARRAY(String), default=list)
 
     # Audit
     created_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
@@ -366,8 +366,8 @@ class CSRBeneficiary(Base):
 
     # Documents
     id_proof_url = Column(String(500))
-    photos = Column(ARRAY(String), default=[])
-    documents = Column(ARRAY(String), default=[])
+    photos = Column(ARRAY(String), default=list)
+    documents = Column(ARRAY(String), default=list)
 
     # Audit
     created_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
@@ -401,7 +401,7 @@ class CSRVolunteer(Base):
     # Role
     role = Column(String(100))  # volunteer, coordinator, team_lead
     team_name = Column(String(100))
-    skills_contributed = Column(ARRAY(String), default=[])
+    skills_contributed = Column(ARRAY(String), default=list)
 
     # Feedback
     experience_rating = Column(Integer)  # 1-5
@@ -415,7 +415,7 @@ class CSRVolunteer(Base):
     points_earned = Column(Integer, default=0)
 
     # Photos
-    photos = Column(ARRAY(String), default=[])
+    photos = Column(ARRAY(String), default=list)
 
     # Audit
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -506,10 +506,10 @@ class CSRReport(Base):
     total_beneficiaries = Column(Integer, default=0)
 
     # Category-wise Spending
-    category_wise_spending = Column(JSONB, default={})
+    category_wise_spending = Column(JSONB, default=dict)
 
     # Impact Summary
-    impact_summary = Column(JSONB, default={})
+    impact_summary = Column(JSONB, default=dict)
     key_achievements = Column(Text)
     challenges_faced = Column(Text)
 
@@ -522,7 +522,7 @@ class CSRReport(Base):
 
     # Report Document
     report_url = Column(String(500))
-    annexures = Column(ARRAY(String), default=[])
+    annexures = Column(ARRAY(String), default=list)
 
     # Approval
     prepared_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))

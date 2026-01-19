@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
+import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -117,18 +118,18 @@ function AgentCard({ agent, stats }: { agent: WBSAgentConfig; stats?: AgentStats
         )}
 
         {/* Triggers */}
-        {agent.triggers.length > 0 && (
+        {(agent.triggers?.length || 0) > 0 && (
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">Triggers</p>
             <div className="flex flex-wrap gap-1">
-              {agent.triggers.slice(0, 4).map((trigger, i) => (
+              {agent.triggers?.slice(0, 4).map((trigger, i) => (
                 <Badge key={i} variant="outline" className="text-xs">
                   {trigger}
                 </Badge>
               ))}
-              {agent.triggers.length > 4 && (
+              {(agent.triggers?.length || 0) > 4 && (
                 <Badge variant="outline" className="text-xs">
-                  +{agent.triggers.length - 4} more
+                  +{(agent.triggers?.length || 0) - 4} more
                 </Badge>
               )}
             </div>
@@ -136,11 +137,11 @@ function AgentCard({ agent, stats }: { agent: WBSAgentConfig; stats?: AgentStats
         )}
 
         {/* Output Types */}
-        {agent.output_types.length > 0 && (
+        {(agent.output_types?.length || 0) > 0 && (
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">Outputs</p>
             <div className="flex flex-wrap gap-1">
-              {agent.output_types.map((output, i) => (
+              {agent.output_types?.map((output, i) => (
                 <Badge key={i} variant="secondary" className="text-xs">
                   {output}
                 </Badge>
@@ -298,21 +299,22 @@ export default function WBSAgentsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [agents, setAgents] = useState<WBSAgentConfig[]>([])
   const [taskStats, setTaskStats] = useState<Record<string, AgentStats>>({})
+  const { fetchWithAuth } = useAuth()
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
       // Fetch agent configs
-      const agentsRes = await fetch(`${apiUrl}/wbs/agents`)
+      const agentsRes = await fetchWithAuth(`${apiUrl}/wbs/agents`)
       if (agentsRes.ok) {
         const agentsData = await agentsRes.json()
         setAgents(agentsData)
       }
 
       // Fetch dashboard for task stats per agent
-      const dashboardRes = await fetch(`${apiUrl}/wbs/dashboard`)
+      const dashboardRes = await fetchWithAuth(`${apiUrl}/wbs/dashboard`)
       if (dashboardRes.ok) {
         const dashboardData = await dashboardRes.json()
         // Convert tasks_by_agent to stats object
@@ -335,11 +337,11 @@ export default function WBSAgentsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [fetchWithAuth])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
   // Calculate stats
   const totalAgents = agents.length

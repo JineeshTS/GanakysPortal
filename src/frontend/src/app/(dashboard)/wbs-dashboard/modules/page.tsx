@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
+import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -143,12 +144,13 @@ export default function WBSModulesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [modules, setModules] = useState<WBSModule[]>([])
   const [sortBy, setSortBy] = useState<'priority' | 'name' | 'progress'>('priority')
+  const { fetchWithAuth } = useAuth()
 
-  const fetchModules = async () => {
+  const fetchModules = useCallback(async () => {
     setIsLoading(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-      const res = await fetch(`${apiUrl}/wbs/modules`)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+      const res = await fetchWithAuth(`${apiUrl}/wbs/modules`)
       if (res.ok) {
         const data = await res.json()
         setModules(data)
@@ -158,11 +160,11 @@ export default function WBSModulesPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [fetchWithAuth])
 
   useEffect(() => {
     fetchModules()
-  }, [])
+  }, [fetchModules])
 
   // Sort modules
   const sortedModules = [...modules].sort((a, b) => {

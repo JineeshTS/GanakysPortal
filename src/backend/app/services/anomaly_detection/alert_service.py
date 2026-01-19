@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.anomaly_detection import AnomalyAlert, AnomalySeverity
 from app.schemas.anomaly_detection import AnomalyAlertListResponse
+from app.core.datetime_utils import utc_now
 
 
 class AlertService:
@@ -92,7 +93,7 @@ class AlertService:
 
         if not alert.is_read:
             alert.is_read = True
-            alert.read_at = datetime.utcnow()
+            alert.read_at = utc_now()
             await db.commit()
             await db.refresh(alert)
 
@@ -112,7 +113,7 @@ class AlertService:
                     AnomalyAlert.is_read == False
                 )
             )
-            .values(is_read=True, read_at=datetime.utcnow())
+            .values(is_read=True, read_at=utc_now())
         )
         await db.commit()
         return result.rowcount
@@ -157,7 +158,7 @@ class AlertService:
             return None
 
         alert.action_taken = action
-        alert.action_taken_at = datetime.utcnow()
+        alert.action_taken_at = utc_now()
         await db.commit()
         await db.refresh(alert)
         return alert
@@ -180,7 +181,7 @@ class AlertService:
 
         # For now, just mark as sent
         alert.email_sent = True
-        alert.email_sent_at = datetime.utcnow()
+        alert.email_sent_at = utc_now()
         await db.commit()
         await db.refresh(alert)
         return alert

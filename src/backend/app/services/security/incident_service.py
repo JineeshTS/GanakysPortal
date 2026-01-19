@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
+from app.core.datetime_utils import utc_now
 from app.models.security import SecurityIncident, IncidentStatus, IncidentSeverity
 from app.schemas.security import (
     SecurityIncidentCreate, SecurityIncidentUpdate,
@@ -25,7 +26,7 @@ class SecurityIncidentService:
         company_id: UUID
     ) -> str:
         """Generate unique incident number"""
-        year = datetime.utcnow().year
+        year = utc_now().year
 
         # Get latest incident number for this year
         result = await db.execute(
@@ -162,7 +163,7 @@ class SecurityIncidentService:
         for key, value in update_data.items():
             setattr(incident, key, value)
 
-        incident.updated_at = datetime.utcnow()
+        incident.updated_at = utc_now()
         await db.commit()
         await db.refresh(incident)
 
@@ -185,10 +186,10 @@ class SecurityIncidentService:
 
         if incident:
             if incident.status == IncidentStatus.open:
-                incident.containment_started_at = datetime.utcnow()
+                incident.containment_started_at = utc_now()
             incident.status = IncidentStatus.contained
-            incident.contained_at = datetime.utcnow()
-            incident.updated_at = datetime.utcnow()
+            incident.contained_at = utc_now()
+            incident.updated_at = utc_now()
             await db.commit()
 
     async def resolve_incident(
@@ -210,12 +211,12 @@ class SecurityIncidentService:
 
         if incident:
             incident.status = IncidentStatus.resolved
-            incident.resolved_at = datetime.utcnow()
+            incident.resolved_at = utc_now()
             if root_cause:
                 incident.root_cause = root_cause
             if remediation_steps:
                 incident.remediation_steps = remediation_steps
-            incident.updated_at = datetime.utcnow()
+            incident.updated_at = utc_now()
             await db.commit()
 
     async def close_incident(
@@ -237,10 +238,10 @@ class SecurityIncidentService:
 
         if incident:
             incident.status = IncidentStatus.closed
-            incident.closed_at = datetime.utcnow()
+            incident.closed_at = utc_now()
             if lessons_learned:
                 incident.lessons_learned = lessons_learned
             if preventive_measures:
                 incident.preventive_measures = preventive_measures
-            incident.updated_at = datetime.utcnow()
+            incident.updated_at = utc_now()
             await db.commit()

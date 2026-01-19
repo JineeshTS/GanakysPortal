@@ -9,6 +9,7 @@ from datetime import datetime, date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, update
 
+from app.core.datetime_utils import utc_now
 from app.models.subscription import (
     Subscription, SubscriptionPlan, BillingCycle, SubscriptionInvoice,
     UsageMeter, SubscriptionAuditLog,
@@ -356,7 +357,7 @@ class BillingService:
         Process all subscriptions due for renewal.
         Called by scheduler/cron job.
         """
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Find subscriptions that need renewal (period ended)
         query = select(Subscription).where(
@@ -471,7 +472,7 @@ class BillingService:
         if not subscription.cancel_at_period_end:
             raise ValueError("Subscription is not marked for cancellation")
 
-        now = datetime.utcnow()
+        now = utc_now()
         if subscription.current_period_end > now:
             return {
                 "status": "pending",

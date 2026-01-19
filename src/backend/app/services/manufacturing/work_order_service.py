@@ -6,6 +6,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.manufacturing import WorkOrder, WorkOrderStatus
 from app.schemas.manufacturing import WorkOrderUpdate
+from app.core.datetime_utils import utc_now
 
 
 class WorkOrderService:
@@ -57,7 +58,7 @@ class WorkOrderService:
         if not work_order or work_order.status != WorkOrderStatus.PENDING:
             return None
         work_order.status = WorkOrderStatus.IN_PROGRESS
-        work_order.actual_start = datetime.utcnow()
+        work_order.actual_start = utc_now()
         await db.commit()
         await db.refresh(work_order)
         return work_order
@@ -71,7 +72,7 @@ class WorkOrderService:
         work_order.status = WorkOrderStatus.COMPLETED
         work_order.completed_quantity = completed_qty
         work_order.rejected_quantity = rejected_qty
-        work_order.actual_end = datetime.utcnow()
+        work_order.actual_end = utc_now()
         if work_order.actual_start:
             duration = (work_order.actual_end - work_order.actual_start).total_seconds() / 60
             work_order.actual_run_time = duration

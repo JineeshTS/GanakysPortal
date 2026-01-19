@@ -805,19 +805,19 @@ export default function CRMPage() {
           <StatCard
             title="Total Leads"
             value={stats.totalLeads}
-            icon={<Users className="h-4 w-4" />}
+            icon={Users}
             description={`${stats.newThisMonth} new this month`}
           />
           <StatCard
             title="Pipeline Value"
             value={formatCurrency(stats.pipelineValue)}
-            icon={<IndianRupee className="h-4 w-4" />}
+            icon={IndianRupee}
             description="Active opportunities"
           />
           <StatCard
             title="Conversion Rate"
             value={`${stats.conversionRate}%`}
-            icon={<TrendingUp className="h-4 w-4" />}
+            icon={TrendingUp}
             description="Lead to customer"
             trend="up"
             trendValue="+2.3%"
@@ -825,13 +825,13 @@ export default function CRMPage() {
           <StatCard
             title="Won This Month"
             value={stats.wonThisMonth}
-            icon={<Target className="h-4 w-4" />}
+            icon={Target}
             description={formatCurrency(stats.avgDealSize * stats.wonThisMonth)}
           />
           <StatCard
             title="Avg Deal Size"
             value={formatCurrency(stats.avgDealSize)}
-            icon={<IndianRupee className="h-4 w-4" />}
+            icon={IndianRupee}
             description="Per customer"
           />
         </div>

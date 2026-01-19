@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.csr import CSRDisbursement
 from app.schemas.csr import CSRDisbursementCreate, CSRDisbursementUpdate
+from app.core.datetime_utils import utc_now
 
 
 class DisbursementService:
@@ -42,7 +43,7 @@ class DisbursementService:
             milestone_id=obj_in.milestone_id,
             description=obj_in.description,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -114,7 +115,7 @@ class DisbursementService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.supply_chain import Supplier, SupplierScorecard, SupplierStatus, SupplierTier
 from app.schemas.supply_chain import (
     SupplierCreate, SupplierUpdate,
@@ -121,7 +122,7 @@ class SupplierService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(supplier, field, value)
-        supplier.updated_at = datetime.utcnow()
+        supplier.updated_at = utc_now()
         await db.commit()
         await db.refresh(supplier)
         return supplier
@@ -135,7 +136,7 @@ class SupplierService:
         """Approve a pending supplier."""
         supplier.status = SupplierStatus.ACTIVE
         supplier.tier = tier
-        supplier.updated_at = datetime.utcnow()
+        supplier.updated_at = utc_now()
         await db.commit()
         await db.refresh(supplier)
         return supplier
@@ -149,7 +150,7 @@ class SupplierService:
         """Block a supplier."""
         supplier.status = SupplierStatus.BLOCKED
         supplier.is_active = False
-        supplier.updated_at = datetime.utcnow()
+        supplier.updated_at = utc_now()
         await db.commit()
         await db.refresh(supplier)
         return supplier
@@ -160,7 +161,7 @@ class SupplierService:
         supplier: Supplier
     ) -> None:
         """Soft delete supplier."""
-        supplier.deleted_at = datetime.utcnow()
+        supplier.deleted_at = utc_now()
         await db.commit()
 
     # Scorecard Methods

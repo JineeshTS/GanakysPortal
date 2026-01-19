@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.csr import CSRBeneficiary
 from app.schemas.csr import CSRBeneficiaryCreate, CSRBeneficiaryUpdate, BeneficiaryType
+from app.core.datetime_utils import utc_now
 
 
 class BeneficiaryService:
@@ -51,7 +52,7 @@ class BeneficiaryService:
             support_start_date=date.today(),
             is_active=True,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -135,7 +136,7 @@ class BeneficiaryService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -150,7 +151,7 @@ class BeneficiaryService:
         db_obj.verified = True
         db_obj.verified_by = user_id
         db_obj.verified_date = date.today()
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(db_obj)

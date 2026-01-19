@@ -58,7 +58,10 @@ class Bill(Base):
     bill_number = Column(String(50), nullable=False)  # Our reference
     vendor_invoice_number = Column(String(100))  # Vendor's invoice number
     vendor_invoice_date = Column(Date)
-    bill_type = Column(Enum(BillType), default=BillType.PURCHASE_INVOICE)
+    bill_type = Column(
+        Enum(BillType, name='bill_type_enum', native_enum=False),
+        default=BillType.PURCHASE_INVOICE
+    )
     bill_date = Column(Date, nullable=False)
     due_date = Column(Date, nullable=False)
 
@@ -92,7 +95,10 @@ class Bill(Base):
 
     # TDS
     tds_applicable = Column(Boolean, default=False)
-    tds_section = Column(Enum(TDSSection))
+    tds_section = Column(
+        Enum(TDSSection, name='tds_section_enum', native_enum=False),
+        nullable=True
+    )
     tds_rate = Column(Numeric(5, 2), default=0)
     tds_amount = Column(Numeric(18, 2), default=0)
     tds_base_amount = Column(Numeric(18, 2), default=0)  # Amount on which TDS calculated
@@ -115,7 +121,10 @@ class Bill(Base):
     tds_deducted = Column(Numeric(18, 2), default=0)  # TDS already deducted
 
     # Status
-    status = Column(Enum(BillStatus), default=BillStatus.DRAFT)
+    status = Column(
+        Enum(BillStatus, name='bill_status_enum', native_enum=False),
+        default=BillStatus.DRAFT
+    )
 
     # Payment terms
     payment_terms = Column(String(50))
@@ -146,6 +155,11 @@ class Bill(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
 
     # Relationships
     vendor = relationship("Party", foreign_keys=[vendor_id])

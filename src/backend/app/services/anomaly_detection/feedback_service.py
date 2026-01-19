@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.anomaly_detection import (
     AnomalyFeedback, AnomalyDetection, FeedbackType, AnomalyStatus
 )
@@ -82,7 +83,7 @@ class FeedbackService:
             detection.status = AnomalyStatus.confirmed
         elif feedback_data.feedback_type == FeedbackType.false_positive:
             detection.status = AnomalyStatus.false_positive
-        detection.updated_at = datetime.utcnow()
+        detection.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(feedback)
@@ -98,7 +99,7 @@ class FeedbackService:
         from datetime import timedelta
         from sqlalchemy import func
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = utc_now() - timedelta(days=days)
 
         # Total feedback count
         total_query = select(func.count()).select_from(AnomalyFeedback).where(

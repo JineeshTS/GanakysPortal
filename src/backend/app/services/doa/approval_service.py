@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
+from app.core.datetime_utils import utc_now
 from app.models.doa import (
     ApprovalRequest, ApprovalAction, ApprovalWorkflowTemplate,
     ApprovalWorkflowLevel, ApprovalAuditLog, DoADelegation,
@@ -88,7 +89,7 @@ class ApprovalService:
         from app.services.doa.workflow_service import WorkflowService
 
         # Generate request number
-        year = datetime.utcnow().year
+        year = utc_now().year
         count_result = await db.execute(
             select(func.count(ApprovalRequest.id))
             .where(ApprovalRequest.created_at >= datetime(year, 1, 1))
@@ -117,7 +118,7 @@ class ApprovalService:
             )
             workflow = workflow_result.scalar_one_or_none()
             if workflow:
-                sla_breach_at = datetime.utcnow() + timedelta(hours=workflow.approval_timeout_hours)
+                sla_breach_at = utc_now() + timedelta(hours=workflow.approval_timeout_hours)
 
         # Assess risk (simplified - would use AI in production)
         risk_level = RiskLevel.low
@@ -218,7 +219,7 @@ class ApprovalService:
 
             if approver_id:
                 # Calculate due date
-                due_at = datetime.utcnow() + timedelta(hours=wf_level.sla_hours)
+                due_at = utc_now() + timedelta(hours=wf_level.sla_hours)
 
                 action = ApprovalAction(
                     request_id=request.id,
@@ -226,7 +227,7 @@ class ApprovalService:
                     approver_id=approver_id,
                     action=ApprovalActionType.approve,  # Default, will be updated
                     status="pending",
-                    assigned_at=datetime.utcnow(),
+                    assigned_at=utc_now(),
                     due_at=due_at
                 )
                 db.add(action)
@@ -306,7 +307,7 @@ class ApprovalService:
         for key, value in update_data.items():
             setattr(request, key, value)
 
-        request.updated_at = datetime.utcnow()
+        request.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(request)
@@ -336,9 +337,9 @@ class ApprovalService:
             raise ValueError("Cannot cancel completed requests")
 
         request.status = ApprovalStatus.cancelled
-        request.completed_at = datetime.utcnow()
+        request.completed_at = utc_now()
         request.completion_type = "cancelled"
-        request.updated_at = datetime.utcnow()
+        request.updated_at = utc_now()
 
         # Audit log
         audit = ApprovalAuditLog(
@@ -384,7 +385,7 @@ class ApprovalService:
 
         request.status = ApprovalStatus.draft
         request.current_level = 1
-        request.updated_at = datetime.utcnow()
+        request.updated_at = utc_now()
 
         # Clear pending actions
         await db.execute(
@@ -446,7 +447,7 @@ class ApprovalService:
             query = query.where(ApprovalRequest.is_urgent == is_urgent)
 
         # SLA status filter
-        now = datetime.utcnow()
+        now = utc_now()
         if sla_status == "breached":
             query = query.where(ApprovalAction.due_at < now)
         elif sla_status == "at_risk":
@@ -568,9 +569,9 @@ class ApprovalService:
         approval_action.status = "completed"
         approval_action.comments = comments
         approval_action.conditions = conditions
-        approval_action.acted_at = datetime.utcnow()
+        approval_action.acted_at = utc_now()
         approval_action.response_time_hours = (
-            (datetime.utcnow() - approval_action.assigned_at).total_seconds() / 3600
+            (utc_now() - approval_action.assigned_at).total_seconds() / 3600
         )
         approval_action.ip_address = ip_address
         approval_action.device_info = {"user_agent": user_agent} if user_agent else None
@@ -637,7 +638,7 @@ class ApprovalService:
         else:
             # Final approval
             request.status = ApprovalStatus.approved
-            request.completed_at = datetime.utcnow()
+            request.completed_at = utc_now()
             request.completion_type = "approved"
             request.final_approver_id = action.approver_id
 
@@ -650,7 +651,7 @@ class ApprovalService:
     ):
         """Process rejection"""
         request.status = ApprovalStatus.rejected
-        request.completed_at = datetime.utcnow()
+        request.completed_at = utc_now()
         request.completion_type = "rejected"
         request.final_approver_id = rejected_by
 
@@ -701,7 +702,7 @@ class ApprovalService:
         original_action.action = ApprovalActionType.delegate
         original_action.status = "completed"
         original_action.comments = comments
-        original_action.acted_at = datetime.utcnow()
+        original_action.acted_at = utc_now()
         original_action.ip_address = ip_address
 
         # Create new action for delegate
@@ -712,7 +713,7 @@ class ApprovalService:
             original_approver_id=delegator_id,
             action=ApprovalActionType.approve,
             status="pending",
-            assigned_at=datetime.utcnow(),
+            assigned_at=utc_now(),
             due_at=original_action.due_at
         )
         db.add(new_action)

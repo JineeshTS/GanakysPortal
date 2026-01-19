@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
+from app.core.datetime_utils import utc_now
 from app.models.doa import (
     ApprovalRequest, ApprovalAction, ApprovalEscalation,
     ApprovalWorkflowTemplate, ApprovalWorkflowLevel, ApprovalAuditLog,
@@ -73,12 +74,12 @@ class EscalationService:
         # Update request
         request.status = ApprovalStatus.escalated
         request.current_level = to_level
-        request.updated_at = datetime.utcnow()
+        request.updated_at = utc_now()
 
         # Cancel pending actions at current level
         if current_action:
             current_action.status = "escalated"
-            current_action.acted_at = datetime.utcnow()
+            current_action.acted_at = utc_now()
 
         # Create new action for escalated level
         if to_approver_id:
@@ -87,8 +88,8 @@ class EscalationService:
                 level_order=to_level,
                 approver_id=to_approver_id,
                 status="pending",
-                assigned_at=datetime.utcnow(),
-                due_at=datetime.utcnow() + timedelta(hours=24)
+                assigned_at=utc_now(),
+                due_at=utc_now() + timedelta(hours=24)
             )
             db.add(new_action)
 
@@ -122,7 +123,7 @@ class EscalationService:
     ) -> List[UUID]:
         """Auto-escalate overdue approval requests"""
         escalated_ids = []
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Find overdue pending actions
         query = select(ApprovalAction, ApprovalRequest).join(
@@ -274,7 +275,7 @@ class EscalationService:
         company_id: Optional[UUID] = None
     ) -> int:
         """Process timeout actions based on workflow configuration"""
-        now = datetime.utcnow()
+        now = utc_now()
         processed_count = 0
 
         # Find requests past their SLA breach time

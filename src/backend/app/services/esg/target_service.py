@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.esg import ESGTarget, ESGCategory
 from app.schemas.esg import ESGTargetCreate, ESGTargetUpdate, ESGTargetListResponse
+from app.core.datetime_utils import utc_now
 
 
 class TargetService:
@@ -115,7 +116,7 @@ class TargetService:
                 target.progress_pct = (current_progress / total_change_needed) * 100
                 target.on_track = target.progress_pct >= 0
 
-        target.updated_at = datetime.utcnow()
+        target.updated_at = utc_now()
         await db.commit()
         await db.refresh(target)
         return target

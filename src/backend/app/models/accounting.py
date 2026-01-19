@@ -92,8 +92,14 @@ class Account(Base):
     description = Column(Text)
 
     # Classification
-    account_type = Column(Enum(AccountType), nullable=False)
-    account_sub_type = Column(Enum(AccountSubType))
+    account_type = Column(
+        Enum(AccountType, name='account_type_enum', native_enum=False),
+        nullable=False
+    )
+    account_sub_type = Column(
+        Enum(AccountSubType, name='account_sub_type_enum', native_enum=False),
+        nullable=True
+    )
 
     # Hierarchy
     parent_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"))

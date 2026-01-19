@@ -4,7 +4,7 @@ Database models for tracking project tasks, phases, modules, and agent execution
 """
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy import (
     Column, String, Text, Integer, Boolean, DateTime, ForeignKey,
     DECIMAL, text, Index
@@ -95,13 +95,13 @@ class WBSTask(Base, TimestampMixin):
     actual_hours = Column(DECIMAL(4, 1), nullable=True)
 
     # Dependencies (array of task_ids)
-    blocking_deps = Column(ARRAY(Text), default=[])
-    non_blocking_deps = Column(ARRAY(Text), default=[])
+    blocking_deps = Column(ARRAY(Text), default=list)
+    non_blocking_deps = Column(ARRAY(Text), default=list)
 
     # Inputs/Outputs
-    input_files = Column(ARRAY(Text), default=[])
-    output_files = Column(ARRAY(Text), default=[])
-    acceptance_criteria = Column(ARRAY(Text), default=[])
+    input_files = Column(ARRAY(Text), default=list)
+    output_files = Column(ARRAY(Text), default=list)
+    acceptance_criteria = Column(ARRAY(Text), default=list)
 
     # Execution
     status = Column(String(20), default='pending', nullable=False, index=True)
@@ -145,15 +145,15 @@ class WBSAgentContext(Base):
     session_id = Column(UUID(as_uuid=True), nullable=True)
 
     # Context Data (JSON)
-    patterns_referenced = Column(JSONB, default={})
-    decisions_made = Column(JSONB, default={})
-    artifacts_created = Column(JSONB, default={})
-    artifacts_modified = Column(JSONB, default={})
+    patterns_referenced = Column(JSONB, default=dict)
+    decisions_made = Column(JSONB, default=dict)
+    artifacts_created = Column(JSONB, default=dict)
+    artifacts_modified = Column(JSONB, default=dict)
 
     # Handoff
     next_agent = Column(String(20), nullable=True)
     next_task_id = Column(String(30), nullable=True)
-    handoff_data = Column(JSONB, default={})
+    handoff_data = Column(JSONB, default=dict)
 
     created_at = Column(
         DateTime(timezone=True),
@@ -181,7 +181,7 @@ class WBSExecutionLog(Base):
     agent_type = Column(String(20), nullable=True)
     action = Column(String(50), nullable=False)
     # Actions: started, file_created, file_modified, test_run, completed, failed, rollback
-    details = Column(JSONB, default={})
+    details = Column(JSONB, default=dict)
     timestamp = Column(
         DateTime(timezone=True),
         server_default=text("NOW()"),
@@ -207,7 +207,7 @@ class WBSQualityGate(Base, TimestampMixin):
     gate_code = Column(String(10), unique=True, nullable=False, index=True)  # G1, G2, etc.
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
-    criteria = Column(ARRAY(Text), default=[])
+    criteria = Column(ARRAY(Text), default=list)
     is_blocking = Column(Boolean, default=True)
     status = Column(String(20), default='pending')  # pending, in_progress, passed, failed
     verified_at = Column(DateTime(timezone=True), nullable=True)
@@ -230,8 +230,47 @@ class WBSAgentConfig(Base, TimestampMixin):
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
     purpose = Column(Text, nullable=True)
-    triggers = Column(ARRAY(Text), default=[])
-    output_types = Column(ARRAY(Text), default=[])
+    triggers = Column(ARRAY(Text), default=list)
+    output_types = Column(ARRAY(Text), default=list)
     system_prompt = Column(Text, nullable=True)
-    pattern_files = Column(ARRAY(Text), default=[])
+    pattern_files = Column(ARRAY(Text), default=list)
     is_active = Column(Boolean, default=True)
+
+
+class WBSIssue(Base, TimestampMixin):
+    """
+    WBS Issues - Tracks issues discovered during code review
+    """
+    __tablename__ = "wbs_issues"
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
+    )
+    issue_code = Column(String(30), unique=True, nullable=False, index=True)  # ISS-001, ISS-002
+    title = Column(String(300), nullable=False)
+    description = Column(Text, nullable=True)
+
+    # Classification
+    category = Column(String(50), nullable=False, index=True)  # bug, missing_feature, security, performance, ui, api, database
+    severity = Column(String(20), default='medium', index=True)  # critical, high, medium, low
+    module = Column(String(50), nullable=True, index=True)  # Which module is affected
+    file_path = Column(String(500), nullable=True)  # Affected file path
+    line_number = Column(Integer, nullable=True)
+
+    # Status
+    status = Column(String(20), default='open', nullable=False, index=True)  # open, in_progress, resolved, wont_fix, duplicate
+    resolution = Column(Text, nullable=True)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Related
+    related_task_id = Column(String(30), nullable=True)  # Link to WBS task if applicable
+
+    # Indexes
+    __table_args__ = (
+        Index('idx_wbs_issues_status_severity', 'status', 'severity'),
+        Index('idx_wbs_issues_category_module', 'category', 'module'),
+        Index('idx_wbs_issues_created_at', 'created_at'),
+    )

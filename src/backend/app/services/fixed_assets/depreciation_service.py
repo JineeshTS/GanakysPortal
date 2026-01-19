@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.fixed_assets import (
     FixedAsset, AssetDepreciation, DepreciationSchedule,
     DepreciationMethod, AssetStatus
@@ -210,15 +211,15 @@ class DepreciationService:
                 asset.accumulated_depreciation = entry.accumulated_depreciation
                 asset.book_value = entry.closing_value
                 asset.ytd_depreciation += entry.depreciation_amount
-                asset.updated_at = datetime.utcnow()
+                asset.updated_at = utc_now()
 
             # Mark entry as posted
             entry.posted = True
-            entry.posted_at = datetime.utcnow()
+            entry.posted_at = utc_now()
             entry.posted_by = user_id
 
         schedule.status = "posted"
-        schedule.posted_at = datetime.utcnow()
+        schedule.posted_at = utc_now()
         schedule.posted_by = user_id
 
         await db.commit()

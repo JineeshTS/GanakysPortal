@@ -375,7 +375,7 @@ class ComplianceVerifier:
                 (Decimal("1000000"), Decimal("10")),
                 (Decimal("1200000"), Decimal("15")),
                 (Decimal("1500000"), Decimal("20")),
-                (Decimal("float('inf')"), Decimal("30")),
+                (Decimal("Infinity"), Decimal("30")),
             ]
         else:
             # Old regime
@@ -383,7 +383,7 @@ class ComplianceVerifier:
                 (Decimal("250000"), Decimal("0")),
                 (Decimal("500000"), Decimal("5")),
                 (Decimal("1000000"), Decimal("20")),
-                (Decimal("float('inf')"), Decimal("30")),
+                (Decimal("Infinity"), Decimal("30")),
             ]
 
         tax = Decimal("0")

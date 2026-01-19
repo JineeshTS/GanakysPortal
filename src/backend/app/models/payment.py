@@ -70,7 +70,10 @@ class Payment(Base):
 
     # Payment identification
     payment_number = Column(String(50), nullable=False)  # REC/2024-25/0001, PAY/2024-25/0001
-    payment_type = Column(Enum(PaymentType), nullable=False)
+    payment_type = Column(
+        Enum(PaymentType, name='payment_type_enum', native_enum=False),
+        nullable=False
+    )
     payment_date = Column(Date, nullable=False)
 
     # Party
@@ -81,14 +84,20 @@ class Payment(Base):
     bank_account_id = Column(UUID(as_uuid=True), ForeignKey("company_bank_accounts.id"))
 
     # Payment mode
-    payment_mode = Column(Enum(PaymentMode), nullable=False)
+    payment_mode = Column(
+        Enum(PaymentMode, name='payment_mode_enum', native_enum=False),
+        nullable=False
+    )
 
     # Cheque details (if applicable)
     cheque_number = Column(String(20))
     cheque_date = Column(Date)
     cheque_bank = Column(String(255))
     cheque_branch = Column(String(255))
-    cheque_status = Column(Enum(ChequeStatus))
+    cheque_status = Column(
+        Enum(ChequeStatus, name='cheque_status_enum', native_enum=False),
+        nullable=True
+    )
     cheque_clearing_date = Column(Date)
 
     # Bank transfer details
@@ -118,7 +127,10 @@ class Payment(Base):
     unallocated_amount = Column(Numeric(18, 2), default=0)
 
     # Status
-    status = Column(Enum(PaymentStatus), default=PaymentStatus.DRAFT)
+    status = Column(
+        Enum(PaymentStatus, name='payment_status_enum', native_enum=False),
+        default=PaymentStatus.DRAFT
+    )
 
     # Notes
     description = Column(Text)

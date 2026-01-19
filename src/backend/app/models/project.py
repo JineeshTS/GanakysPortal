@@ -67,8 +67,8 @@ class Project(Base):
     customer_contact = Column(String(255))
 
     # Type and status
-    project_type = Column(Enum(ProjectType), default=ProjectType.FIXED_PRICE)
-    status = Column(Enum(ProjectStatus), default=ProjectStatus.PLANNING)
+    project_type = Column(Enum(ProjectType, name='project_type', create_type=False), default=ProjectType.FIXED_PRICE)
+    status = Column(Enum(ProjectStatus, name='project_status', create_type=False), default=ProjectStatus.PLANNING)
 
     # Timeline
     start_date = Column(Date)
@@ -101,7 +101,7 @@ class Project(Base):
     cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id"))
 
     # Priority
-    priority = Column(Enum(TaskPriority), default=TaskPriority.MEDIUM)
+    priority = Column(Enum(TaskPriority, name='task_priority', create_type=False), default=TaskPriority.MEDIUM)
 
     # Tags (JSON array)
     tags = Column(Text)
@@ -168,8 +168,8 @@ class Task(Base):
     parent_task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id"))
 
     # Status and priority
-    status = Column(Enum(TaskStatus), default=TaskStatus.TODO)
-    priority = Column(Enum(TaskPriority), default=TaskPriority.MEDIUM)
+    status = Column(Enum(TaskStatus, name='task_status', create_type=False), default=TaskStatus.TODO)
+    priority = Column(Enum(TaskPriority, name='task_priority', create_type=False), default=TaskPriority.MEDIUM)
 
     # Dates
     start_date = Column(Date)

@@ -9,6 +9,8 @@ from enum import Enum
 from pydantic import BaseModel, Field, EmailStr, field_validator
 import ipaddress
 
+from app.schemas.validators import validate_phone
+
 
 # ============================================================================
 # Enums
@@ -183,10 +185,10 @@ class TenantProfileUpdate(BaseModel):
     account_manager_id: Optional[UUID] = None
     internal_notes: Optional[str] = None
     tags: Optional[List[str]] = None
-    custom_employee_limit: Optional[int] = None
-    custom_user_limit: Optional[int] = None
-    custom_storage_gb: Optional[int] = None
-    custom_api_limit: Optional[int] = None
+    custom_employee_limit: Optional[int] = Field(None, ge=1)
+    custom_user_limit: Optional[int] = Field(None, ge=1)
+    custom_storage_gb: Optional[int] = Field(None, ge=1)
+    custom_api_limit: Optional[int] = Field(None, ge=0)
 
 
 class TenantProfileResponse(TenantProfileBase):
@@ -294,7 +296,12 @@ class PlatformSettingsBase(BaseModel):
     platform_tagline: Optional[str] = None
     platform_logo_url: Optional[str] = None
     support_email: EmailStr = "support@ganakys.com"
-    support_phone: Optional[str] = None
+    support_phone: Optional[str] = Field(None, max_length=20)
+
+    @field_validator('support_phone')
+    @classmethod
+    def validate_support_phone(cls, v):
+        return validate_phone(v)
 
 
 class PlatformSettingsUpdate(BaseModel):
@@ -302,21 +309,26 @@ class PlatformSettingsUpdate(BaseModel):
     platform_tagline: Optional[str] = None
     platform_logo_url: Optional[str] = None
     support_email: Optional[EmailStr] = None
-    support_phone: Optional[str] = None
+    support_phone: Optional[str] = Field(None, max_length=20)
     allow_signups: Optional[bool] = None
     require_email_verification: Optional[bool] = None
-    default_trial_days: Optional[int] = None
+    default_trial_days: Optional[int] = Field(None, ge=0, le=365)
     default_plan_id: Optional[UUID] = None
     enforce_mfa_superadmins: Optional[bool] = None
     enforce_mfa_tenant_admins: Optional[bool] = None
-    password_min_length: Optional[int] = None
+    password_min_length: Optional[int] = Field(None, ge=8, le=128)
     password_require_special: Optional[bool] = None
-    session_timeout_minutes: Optional[int] = None
-    max_failed_logins: Optional[int] = None
-    lockout_duration_minutes: Optional[int] = None
+    session_timeout_minutes: Optional[int] = Field(None, ge=5, le=10080)  # 5 min to 1 week
+    max_failed_logins: Optional[int] = Field(None, ge=1, le=100)
+    lockout_duration_minutes: Optional[int] = Field(None, ge=1, le=10080)  # 1 min to 1 week
     maintenance_mode: Optional[bool] = None
     maintenance_message: Optional[str] = None
     maintenance_allowed_ips: Optional[List[str]] = None
+
+    @field_validator('support_phone')
+    @classmethod
+    def validate_support_phone(cls, v):
+        return validate_phone(v)
 
 
 class PlatformSettingsResponse(PlatformSettingsBase):
@@ -355,7 +367,7 @@ class PlatformSettingsResponse(PlatformSettingsBase):
 
 class EmailSettingsUpdate(BaseModel):
     smtp_host: Optional[str] = None
-    smtp_port: Optional[int] = None
+    smtp_port: Optional[int] = Field(None, ge=1, le=65535)
     smtp_username: Optional[str] = None
     smtp_password: Optional[str] = None  # Will be encrypted before storage
     email_from_name: Optional[str] = None
@@ -366,7 +378,7 @@ class StorageSettingsUpdate(BaseModel):
     storage_provider: Optional[str] = None
     storage_bucket: Optional[str] = None
     storage_region: Optional[str] = None
-    max_upload_size_mb: Optional[int] = None
+    max_upload_size_mb: Optional[int] = Field(None, ge=1, le=10240)  # 1MB to 10GB
 
 
 # ============================================================================

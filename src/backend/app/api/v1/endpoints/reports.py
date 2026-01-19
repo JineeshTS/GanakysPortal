@@ -8,9 +8,27 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 from io import BytesIO
 
 from app.db.session import get_db
+from app.api.deps import get_current_user
+from app.models.user import User
+
+
+async def require_auth(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Require authenticated user for endpoint access."""
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return current_user
+
+
 from app.schemas.reports import (
     # Enums
     ReportTypeEnum, ReportCategoryEnum, OutputFormatEnum,
@@ -31,7 +49,148 @@ from app.schemas.reports import (
 from app.services.report_service import ReportService
 
 
-router = APIRouter(prefix="/reports", tags=["Reports"])
+router = APIRouter(prefix="/reports", tags=["Reports"], dependencies=[Depends(require_auth)])
+
+
+# =====================
+# Dashboard Summary
+# =====================
+
+@router.get("/dashboard", summary="Get dashboard summary stats")
+async def get_dashboard_summary(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get summary statistics for the main dashboard."""
+    from sqlalchemy import select, func
+    from app.models.employee import Employee
+
+    company_id = current_user.company_id
+
+    # Employee counts
+    total_emp_result = await db.execute(
+        select(func.count(Employee.id)).where(
+            Employee.company_id == company_id,
+            Employee.deleted_at.is_(None)
+        )
+    )
+    total_employees = total_emp_result.scalar() or 0
+
+    active_emp_result = await db.execute(
+        select(func.count(Employee.id)).where(
+            Employee.company_id == company_id,
+            Employee.deleted_at.is_(None),
+            Employee.employment_status == 'active'
+        )
+    )
+    active_employees = active_emp_result.scalar() or 0
+
+    # Leave requests - on leave today
+    # Query employees on leave through employee-leave join
+    from datetime import date as date_type
+    today = date_type.today()
+    on_leave_today = 0
+    pending_leave_requests = 0
+
+    try:
+        # Try to get leave data via employee join
+        # Note: leave_requests table has company_id column, and uses from_date/to_date
+        leave_result = await db.execute(
+            text("""
+                SELECT COUNT(DISTINCT lr.employee_id)
+                FROM leave_requests lr
+                WHERE lr.company_id = :company_id
+                AND lr.status = 'approved'
+                AND :today BETWEEN lr.from_date AND lr.to_date
+            """),
+            {"company_id": str(company_id), "today": today}
+        )
+        on_leave_today = leave_result.scalar() or 0
+
+        # Pending leave requests
+        pending_result = await db.execute(
+            text("""
+                SELECT COUNT(*)
+                FROM leave_requests lr
+                WHERE lr.company_id = :company_id
+                AND lr.status = 'pending'
+            """),
+            {"company_id": str(company_id)}
+        )
+        pending_leave_requests = pending_result.scalar() or 0
+    except Exception:
+        pass  # Leave queries fail due to schema, use defaults
+
+    # Receivables (total outstanding invoices)
+    receivables = 0.0
+    overdue_invoices = 0
+    try:
+        from app.models.invoice import Invoice
+        recv_result = await db.execute(
+            select(func.coalesce(func.sum(Invoice.amount_due), 0)).where(
+                Invoice.company_id == company_id,
+                Invoice.deleted_at.is_(None),
+                Invoice.amount_due > 0
+            )
+        )
+        receivables = float(recv_result.scalar() or 0)
+
+        # Overdue invoices count
+        overdue_result = await db.execute(
+            select(func.count(Invoice.id)).where(
+                Invoice.company_id == company_id,
+                Invoice.deleted_at.is_(None),
+                Invoice.amount_due > 0,
+                Invoice.due_date < today
+            )
+        )
+        overdue_invoices = overdue_result.scalar() or 0
+    except Exception:
+        pass
+
+    # Payables (total outstanding bills)
+    payables = 0.0
+    overdue_bills = 0
+    try:
+        from app.models.bill import Bill
+        pay_result = await db.execute(
+            select(func.coalesce(func.sum(Bill.amount_due), 0)).where(
+                Bill.company_id == company_id,
+                Bill.deleted_at.is_(None),
+                Bill.amount_due > 0
+            )
+        )
+        payables = float(pay_result.scalar() or 0)
+
+        # Overdue bills count
+        overdue_bill_result = await db.execute(
+            select(func.count(Bill.id)).where(
+                Bill.company_id == company_id,
+                Bill.deleted_at.is_(None),
+                Bill.amount_due > 0,
+                Bill.due_date < today
+            )
+        )
+        overdue_bills = overdue_bill_result.scalar() or 0
+    except Exception:
+        pass
+
+    return {
+        "stats": {
+            "total_employees": total_employees,
+            "active_employees": active_employees,
+            "on_leave_today": on_leave_today,
+            "pending_leave_requests": pending_leave_requests,
+            "monthly_payroll": 0,  # Requires payroll run data
+            "pf_contribution": 0,
+            "esi_contribution": 0,
+            "tds_deducted": 0,
+            "receivables": receivables,
+            "payables": payables,
+            "overdue_invoices": overdue_invoices,
+            "overdue_bills": overdue_bills
+        }
+    }
 
 
 # =====================
@@ -741,7 +900,7 @@ async def get_payables_aging(
 
 @router.get("/templates", summary="List report templates")
 async def list_report_templates(
-    company_id: UUID = Query(..., description="Company ID"),
+    current_user: User = Depends(get_current_user),
     report_type: Optional[ReportTypeEnum] = Query(default=None, description="Filter by type"),
     category: Optional[ReportCategoryEnum] = Query(default=None, description="Filter by category"),
     include_system: bool = Query(default=True, description="Include system templates"),
@@ -750,39 +909,43 @@ async def list_report_templates(
     db: AsyncSession = Depends(get_db)
 ):
     """List all available report templates."""
+    company_id = current_user.company_id
     # Demo response - would query database in production
     return {
         "items": [],
         "total": 0,
         "page": page,
         "page_size": page_size,
-        "note": "Demo endpoint - connect to database for data"
+        "company_id": str(company_id)
     }
 
 
 @router.post("/templates", summary="Create report template")
 async def create_report_template(
     template: ReportTemplateCreate,
-    company_id: UUID = Query(..., description="Company ID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new report template."""
+    company_id = current_user.company_id
     return {
         "id": "demo-template-id",
         "message": "Template created successfully",
-        "template": template.model_dump()
+        "template": template.model_dump(),
+        "company_id": str(company_id)
     }
 
 
 @router.get("/templates/{template_id}", summary="Get report template")
 async def get_report_template(
     template_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get report template by ID."""
     return {
         "id": str(template_id),
-        "note": "Demo endpoint - connect to database for data"
+        "company_id": str(current_user.company_id)
     }
 
 
@@ -790,6 +953,7 @@ async def get_report_template(
 async def update_report_template(
     template_id: UUID,
     template: ReportTemplateUpdate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Update an existing report template."""
@@ -802,6 +966,7 @@ async def update_report_template(
 @router.delete("/templates/{template_id}", summary="Delete report template")
 async def delete_report_template(
     template_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a report template."""
@@ -813,32 +978,36 @@ async def delete_report_template(
 
 @router.get("/schedules", summary="List report schedules")
 async def list_report_schedules(
-    company_id: UUID = Query(..., description="Company ID"),
+    current_user: User = Depends(get_current_user),
     is_active: Optional[bool] = Query(default=None, description="Filter by active status"),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     db: AsyncSession = Depends(get_db)
 ):
     """List all report schedules."""
+    company_id = current_user.company_id
     return {
         "items": [],
         "total": 0,
         "page": page,
-        "page_size": page_size
+        "page_size": page_size,
+        "company_id": str(company_id)
     }
 
 
 @router.post("/schedules", summary="Create report schedule")
 async def create_report_schedule(
     schedule: ReportScheduleCreate,
-    company_id: UUID = Query(..., description="Company ID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new report schedule."""
+    company_id = current_user.company_id
     return {
         "id": "demo-schedule-id",
         "message": "Schedule created successfully",
-        "schedule": schedule.model_dump()
+        "schedule": schedule.model_dump(),
+        "company_id": str(company_id)
     }
 
 

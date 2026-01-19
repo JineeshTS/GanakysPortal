@@ -13,6 +13,8 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 
+from app.core.datetime_utils import utc_now
+from app.core.constants import PAYMENT_SERVICE_TIMEOUT
 from app.models.subscription import (
     Subscription, SubscriptionInvoice, SubscriptionPayment,
     SubscriptionAuditLog,
@@ -74,7 +76,7 @@ class PaymentService:
                 f"{self._razorpay_base_url}/orders",
                 json=payload,
                 auth=(self._razorpay_key, self._razorpay_secret),
-                timeout=30.0,
+                timeout=PAYMENT_SERVICE_TIMEOUT,
             )
 
             if response.status_code != 200:
@@ -134,7 +136,7 @@ class PaymentService:
             response = await client.get(
                 f"{self._razorpay_base_url}/payments/{razorpay_payment_id}",
                 auth=(self._razorpay_key, self._razorpay_secret),
-                timeout=30.0,
+                timeout=PAYMENT_SERVICE_TIMEOUT,
             )
 
             if response.status_code != 200:
@@ -189,7 +191,7 @@ class PaymentService:
                 f"{self._razorpay_base_url}/subscriptions",
                 json=payload,
                 auth=(self._razorpay_key, self._razorpay_secret),
-                timeout=30.0,
+                timeout=PAYMENT_SERVICE_TIMEOUT,
             )
 
             if response.status_code != 200:
@@ -227,7 +229,7 @@ class PaymentService:
                 f"{self._razorpay_base_url}/subscriptions/{subscription.razorpay_subscription_id}/cancel",
                 json={"cancel_at_cycle_end": cancel_at_cycle_end},
                 auth=(self._razorpay_key, self._razorpay_secret),
-                timeout=30.0,
+                timeout=PAYMENT_SERVICE_TIMEOUT,
             )
 
             if response.status_code != 200:
@@ -283,7 +285,7 @@ class PaymentService:
             invoice_id=invoice_id,
             company_id=invoice.company_id,
             payment_number=payment_number,
-            payment_date=datetime.utcnow(),
+            payment_date=utc_now(),
             amount=amount,
             currency=invoice.currency,
             payment_method=payment_method.value,
@@ -304,7 +306,7 @@ class PaymentService:
 
         if invoice.amount_due <= 0:
             invoice.status = InvoiceStatus.paid
-            invoice.paid_at = datetime.utcnow()
+            invoice.paid_at = utc_now()
         elif invoice.amount_paid > 0:
             invoice.status = InvoiceStatus.partially_paid
 
@@ -404,7 +406,7 @@ class PaymentService:
                 f"{self._razorpay_base_url}/payments/{payment_id}/refund",
                 json={"amount": amount_paise},
                 auth=(self._razorpay_key, self._razorpay_secret),
-                timeout=30.0,
+                timeout=PAYMENT_SERVICE_TIMEOUT,
             )
 
             if response.status_code != 200:
@@ -476,8 +478,8 @@ class PaymentService:
                 "amount_paid": float(inv.amount_paid),
                 "amount_due": float(inv.amount_due),
                 "status": inv.status.value,
-                "days_overdue": (datetime.utcnow().date() - inv.due_date).days
-                    if datetime.utcnow().date() > inv.due_date else 0,
+                "days_overdue": (utc_now().date() - inv.due_date).days
+                    if utc_now().date() > inv.due_date else 0,
             }
             for inv in invoices
         ]
@@ -487,7 +489,7 @@ class PaymentService:
         Mark overdue invoices (past due date and not fully paid).
         Called by scheduler.
         """
-        today = datetime.utcnow().date()
+        today = utc_now().date()
 
         query = select(SubscriptionInvoice).where(
             and_(
@@ -559,7 +561,7 @@ class PaymentService:
                 f"{self._razorpay_base_url}/payment_links",
                 json=payload,
                 auth=(self._razorpay_key, self._razorpay_secret),
-                timeout=30.0,
+                timeout=PAYMENT_SERVICE_TIMEOUT,
             )
 
             if response.status_code != 200:

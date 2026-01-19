@@ -14,6 +14,8 @@ from sqlalchemy import select
 
 from app.models.security import MFAConfig, MFAMethod
 from app.schemas.security import MFAConfigResponse, EnableTOTPResponse
+from app.core.datetime_utils import utc_now
+from app.core.constants import MFA_BACKUP_CODES_COUNT, TOKEN_BYTES
 
 
 class MFAService:
@@ -70,10 +72,10 @@ class MFAService:
         config.totp_secret = secret
 
         # Generate backup codes
-        backup_codes = [secrets.token_hex(4).upper() for _ in range(10)]
+        backup_codes = [secrets.token_hex(TOKEN_BYTES).upper() for _ in range(MFA_BACKUP_CODES_COUNT)]
         config.backup_codes = backup_codes
         config.backup_codes_generated = True
-        config.backup_codes_generated_at = datetime.utcnow()
+        config.backup_codes_generated_at = utc_now()
 
         await db.commit()
 
@@ -108,7 +110,7 @@ class MFAService:
         totp = pyotp.TOTP(config.totp_secret)
         if totp.verify(code):
             config.totp_enabled = True
-            config.totp_verified_at = datetime.utcnow()
+            config.totp_verified_at = utc_now()
             config.preferred_method = MFAMethod.totp
             await db.commit()
             return True
@@ -200,7 +202,7 @@ class MFAService:
         # TODO: Verify the code against stored verification code
         # For now, assume verification passes
         config.sms_enabled = True
-        config.sms_verified_at = datetime.utcnow()
+        config.sms_verified_at = utc_now()
         if not config.preferred_method:
             config.preferred_method = MFAMethod.sms
         await db.commit()
@@ -228,11 +230,11 @@ class MFAService:
         """Generate new backup codes"""
         config = await self._get_or_create_config(db, user_id)
 
-        backup_codes = [secrets.token_hex(4).upper() for _ in range(10)]
+        backup_codes = [secrets.token_hex(TOKEN_BYTES).upper() for _ in range(MFA_BACKUP_CODES_COUNT)]
         config.backup_codes = backup_codes
         config.backup_codes_generated = True
         config.backup_codes_used = 0
-        config.backup_codes_generated_at = datetime.utcnow()
+        config.backup_codes_generated_at = utc_now()
 
         await db.commit()
         return backup_codes

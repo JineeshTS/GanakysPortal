@@ -330,6 +330,9 @@ async def fetch_external_rates(
     company_id = UUID(current_user.company_id)
     user_id = UUID(current_user.user_id)
 
+    import structlog
+    logger = structlog.get_logger()
+
     try:
         result = await ExchangeRateService.fetch_external_rates(
             db=db,
@@ -340,7 +343,11 @@ async def fetch_external_rates(
         )
         return {"success": True, "rates_fetched": result}
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.error("Failed to fetch external exchange rates", error=str(e), source=source.value)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch exchange rates from external source. Please try again later."
+        )
 
 
 # ============================================================================

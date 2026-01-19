@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hsseq import HSEIncident, IncidentStatus
 from app.schemas.hsseq import HSEIncidentCreate, HSEIncidentUpdate, HSECategory, IncidentType, IncidentSeverity
+from app.core.datetime_utils import utc_now
 
 
 class IncidentService:
@@ -60,7 +61,7 @@ class IncidentService:
             investigation_required=obj_in.investigation_required,
             reported_by=user_id,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -170,7 +171,7 @@ class IncidentService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -183,9 +184,9 @@ class IncidentService:
     ) -> HSEIncident:
         """Close an incident"""
         db_obj.status = IncidentStatus.closed
-        db_obj.closed_at = datetime.utcnow()
+        db_obj.closed_at = utc_now()
         db_obj.closed_by = user_id
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

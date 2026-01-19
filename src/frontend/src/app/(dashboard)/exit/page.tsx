@@ -511,7 +511,7 @@ export default function ExitPage() {
         <PageHeader
           title="Exit Management"
           description="Manage employee offboarding and clearance"
-          icon={<UserMinus className="h-6 w-6" />}
+          icon={UserMinus}
         />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -540,7 +540,7 @@ export default function ExitPage() {
       <PageHeader
         title="Exit Management"
         description="Manage employee offboarding and clearance"
-        icon={<UserMinus className="h-6 w-6" />}
+        icon={UserMinus}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={fetchData}>

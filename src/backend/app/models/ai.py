@@ -45,7 +45,10 @@ class AIConversation(Base):
 
     # Conversation details
     title = Column(String(255))
-    feature = Column(Enum(AIFeature), nullable=False)
+    feature = Column(
+        Enum(AIFeature, name='ai_feature_enum', native_enum=False),
+        nullable=False
+    )
 
     # Context
     context_type = Column(String(50))  # employee, payroll, invoice, etc.
@@ -53,7 +56,10 @@ class AIConversation(Base):
     context_data = Column(JSON)  # Additional context passed to AI
 
     # Provider used
-    provider = Column(Enum(AIProvider), default=AIProvider.CLAUDE)
+    provider = Column(
+        Enum(AIProvider, name='ai_provider_enum', native_enum=False),
+        default=AIProvider.CLAUDE
+    )
     model = Column(String(50))
 
     # Statistics
@@ -83,7 +89,10 @@ class AIMessage(Base):
     content = Column(Text, nullable=False)
 
     # Metadata
-    provider = Column(Enum(AIProvider))
+    provider = Column(
+        Enum(AIProvider, name='ai_provider_enum', native_enum=False),
+        nullable=True
+    )
     model = Column(String(50))
     input_tokens = Column(Integer, default=0)
     output_tokens = Column(Integer, default=0)
@@ -114,8 +123,14 @@ class AIUsage(Base):
     month = Column(Integer, nullable=False)
 
     # Provider usage
-    provider = Column(Enum(AIProvider), nullable=False)
-    feature = Column(Enum(AIFeature), nullable=False)
+    provider = Column(
+        Enum(AIProvider, name='ai_provider_enum', native_enum=False),
+        nullable=False
+    )
+    feature = Column(
+        Enum(AIFeature, name='ai_feature_enum', native_enum=False),
+        nullable=False
+    )
 
     # Token counts
     input_tokens = Column(Integer, default=0)
@@ -145,7 +160,10 @@ class AIPromptTemplate(Base):
     # Template details
     name = Column(String(100), nullable=False)
     description = Column(Text)
-    feature = Column(Enum(AIFeature), nullable=False)
+    feature = Column(
+        Enum(AIFeature, name='ai_feature_enum', native_enum=False),
+        nullable=False
+    )
 
     # Prompt
     system_prompt = Column(Text)
@@ -155,7 +173,10 @@ class AIPromptTemplate(Base):
     variables = Column(JSON)
 
     # Settings
-    preferred_provider = Column(Enum(AIProvider))
+    preferred_provider = Column(
+        Enum(AIProvider, name='ai_provider_enum', native_enum=False),
+        nullable=True
+    )
     preferred_model = Column(String(50))
     max_tokens = Column(Integer, default=4000)
     temperature = Column(Numeric(3, 2), default=Decimal("0.7"))
@@ -217,7 +238,10 @@ class AIDocumentAnalysis(Base):
     confidence_score = Column(Numeric(5, 4))  # 0-1
 
     # Provider
-    provider = Column(Enum(AIProvider))
+    provider = Column(
+        Enum(AIProvider, name='ai_provider_enum', native_enum=False),
+        nullable=True
+    )
     model = Column(String(50))
     processing_time_ms = Column(Integer)
 

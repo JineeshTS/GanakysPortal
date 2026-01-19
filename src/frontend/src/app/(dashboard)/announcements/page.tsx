@@ -122,7 +122,7 @@ export default function AnnouncementsPage() {
       <PageHeader
         title="Announcements & Policies"
         description="Company news, updates, and policy documents"
-        icon={<Megaphone className="h-6 w-6" />}
+        icon={Megaphone}
         actions={
           <Button>
             <Plus className="h-4 w-4 mr-2" />

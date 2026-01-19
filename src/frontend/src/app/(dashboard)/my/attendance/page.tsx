@@ -141,7 +141,7 @@ export default function MyAttendancePage() {
         <PageHeader
           title="My Attendance"
           description="Track your daily attendance and working hours"
-          icon={<Clock className="h-6 w-6" />}
+          icon={Clock}
         />
         <Card>
           <CardContent className="pt-6">
@@ -169,7 +169,7 @@ export default function MyAttendancePage() {
       <PageHeader
         title="My Attendance"
         description="Track your daily attendance and working hours"
-        icon={<Clock className="h-6 w-6" />}
+        icon={Clock}
       />
 
       {/* Quick Actions */}

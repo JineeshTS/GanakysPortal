@@ -39,10 +39,50 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "https://portal.ganakys.com"]
 
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://ganaportal_user:GanaPortal2026!@localhost:5432/ganaportal"
+    # Database - SECURITY: Must be set via environment variable
+    DATABASE_URL: str
     DATABASE_POOL_SIZE: int = 20
     DATABASE_MAX_OVERFLOW: int = 10
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        """Validate that database URL is set and doesn't contain default credentials."""
+        if not v:
+            raise ValueError(
+                "DATABASE_URL must be set via environment variable"
+            )
+        # Extract password from URL: scheme://user:password@host:port/db
+        # URL format: postgresql+asyncpg://user:password@host:port/dbname
+        try:
+            # Find password between :// and @
+            if "://" in v and "@" in v:
+                auth_part = v.split("://")[1].split("@")[0]
+                if ":" in auth_part:
+                    password = auth_part.split(":", 1)[1]
+                else:
+                    password = ""
+            else:
+                password = ""
+        except (IndexError, ValueError):
+            password = ""
+
+        # Check for known insecure default credentials in password only
+        insecure_passwords = ["GanaPortal2026!", "password", "postgres", "changeme", "admin", "12345"]
+        for insecure in insecure_passwords:
+            if password and password.lower() == insecure.lower():
+                raise ValueError(
+                    f"DATABASE_URL contains insecure default password. "
+                    f"Use a secure, randomly generated password."
+                )
+
+        # Check for minimum password length
+        if password and len(password) < 16:
+            raise ValueError(
+                "DATABASE_URL password is too short. Use at least 16 characters."
+            )
+
+        return v
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"

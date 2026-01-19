@@ -154,7 +154,7 @@ export default function PerformancePage() {
       <PageHeader
         title="Performance Management"
         description="Reviews, goals, and feedback"
-        icon={<Award className="h-6 w-6" />}
+        icon={Award}
         actions={
           <Button>
             <Plus className="h-4 w-4 mr-2" />

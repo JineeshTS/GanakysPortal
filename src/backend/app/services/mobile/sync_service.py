@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.schemas.mobile import (
     MobileSyncRequest, MobileSyncResponse, SyncDataItem,
     OfflineActionCreate, OfflineActionBatchCreate, OfflineActionBatchResponse,
@@ -44,7 +45,7 @@ class MobileSyncService:
         return MobileSyncResponse(
             sync_id=sync_id,
             device_id=request.device_id,
-            sync_timestamp=datetime.utcnow(),
+            sync_timestamp=utc_now(),
             items=items,
             has_more=has_more,
             next_cursor=str(sync_id) if has_more else None
@@ -103,7 +104,7 @@ class MobileSyncService:
                     'client_action_id': action.client_action_id,
                     'status': 'failed',
                     'error_message': str(e),
-                    'processed_at': datetime.utcnow()
+                    'processed_at': utc_now()
                 })
 
         return OfflineActionBatchResponse(
@@ -128,7 +129,7 @@ class MobileSyncService:
             'entity_type': action.entity_type,
             'action_type': action.action_type,
             'status': 'success',
-            'processed_at': datetime.utcnow(),
+            'processed_at': utc_now(),
             'success': True
         }
 

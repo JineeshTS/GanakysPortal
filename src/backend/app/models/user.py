@@ -4,12 +4,13 @@ Authentication and user management with categories, types, and permissions
 """
 import uuid
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Boolean, DateTime, Enum, Integer, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID, INET, JSONB
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
+from app.core.datetime_utils import utc_now
 
 
 # Role enum (legacy - kept for backward compatibility)
@@ -71,8 +72,8 @@ class User(Base):
     password_changed_at = Column(DateTime(timezone=True), nullable=True)
     failed_login_attempts = Column(Integer, default=0)
     locked_until = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
     created_by = Column(UUID(as_uuid=True), nullable=True)
     updated_by = Column(UUID(as_uuid=True), nullable=True)
 
@@ -99,7 +100,7 @@ class User(Base):
         """Check if user access has expired."""
         if self.expires_at is None:
             return False
-        return datetime.utcnow() > self.expires_at
+        return utc_now() > self.expires_at
 
     @property
     def is_internal(self) -> bool:
@@ -127,7 +128,7 @@ class UserSession(Base):
     device_info = Column(String(500), nullable=True)
     ip_address = Column(INET, nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
     # Relationships
     user = relationship("User", back_populates="sessions")
@@ -142,11 +143,11 @@ class AuditLog(Base):
     action = Column(String(100), nullable=False)
     entity_type = Column(String(50), nullable=True)
     entity_id = Column(UUID(as_uuid=True), nullable=True)
-    old_values = Column(String, nullable=True)  # JSON stored as string
-    new_values = Column(String, nullable=True)  # JSON stored as string
+    old_values = Column(JSONB, nullable=True)  # Proper JSONB for efficient queries
+    new_values = Column(JSONB, nullable=True)  # Proper JSONB for efficient queries
     ip_address = Column(INET, nullable=True)
     user_agent = Column(String(500), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
 
 class Module(Base):
@@ -162,8 +163,8 @@ class Module(Base):
     route = Column(String(100), nullable=True)
     sort_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     # Relationships
     permissions = relationship("UserModulePermission", back_populates="module", cascade="all, delete-orphan")
@@ -185,10 +186,10 @@ class UserModulePermission(Base):
     data_scope = Column(Enum(DataScope, name='data_scope', create_type=False), default=DataScope.OWN)
     custom_permissions = Column(JSONB, nullable=True)  # Additional custom permissions
     granted_by = Column(UUID(as_uuid=True), nullable=True)
-    granted_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    granted_at = Column(DateTime(timezone=True), default=utc_now)
     expires_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     # Relationships
     user = relationship("User", back_populates="permissions")
@@ -208,8 +209,8 @@ class PermissionTemplate(Base):
     permissions = Column(JSONB, nullable=False)  # JSON structure of permissions
     is_default = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 
 class UserInvitation(Base):
@@ -232,4 +233,4 @@ class UserInvitation(Base):
     linked_entity_type = Column(String(50), nullable=True)
     linked_entity_id = Column(UUID(as_uuid=True), nullable=True)
     accepted_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)

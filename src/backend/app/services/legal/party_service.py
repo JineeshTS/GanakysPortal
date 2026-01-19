@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.legal import LegalParty
 from app.schemas.legal import LegalPartyCreate, LegalPartyUpdate
+from app.core.datetime_utils import utc_now
 
 
 class PartyService:
@@ -38,7 +39,7 @@ class PartyService:
             pan_number=obj_in.pan_number,
             cin_number=obj_in.cin_number,
             notes=obj_in.notes,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -92,7 +93,7 @@ class PartyService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
+from app.core.datetime_utils import utc_now
 from app.models.digital_signature import (
     SignatureRequest, SignatureSigner, DocumentSignature,
     SignatureMetrics, SignatureStatus, SignerStatus
@@ -28,7 +29,7 @@ class SignatureMetricsService:
         user_id: UUID
     ) -> SignatureDashboardMetrics:
         """Get dashboard metrics for a user"""
-        now = datetime.utcnow()
+        now = utc_now()
         today_start = datetime.combine(date.today(), datetime.min.time())
         thirty_days_ago = now - timedelta(days=30)
         three_days_from_now = now + timedelta(days=3)
@@ -327,7 +328,7 @@ class SignatureMetricsService:
             existing.avg_time_to_sign_hours = avg_time
             existing.min_time_to_sign_hours = min_time
             existing.max_time_to_sign_hours = max_time
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = utc_now()
         else:
             # Create
             metrics = SignatureMetrics(

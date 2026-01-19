@@ -6,7 +6,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List, Any
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from enum import Enum
 
 
@@ -121,8 +121,7 @@ class LeaveTypeResponse(LeaveTypeBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LeaveTypeListResponse(BaseModel):
@@ -214,8 +213,7 @@ class LeavePolicyResponse(LeavePolicyBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LeavePolicyListResponse(BaseModel):
@@ -265,8 +263,7 @@ class LeaveBalanceResponse(LeaveBalanceBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LeaveBalanceSummary(BaseModel):
@@ -410,8 +407,7 @@ class LeaveRequestResponse(BaseModel):
     leave_type: Optional[LeaveTypeResponse] = None
     approver: Optional[LeaveRequestEmployee] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LeaveRequestListResponse(BaseModel):
@@ -475,8 +471,7 @@ class HolidayResponse(HolidayBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HolidayListResponse(BaseModel):
@@ -528,8 +523,7 @@ class CompensatoryOffResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ===== Leave Encashment Schemas =====
@@ -574,8 +568,7 @@ class LeaveEncashmentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ===== Leave Transaction Schemas =====
@@ -595,8 +588,7 @@ class LeaveTransactionResponse(BaseModel):
     description: Optional[str]
     transaction_date: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LeaveTransactionListResponse(BaseModel):

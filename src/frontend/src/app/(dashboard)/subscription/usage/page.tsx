@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
+import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -184,7 +185,7 @@ export default function UsagePage() {
     try {
       // In real app, would fetch from API
       // const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-      // const res = await fetch(`${apiUrl}/subscriptions/usage/summary`)
+      // const res = await fetchWithAuth(`${apiUrl}/subscriptions/usage/summary`)
 
       // Mock data
       await new Promise((resolve) => setTimeout(resolve, 500))
@@ -362,38 +363,38 @@ export default function UsagePage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <UsageCard
               title="API Calls"
-              icon={<Zap className="h-4 w-4" />}
+              icon={Zap}
               usage={usageSummary.usage.api_calls}
               description="REST API requests this month"
             />
             <UsageCard
               title="AI Queries"
-              icon={<Bot className="h-4 w-4" />}
+              icon={Bot}
               usage={usageSummary.usage.ai_queries}
               description="AI assistant queries"
             />
             <UsageCard
               title="Storage"
-              icon={<Cloud className="h-4 w-4" />}
+              icon={Cloud}
               usage={usageSummary.usage.storage_gb}
               unit=" GB"
               description="Document and file storage"
             />
             <UsageCard
               title="Employees"
-              icon={<Users className="h-4 w-4" />}
+              icon={Users}
               usage={usageSummary.usage.employees}
               description="Active employees in system"
             />
             <UsageCard
               title="Users"
-              icon={<Users className="h-4 w-4" />}
+              icon={Users}
               usage={usageSummary.usage.users}
               description="Platform user accounts"
             />
             <UsageCard
               title="Documents"
-              icon={<FileText className="h-4 w-4" />}
+              icon={FileText}
               usage={usageSummary.usage.documents}
               description="Total documents stored"
             />

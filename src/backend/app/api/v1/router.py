@@ -57,6 +57,7 @@ from app.api.v1.endpoints import (
     currency,
     fixed_assets,
     expense,
+    finance,
 )
 
 api_router = APIRouter()
@@ -111,6 +112,9 @@ api_router.include_router(invoices.router, prefix="/invoices", tags=["Invoices"]
 
 # Finance - Bills (Purchases/AP)
 api_router.include_router(bills.router, prefix="/bills", tags=["Bills"])
+
+# Finance Dashboard
+api_router.include_router(finance.router, tags=["Finance Dashboard"])
 
 # Banking & Payments
 api_router.include_router(banking.router, tags=["Banking"])

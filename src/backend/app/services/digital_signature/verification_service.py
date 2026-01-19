@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.datetime_utils import utc_now
 from app.models.digital_signature import (
     SignatureRequest, SignatureDocument, DocumentSignature,
     SignatureVerification, SignatureCertificate
@@ -68,7 +69,7 @@ class SignatureVerificationService:
             cert = cert_result.scalar_one_or_none()
 
             if cert:
-                now = datetime.utcnow()
+                now = utc_now()
                 if cert.valid_to < now:
                     is_valid = False
                     status = "expired"
@@ -88,7 +89,7 @@ class SignatureVerificationService:
 
         # Update signature
         signature.is_valid = is_valid
-        signature.verified_at = datetime.utcnow()
+        signature.verified_at = utc_now()
         signature.verification_result = {
             "status": status,
             "message": message,

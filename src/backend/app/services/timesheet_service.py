@@ -12,6 +12,7 @@ from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.datetime_utils import utc_now
 from app.models.timesheet import (
     Timesheet, TimesheetEntry, TimesheetProject, TimesheetTask,
     TimesheetStatus, ProjectStatus, TaskStatus
@@ -424,7 +425,7 @@ class TimesheetService:
             raise ValueError("Cannot submit timesheet with zero hours")
 
         timesheet.status = TimesheetStatus.SUBMITTED
-        timesheet.submitted_at = datetime.utcnow()
+        timesheet.submitted_at = utc_now()
         timesheet.submitted_by = submitted_by
 
         await db.flush()
@@ -459,7 +460,7 @@ class TimesheetService:
             raise ValueError("Can only approve submitted timesheets")
 
         timesheet.status = TimesheetStatus.APPROVED
-        timesheet.approved_at = datetime.utcnow()
+        timesheet.approved_at = utc_now()
         timesheet.approver_id = approver_id
         timesheet.approver_remarks = remarks
 
@@ -498,7 +499,7 @@ class TimesheetService:
             raise ValueError("Can only reject submitted timesheets")
 
         timesheet.status = TimesheetStatus.REJECTED
-        timesheet.rejected_at = datetime.utcnow()
+        timesheet.rejected_at = utc_now()
         timesheet.approver_id = approver_id
         timesheet.rejection_reason = reason
 

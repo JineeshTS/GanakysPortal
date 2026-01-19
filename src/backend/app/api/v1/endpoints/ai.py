@@ -7,7 +7,24 @@ from datetime import date
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Query
 from pydantic import BaseModel, Field
 
-router = APIRouter(prefix="/ai", tags=["AI"])
+from app.api.deps import get_current_user
+from app.models.user import User
+
+
+async def require_auth(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Require authenticated user for endpoint access."""
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return current_user
+
+
+router = APIRouter(prefix="/ai", tags=["AI"], dependencies=[Depends(require_auth)])
 
 
 # ============================================================================

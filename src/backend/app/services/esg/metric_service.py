@@ -9,6 +9,7 @@ from decimal import Decimal
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.esg import ESGCompanyMetric, ESGCategory
 from app.schemas.esg import (
     ESGCompanyMetricCreate, ESGCompanyMetricUpdate, ESGCompanyMetricListResponse
@@ -134,7 +135,7 @@ class MetricService:
             if metric.target_value != 0:
                 metric.variance_pct = float(metric.variance / metric.target_value * 100)
 
-        metric.updated_at = datetime.utcnow()
+        metric.updated_at = utc_now()
         await db.commit()
         await db.refresh(metric)
         return metric
@@ -153,8 +154,8 @@ class MetricService:
 
         metric.verified = True
         metric.verified_by = user_id
-        metric.verified_at = datetime.utcnow()
-        metric.updated_at = datetime.utcnow()
+        metric.verified_at = utc_now()
+        metric.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(metric)

@@ -93,7 +93,7 @@ export default function TDSPage() {
       <PageHeader
         title="TDS Management"
         description="Tax Deducted at Source - 24Q Filing & Form 16 Generation"
-        icon={<Receipt className="h-6 w-6" />}
+        icon={Receipt}
         actions={
           <div className="flex gap-2">
             <Button variant="outline">

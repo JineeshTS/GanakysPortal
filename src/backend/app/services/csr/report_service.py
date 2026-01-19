@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.csr import CSRReport, CSRProject, CSRBudget, CSRBeneficiary, CSRProjectStatus
 from app.schemas.csr import CSRReportCreate, CSRReportUpdate
+from app.core.datetime_utils import utc_now
 
 
 class ReportService:
@@ -30,7 +31,7 @@ class ReportService:
             report_type=obj_in.report_type,
             prepared_by=user_id,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -98,7 +99,7 @@ class ReportService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -181,7 +182,7 @@ class ReportService:
                 category_spending[row[0].value] = float(row[1])
         db_obj.category_wise_spending = category_spending
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

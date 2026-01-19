@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.csr import CSRBudget
 from app.schemas.csr import CSRBudgetCreate, CSRBudgetUpdate
+from app.core.datetime_utils import utc_now
 
 
 class BudgetService:
@@ -48,7 +49,7 @@ class BudgetService:
             spending_deadline=obj_in.spending_deadline,
             approved=False,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -122,7 +123,7 @@ class BudgetService:
             )
             db_obj.amount_available = db_obj.total_budget - db_obj.amount_spent - db_obj.amount_committed
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -137,7 +138,7 @@ class BudgetService:
         db_obj.approved = True
         db_obj.approved_by = user_id
         db_obj.approved_date = date.today()
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(db_obj)

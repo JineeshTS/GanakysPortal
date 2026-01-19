@@ -455,7 +455,7 @@ async def get_setup_status(
         select(func.count(Department.id))
         .where(and_(
             Department.company_id == company_id,
-            Department.is_active == True
+            Department.is_active.is_(True)
         ))
     )
     departments_exist = (dept_count.scalar() or 0) > 0
@@ -465,7 +465,7 @@ async def get_setup_status(
         select(func.count(Designation.id))
         .where(and_(
             Designation.company_id == company_id,
-            Designation.is_active == True
+            Designation.is_active.is_(True)
         ))
     )
     designations_exist = (desig_count.scalar() or 0) > 0
@@ -543,13 +543,13 @@ async def get_full_profile(
     # Get counts
     dept_count = await db.execute(
         select(func.count(Department.id))
-        .where(and_(Department.company_id == company_id, Department.is_active == True))
+        .where(and_(Department.company_id == company_id, Department.is_active.is_(True)))
     )
     departments_count = dept_count.scalar() or 0
 
     desig_count = await db.execute(
         select(func.count(Designation.id))
-        .where(and_(Designation.company_id == company_id, Designation.is_active == True))
+        .where(and_(Designation.company_id == company_id, Designation.is_active.is_(True)))
     )
     designations_count = desig_count.scalar() or 0
 

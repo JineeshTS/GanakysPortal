@@ -9,6 +9,38 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.api.deps import get_current_user, get_current_company
+from app.models.user import User
+
+
+async def require_auth_and_company(
+    current_user: User = Depends(get_current_user),
+    user_company_id: Optional[UUID] = Depends(get_current_company)
+) -> tuple[User, UUID]:
+    """Require authenticated user with company access."""
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    if not user_company_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Company access required"
+        )
+    return current_user, user_company_id
+
+
+def verify_company_access(requested_company_id: UUID, user_company_id: UUID):
+    """Verify user has access to the requested company."""
+    if requested_company_id != user_company_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied: You can only access data for your own company"
+        )
+
+
 from app.services.gst_service import GSTService, GSTCalculator, GSTINValidator
 from app.schemas.gst import (
     # Request schemas
@@ -36,7 +68,7 @@ from app.schemas.gst import (
     GSTReturnStatusEnum,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_auth_and_company)])
 
 
 # ----- GST Returns List -----
@@ -55,7 +87,8 @@ async def list_gst_returns(
     financial_year: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}$", description="Financial year (e.g., 2024-25)"),
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    auth: tuple = Depends(require_auth_and_company)
 ):
     """
     List all GST returns for a company.
@@ -68,6 +101,10 @@ async def list_gst_returns(
 
     Returns paginated list of returns with summary information.
     """
+    # Verify user has access to the requested company
+    _, user_company_id = auth
+    verify_company_access(company_id, user_company_id)
+
     service = GSTService(db)
     result = await service.get_returns(
         company_id=company_id,

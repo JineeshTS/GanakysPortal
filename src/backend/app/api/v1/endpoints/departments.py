@@ -156,7 +156,7 @@ async def list_departments(
     query = select(Department).where(Department.company_id == company_id)
 
     if not include_inactive:
-        query = query.where(Department.is_active == True)
+        query = query.where(Department.is_active.is_(True))
 
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
@@ -568,7 +568,7 @@ async def list_designations(
     query = select(Designation).where(Designation.company_id == company_id)
 
     if not include_inactive:
-        query = query.where(Designation.is_active == True)
+        query = query.where(Designation.is_active.is_(True))
     if department_id:
         query = query.where(Designation.department_id == department_id)
     if ai_generated is not None:

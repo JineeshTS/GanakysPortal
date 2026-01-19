@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hsseq import WorkPermit, PermitStatus
 from app.schemas.hsseq import WorkPermitCreate, WorkPermitUpdate, PermitType
+from app.core.datetime_utils import utc_now
 
 
 class PermitService:
@@ -52,7 +53,7 @@ class PermitService:
             emergency_phone=obj_in.emergency_phone,
             emergency_procedures=obj_in.emergency_procedures,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -109,7 +110,7 @@ class PermitService:
             query = query.where(WorkPermit.department == department)
             count_query = count_query.where(WorkPermit.department == department)
         if active_only:
-            now = datetime.utcnow()
+            now = utc_now()
             active_filter = and_(
                 WorkPermit.status == PermitStatus.active,
                 WorkPermit.valid_from <= now,
@@ -161,7 +162,7 @@ class PermitService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -175,7 +176,7 @@ class PermitService:
         approved: bool,
     ) -> WorkPermit:
         """Approve a work permit"""
-        now = datetime.utcnow()
+        now = utc_now()
 
         if approval_type == "area_owner":
             db_obj.area_owner_approval = approved
@@ -213,7 +214,7 @@ class PermitService:
             raise ValueError("Permit must be approved before activation")
 
         db_obj.status = PermitStatus.active
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(db_obj)
@@ -230,11 +231,11 @@ class PermitService:
         """Complete a work permit"""
         db_obj.work_completed = True
         db_obj.completed_by = user_id
-        db_obj.completion_date = datetime.utcnow()
+        db_obj.completion_date = utc_now()
         db_obj.completion_notes = notes
         db_obj.area_handed_back = area_handed_back
         db_obj.status = PermitStatus.completed
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(db_obj)

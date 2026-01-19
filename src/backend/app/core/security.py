@@ -3,7 +3,7 @@ QA-001 to QA-003: Security Hardening
 Comprehensive security middleware and utilities
 """
 from typing import Optional, List, Dict, Any, Callable
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 import hashlib
 import hmac
@@ -30,14 +30,26 @@ class SecurityLevel(str, Enum):
 
 
 # OWASP Security Headers
+# Note: CSP is strict - frontend must use external scripts/styles, not inline
 SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "X-XSS-Protection": "1; mode=block",
-    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+    "Content-Security-Policy": (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "form-action 'self'; "
+        "base-uri 'self'"
+    ),
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+    "X-Permitted-Cross-Domain-Policies": "none",
 }
 
 # Rate limiting defaults
@@ -62,97 +74,262 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Rate limiting middleware."""
+    """
+    Rate limiting middleware with Redis support for distributed deployments.
 
-    def __init__(self, app, max_requests: int = 100, window: int = 60):
+    Falls back to in-memory storage if Redis is unavailable.
+    """
+
+    def __init__(self, app, max_requests: int = 100, window: int = 60, redis_url: str = None):
         super().__init__(app)
         self.max_requests = max_requests
         self.window = window
-        self._requests: Dict[str, List[datetime]] = {}
+        self.redis_url = redis_url
+        self._redis = None
+        self._fallback_requests: Dict[str, List[datetime]] = {}  # Fallback for non-Redis
+
+    async def _get_redis(self):
+        """Get Redis client for distributed rate limiting."""
+        if self._redis is None and self.redis_url:
+            try:
+                import redis.asyncio as aioredis
+                self._redis = aioredis.from_url(self.redis_url, decode_responses=True)
+                await self._redis.ping()
+            except Exception:
+                self._redis = None
+        return self._redis
 
     async def dispatch(self, request: Request, call_next):
         client_ip = self._get_client_ip(request)
 
-        if not self._is_allowed(client_ip):
+        if not await self._is_allowed(client_ip):
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Rate limit exceeded. Please try again later.",
                 headers={"Retry-After": str(self.window)}
             )
 
-        self._record_request(client_ip)
+        await self._record_request(client_ip)
         return await call_next(request)
 
     def _get_client_ip(self, request: Request) -> str:
-        """Get client IP, handling proxies."""
+        """
+        Get client IP, handling proxies securely.
+
+        Only trust X-Forwarded-For if behind a known proxy.
+        """
+        # Check for trusted proxy header (should be set by your load balancer)
+        if request.headers.get("X-Real-IP"):
+            return request.headers.get("X-Real-IP")
+
+        # X-Forwarded-For can be spoofed - only trust first IP if behind trusted proxy
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
-            return forwarded.split(",")[0].strip()
+            # Take the rightmost IP (closest proxy) for security
+            # In production, configure your proxy to strip untrusted headers
+            ips = [ip.strip() for ip in forwarded.split(",")]
+            # Return first non-private IP, or first IP if all are private
+            for ip in ips:
+                try:
+                    ip_obj = ipaddress.ip_address(ip)
+                    if not ip_obj.is_private:
+                        return ip
+                except ValueError:
+                    continue
+            return ips[0] if ips else "unknown"
+
         return request.client.host if request.client else "unknown"
 
-    def _is_allowed(self, client_ip: str) -> bool:
-        """Check if client is within rate limit."""
-        now = datetime.utcnow()
+    async def _is_allowed(self, client_ip: str) -> bool:
+        """Check if client is within rate limit using Redis or fallback."""
+        redis_client = await self._get_redis()
+
+        if redis_client:
+            try:
+                key = f"rate_limit:{client_ip}"
+                current = await redis_client.get(key)
+                return int(current or 0) < self.max_requests
+            except Exception:
+                pass  # Fall through to in-memory
+
+        # Fallback to in-memory (single instance only)
+        now = datetime.now(timezone.utc)
         cutoff = now - timedelta(seconds=self.window)
 
-        if client_ip in self._requests:
-            # Clean old requests
-            self._requests[client_ip] = [
-                t for t in self._requests[client_ip] if t > cutoff
+        if client_ip in self._fallback_requests:
+            self._fallback_requests[client_ip] = [
+                t for t in self._fallback_requests[client_ip] if t > cutoff
             ]
-            return len(self._requests[client_ip]) < self.max_requests
+            return len(self._fallback_requests[client_ip]) < self.max_requests
 
         return True
 
-    def _record_request(self, client_ip: str) -> None:
-        """Record a request from client."""
-        now = datetime.utcnow()
-        if client_ip not in self._requests:
-            self._requests[client_ip] = []
-        self._requests[client_ip].append(now)
+    async def _record_request(self, client_ip: str) -> None:
+        """Record a request using Redis or fallback."""
+        redis_client = await self._get_redis()
+
+        if redis_client:
+            try:
+                key = f"rate_limit:{client_ip}"
+                pipe = redis_client.pipeline()
+                pipe.incr(key)
+                pipe.expire(key, self.window)
+                await pipe.execute()
+                return
+            except Exception:
+                pass  # Fall through to in-memory
+
+        # Fallback to in-memory
+        now = datetime.now(timezone.utc)
+        if client_ip not in self._fallback_requests:
+            self._fallback_requests[client_ip] = []
+        self._fallback_requests[client_ip].append(now)
 
 
 class SQLInjectionMiddleware(BaseHTTPMiddleware):
-    """Detect and block SQL injection attempts."""
+    """
+    Defense-in-depth SQL injection detection middleware.
 
+    IMPORTANT: This is NOT a replacement for parameterized queries!
+    All database queries MUST use parameterized queries (SQLAlchemy ORM) as the
+    primary defense against SQL injection. This middleware provides an additional
+    layer of protection by detecting and blocking obvious attack patterns.
+
+    This middleware:
+    - Checks query strings, URL paths, and JSON request bodies
+    - URL-decodes values before pattern matching to catch encoding bypasses
+    - Logs detected attempts for security monitoring
+    """
+
+    # Comprehensive SQL injection patterns
+    # Patterns work on URL-decoded strings
     SQL_PATTERNS = [
-        r"(\%27)|(\')|(\-\-)|(\%23)|(#)",
-        r"((\%3D)|(=))[^\n]*((\%27)|(\')|(\-\-)|(\%3B)|(;))",
-        r"\w*((\%27)|(\'))((\%6F)|o|(\%4F))((\%72)|r|(\%52))",
-        r"((\%27)|(\'))union",
-        r"exec(\s|\+)+(s|x)p\w+",
-        r"UNION\s+SELECT",
-        r"INSERT\s+INTO",
-        r"DELETE\s+FROM",
-        r"DROP\s+TABLE",
-        r"UPDATE\s+\w+\s+SET",
+        # Basic SQL syntax elements that shouldn't appear in normal input
+        r"(\-\-)|(/\*)|(\*/)",  # SQL comments
+        r";\s*(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE)",  # Chained statements
+
+        # UNION-based injection
+        r"UNION\s+(ALL\s+)?SELECT",
+        r"UNION\s+(ALL\s+)?/\*.*\*/\s*SELECT",
+
+        # Classic SQL injection patterns
+        r"'\s*(OR|AND)\s+['\d]",  # ' OR '1 / ' AND 1
+        r"'\s*(OR|AND)\s+\w+\s*=\s*\w+",  # ' OR 1=1 / ' AND a=a
+        r"1\s*=\s*1",  # Tautologies like 1=1
+        r"'\s*=\s*'",  # '='
+
+        # Dangerous SQL keywords with suspicious context
+        r"(^|\s|;)(DROP|TRUNCATE|DELETE\s+FROM)\s+",
+        r"(^|\s|;)INSERT\s+INTO\s+",
+        r"(^|\s|;)UPDATE\s+\w+\s+SET\s+",
+        r"(^|\s|;)ALTER\s+TABLE\s+",
+
+        # Stored procedure execution
+        r"EXEC(UTE)?\s+",
+        r"xp_\w+",  # SQL Server extended procedures
+
+        # Information schema access
+        r"INFORMATION_SCHEMA\.",
+        r"sys\.(tables|columns|databases)",
+
+        # Sleep/benchmark (time-based blind injection)
+        r"SLEEP\s*\(",
+        r"BENCHMARK\s*\(",
+        r"WAITFOR\s+DELAY",
+        r"pg_sleep\s*\(",
+
+        # Hex/char encoding attempts
+        r"CHAR\s*\(\s*\d+\s*\)",
+        r"0x[0-9a-fA-F]+",  # Hex literals in suspicious context
+
+        # Stacked queries
+        r";\s*\-\-",
     ]
+
+    # Content types to inspect for body content
+    INSPECTABLE_CONTENT_TYPES = [
+        "application/json",
+        "application/x-www-form-urlencoded",
+        "text/plain",
+    ]
+
+    # Max body size to inspect (avoid memory issues with large uploads)
+    MAX_BODY_SIZE = 1024 * 1024  # 1MB
 
     def __init__(self, app):
         super().__init__(app)
         self._patterns = [re.compile(p, re.IGNORECASE) for p in self.SQL_PATTERNS]
 
     async def dispatch(self, request: Request, call_next):
-        # Check query parameters
-        query_string = str(request.query_params)
+        from urllib.parse import unquote_plus
+        import logging
+
+        logger = logging.getLogger("security.sqli")
+
+        # Check query parameters (URL-decoded)
+        query_string = unquote_plus(str(request.query_params))
+
         if self._contains_sql_injection(query_string):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid request parameters"
+            logger.warning(
+                f"SQL injection attempt detected in query string from {request.client.host}: {query_string[:200]}"
+            )
+            from starlette.responses import JSONResponse
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Invalid request parameters"}
             )
 
-        # Check path parameters
-        path = request.url.path
+        # Check path parameters (URL-decoded)
+        path = unquote_plus(request.url.path)
         if self._contains_sql_injection(path):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid request path"
+            logger.warning(
+                f"SQL injection attempt detected in path from {request.client.host}: {path[:200]}"
             )
+            from starlette.responses import JSONResponse
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Invalid request path"}
+            )
+
+        # Check request body for POST/PUT/PATCH requests
+        if request.method in ("POST", "PUT", "PATCH"):
+            content_type = request.headers.get("content-type", "").lower()
+
+            # Only inspect certain content types
+            if any(ct in content_type for ct in self.INSPECTABLE_CONTENT_TYPES):
+                try:
+                    body = await request.body()
+
+                    # Skip if body is too large
+                    if len(body) <= self.MAX_BODY_SIZE:
+                        body_str = body.decode("utf-8", errors="ignore")
+                        body_str = unquote_plus(body_str)
+
+                        if self._contains_sql_injection(body_str):
+                            logger.warning(
+                                f"SQL injection attempt detected in body from {request.client.host}: {body_str[:200]}"
+                            )
+                            from starlette.responses import JSONResponse
+                            return JSONResponse(
+                                status_code=400,
+                                content={"detail": "Invalid request body"}
+                            )
+                except Exception as e:
+                    # Don't block request if we can't read body
+                    logger.debug(f"Could not inspect request body: {e}")
 
         return await call_next(request)
 
     def _contains_sql_injection(self, value: str) -> bool:
-        """Check if value contains SQL injection patterns."""
+        """
+        Check if value contains SQL injection patterns.
+
+        Note: This is a heuristic check and may have false positives/negatives.
+        Always use parameterized queries as the primary defense.
+        """
+        if not value:
+            return False
+
         for pattern in self._patterns:
             if pattern.search(value):
                 return True
@@ -160,35 +337,145 @@ class SQLInjectionMiddleware(BaseHTTPMiddleware):
 
 
 class XSSProtectionMiddleware(BaseHTTPMiddleware):
-    """Detect and sanitize XSS attempts."""
+    """
+    Defense-in-depth XSS detection middleware.
+
+    IMPORTANT: This is NOT a replacement for proper output encoding!
+    All user input displayed in HTML MUST be properly escaped/encoded.
+    This middleware provides an additional layer of protection by detecting
+    and blocking obvious XSS attack patterns in inputs.
+
+    This middleware:
+    - Checks query strings, URL paths, and request bodies
+    - URL-decodes values before pattern matching to catch encoding bypasses
+    - Logs detected attempts for security monitoring
+    """
 
     XSS_PATTERNS = [
-        r"<script[^>]*>.*?</script>",
-        r"javascript:",
-        r"on\w+\s*=",
-        r"<iframe[^>]*>",
-        r"<object[^>]*>",
-        r"<embed[^>]*>",
-        r"<svg[^>]*onload",
+        # Script tags (various forms)
+        r"<\s*script[^>]*>",
+        r"<\s*/\s*script\s*>",
+
+        # JavaScript URI scheme
+        r"javascript\s*:",
+        r"vbscript\s*:",
+        r"data\s*:\s*text/html",
+
+        # Event handlers (comprehensive list)
+        r"on(abort|activate|afterprint|afterupdate|beforeactivate|beforecopy|beforecut|beforedeactivate|beforeeditfocus|beforepaste|beforeprint|beforeunload|beforeupdate|blur|bounce|cellchange|change|click|contextmenu|controlselect|copy|cut|dataavailable|datasetchanged|datasetcomplete|dblclick|deactivate|drag|dragend|dragenter|dragleave|dragover|dragstart|drop|error|errorupdate|filterchange|finish|focus|focusin|focusout|hashchange|help|input|keydown|keypress|keyup|layoutcomplete|load|losecapture|message|mousedown|mouseenter|mouseleave|mousemove|mouseout|mouseover|mouseup|mousewheel|move|moveend|movestart|offline|online|pagehide|pageshow|paste|popstate|progress|propertychange|readystatechange|reset|resize|resizeend|resizestart|rowenter|rowexit|rowsdelete|rowsinserted|scroll|search|select|selectionchange|selectstart|start|stop|storage|submit|timeout|touchcancel|touchend|touchmove|touchstart|unload|wheel)\s*=",
+
+        # Dangerous HTML elements
+        r"<\s*iframe[^>]*>",
+        r"<\s*object[^>]*>",
+        r"<\s*embed[^>]*>",
+        r"<\s*frame[^>]*>",
+        r"<\s*frameset[^>]*>",
+        r"<\s*applet[^>]*>",
+        r"<\s*base[^>]*>",
+        r"<\s*link[^>]*>",
+        r"<\s*meta[^>]*>",
+        r"<\s*style[^>]*>",
+
+        # SVG-based XSS
+        r"<\s*svg[^>]*>",
+        r"<\s*math[^>]*>",
+
+        # Expression/eval patterns
+        r"expression\s*\(",
+        r"eval\s*\(",
+        r"Function\s*\(",
+        r"setTimeout\s*\(",
+        r"setInterval\s*\(",
+
+        # HTML entity encoded variants of < and >
+        r"&lt;\s*script",
+        r"&#60;\s*script",
+        r"&#x3c;\s*script",
     ]
+
+    # Content types to inspect for body content
+    INSPECTABLE_CONTENT_TYPES = [
+        "application/json",
+        "application/x-www-form-urlencoded",
+        "text/plain",
+    ]
+
+    # Max body size to inspect
+    MAX_BODY_SIZE = 1024 * 1024  # 1MB
 
     def __init__(self, app):
         super().__init__(app)
-        self._patterns = [re.compile(p, re.IGNORECASE) for p in self.XSS_PATTERNS]
+        self._patterns = [re.compile(p, re.IGNORECASE | re.DOTALL) for p in self.XSS_PATTERNS]
 
     async def dispatch(self, request: Request, call_next):
-        query_string = str(request.query_params)
+        from urllib.parse import unquote_plus
+        import logging
 
+        logger = logging.getLogger("security.xss")
+
+        # Check query parameters (URL-decoded)
+        query_string = unquote_plus(str(request.query_params))
         if self._contains_xss(query_string):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid request parameters"
+            logger.warning(
+                f"XSS attempt detected in query string from {request.client.host}: {query_string[:200]}"
             )
+            from starlette.responses import JSONResponse
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Invalid request parameters"}
+            )
+
+        # Check path (URL-decoded)
+        path = unquote_plus(request.url.path)
+        if self._contains_xss(path):
+            logger.warning(
+                f"XSS attempt detected in path from {request.client.host}: {path[:200]}"
+            )
+            from starlette.responses import JSONResponse
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Invalid request path"}
+            )
+
+        # Check request body for POST/PUT/PATCH requests
+        if request.method in ("POST", "PUT", "PATCH"):
+            content_type = request.headers.get("content-type", "").lower()
+
+            # Only inspect certain content types
+            if any(ct in content_type for ct in self.INSPECTABLE_CONTENT_TYPES):
+                try:
+                    body = await request.body()
+
+                    # Skip if body is too large
+                    if len(body) <= self.MAX_BODY_SIZE:
+                        body_str = body.decode("utf-8", errors="ignore")
+                        body_str = unquote_plus(body_str)
+
+                        if self._contains_xss(body_str):
+                            logger.warning(
+                                f"XSS attempt detected in body from {request.client.host}: {body_str[:200]}"
+                            )
+                            from starlette.responses import JSONResponse
+                            return JSONResponse(
+                                status_code=400,
+                                content={"detail": "Invalid request body"}
+                            )
+                except Exception as e:
+                    # Don't block request if we can't read body
+                    logger.debug(f"Could not inspect request body: {e}")
 
         return await call_next(request)
 
     def _contains_xss(self, value: str) -> bool:
-        """Check if value contains XSS patterns."""
+        """
+        Check if value contains XSS patterns.
+
+        Note: This is a heuristic check and may have false positives/negatives.
+        Always use proper output encoding as the primary defense.
+        """
+        if not value:
+            return False
+
         for pattern in self._patterns:
             if pattern.search(value):
                 return True

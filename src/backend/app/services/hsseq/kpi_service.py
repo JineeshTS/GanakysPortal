@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hsseq import HSEKPI, HSEIncident, IncidentType, IncidentStatus
 from app.schemas.hsseq import HSEKPICreate, HSEKPIUpdate, HSECategory
+from app.core.datetime_utils import utc_now
 
 
 class KPIService:
@@ -39,7 +40,7 @@ class KPIService:
             target_value=obj_in.target_value,
             baseline_value=obj_in.baseline_value,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -135,7 +136,7 @@ class KPIService:
                 db_obj.variance_pct = float((db_obj.variance / db_obj.target_value) * 100)
             db_obj.target_achieved = db_obj.actual_value >= db_obj.target_value
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -266,8 +267,8 @@ class KPIService:
 
             if existing_kpi:
                 existing_kpi.actual_value = kpi_info["actual_value"]
-                existing_kpi.calculated_at = datetime.utcnow()
-                existing_kpi.updated_at = datetime.utcnow()
+                existing_kpi.calculated_at = utc_now()
+                existing_kpi.updated_at = utc_now()
             else:
                 new_kpi = HSEKPI(
                     id=uuid4(),
@@ -281,8 +282,8 @@ class KPIService:
                     period_start=period_start,
                     period_end=period_end,
                     actual_value=kpi_info["actual_value"],
-                    calculated_at=datetime.utcnow(),
-                    created_at=datetime.utcnow(),
+                    calculated_at=utc_now(),
+                    created_at=utc_now(),
                 )
                 db.add(new_kpi)
 

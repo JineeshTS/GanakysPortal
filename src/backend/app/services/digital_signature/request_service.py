@@ -11,6 +11,7 @@ from fastapi import BackgroundTasks, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 
+from app.core.datetime_utils import utc_now
 from app.models.digital_signature import (
     SignatureRequest, SignatureDocument, SignatureSigner,
     SignatureAuditLog, SignatureStatus, SignerStatus
@@ -41,7 +42,7 @@ class SignatureRequestService:
         request_number = await self._generate_request_number(db, company_id)
 
         # Calculate expiry
-        expires_at = datetime.utcnow() + timedelta(days=request_in.expires_in_days)
+        expires_at = utc_now() + timedelta(days=request_in.expires_in_days)
 
         request = SignatureRequest(
             company_id=company_id,
@@ -73,7 +74,7 @@ class SignatureRequestService:
         # Add signers
         for signer_in in request_in.signers:
             access_token = secrets.token_urlsafe(32)
-            token_expires = datetime.utcnow() + timedelta(days=request_in.expires_in_days + 7)
+            token_expires = utc_now() + timedelta(days=request_in.expires_in_days + 7)
 
             signer = SignatureSigner(
                 request_id=request.id,
@@ -111,7 +112,7 @@ class SignatureRequestService:
 
     async def _generate_request_number(self, db: AsyncSession, company_id: UUID) -> str:
         """Generate unique request number"""
-        year = datetime.utcnow().year
+        year = utc_now().year
         prefix = f"SIG-{year}-"
 
         result = await db.execute(
@@ -289,7 +290,7 @@ class SignatureRequestService:
         for field, value in update_data.items():
             setattr(request, field, value)
 
-        request.updated_at = datetime.utcnow()
+        request.updated_at = utc_now()
         await db.commit()
         await db.refresh(request)
         return SignatureRequestResponse.model_validate(request)
@@ -325,8 +326,8 @@ class SignatureRequestService:
             raise ValueError("Request must have at least one document")
 
         request.status = SignatureStatus.pending
-        request.sent_at = datetime.utcnow()
-        request.updated_at = datetime.utcnow()
+        request.sent_at = utc_now()
+        request.updated_at = utc_now()
 
         # Audit log
         audit = SignatureAuditLog(
@@ -366,9 +367,9 @@ class SignatureRequestService:
             raise ValueError("Request already completed or cancelled")
 
         request.status = SignatureStatus.cancelled
-        request.completed_at = datetime.utcnow()
+        request.completed_at = utc_now()
         request.completion_type = "cancelled"
-        request.updated_at = datetime.utcnow()
+        request.updated_at = utc_now()
 
         # Audit log
         audit = SignatureAuditLog(
@@ -534,7 +535,7 @@ class SignatureRequestService:
         signers = result.scalars().all()
 
         count = 0
-        now = datetime.utcnow()
+        now = utc_now()
         for signer in signers:
             signer.reminder_count = (signer.reminder_count or 0) + 1
             signer.last_reminder_at = now

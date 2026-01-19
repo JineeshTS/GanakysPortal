@@ -5,7 +5,7 @@ from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from enum import Enum
 
 
@@ -84,15 +84,15 @@ class WorkCenterBase(BaseModel):
     description: Optional[str] = None
     work_center_type: WorkCenterType
     plant_id: Optional[UUID] = None
-    capacity_per_hour: Decimal = Decimal("0")
+    capacity_per_hour: Decimal = Field(Decimal("0"), ge=0)
     capacity_uom: Optional[str] = None
-    efficiency_percentage: Decimal = Decimal("100")
-    hourly_rate: Decimal = Decimal("0")
-    setup_cost: Decimal = Decimal("0")
-    overhead_rate: Decimal = Decimal("0")
-    shifts_per_day: int = 1
-    hours_per_shift: Decimal = Decimal("8")
-    working_days_per_week: int = 5
+    efficiency_percentage: Decimal = Field(Decimal("100"), ge=0, le=100)
+    hourly_rate: Decimal = Field(Decimal("0"), ge=0)
+    setup_cost: Decimal = Field(Decimal("0"), ge=0)
+    overhead_rate: Decimal = Field(Decimal("0"), ge=0)
+    shifts_per_day: int = Field(1, ge=1, le=4)
+    hours_per_shift: Decimal = Field(Decimal("8"), ge=1, le=24)
+    working_days_per_week: int = Field(5, ge=1, le=7)
     location_in_plant: Optional[str] = None
 
 
@@ -106,9 +106,9 @@ class WorkCenterUpdate(BaseModel):
     description: Optional[str] = None
     work_center_type: Optional[WorkCenterType] = None
     status: Optional[WorkCenterStatus] = None
-    capacity_per_hour: Optional[Decimal] = None
-    efficiency_percentage: Optional[Decimal] = None
-    hourly_rate: Optional[Decimal] = None
+    capacity_per_hour: Optional[Decimal] = Field(None, ge=0)
+    efficiency_percentage: Optional[Decimal] = Field(None, ge=0, le=100)
+    hourly_rate: Optional[Decimal] = Field(None, ge=0)
 
 
 class WorkCenterResponse(WorkCenterBase):
@@ -123,12 +123,12 @@ class WorkCenterResponse(WorkCenterBase):
 
 # BOM Schemas
 class BOMLineBase(BaseModel):
-    line_number: int
+    line_number: int = Field(..., ge=1, description="Line number (must be positive)")
     component_id: UUID
     component_variant_id: Optional[UUID] = None
-    quantity: Decimal
+    quantity: Decimal = Field(..., gt=0, description="Quantity required (must be positive)")
     uom: str
-    scrap_percentage: Decimal = Decimal("0")
+    scrap_percentage: Decimal = Field(Decimal("0"), ge=0, le=100)
     substitute_allowed: bool = False
     substitute_product_id: Optional[UUID] = None
     position: Optional[str] = None
@@ -155,7 +155,7 @@ class BOMBase(BaseModel):
     product_id: UUID
     product_variant_id: Optional[UUID] = None
     bom_type: BOMType = BOMType.STANDARD
-    quantity: Decimal = Decimal("1")
+    quantity: Decimal = Field(Decimal("1"), gt=0)
     uom: str
     effective_from: Optional[date] = None
     effective_to: Optional[date] = None
@@ -170,7 +170,7 @@ class BOMCreate(BOMBase):
 class BOMUpdate(BaseModel):
     bom_type: Optional[BOMType] = None
     status: Optional[BOMStatus] = None
-    quantity: Optional[Decimal] = None
+    quantity: Optional[Decimal] = Field(None, gt=0)
     effective_from: Optional[date] = None
     effective_to: Optional[date] = None
     description: Optional[str] = None
@@ -200,20 +200,20 @@ class BOMResponse(BOMBase):
 
 # Routing Schemas
 class RoutingOperationBase(BaseModel):
-    operation_number: int
+    operation_number: int = Field(..., ge=1)
     operation_name: str
     description: Optional[str] = None
     work_center_id: UUID
-    setup_time: Decimal = Decimal("0")
-    run_time_per_unit: Decimal = Decimal("0")
-    wait_time: Decimal = Decimal("0")
-    move_time: Decimal = Decimal("0")
-    minimum_batch: Decimal = Decimal("1")
-    maximum_batch: Decimal = Decimal("0")
+    setup_time: Decimal = Field(Decimal("0"), ge=0)
+    run_time_per_unit: Decimal = Field(Decimal("0"), ge=0)
+    wait_time: Decimal = Field(Decimal("0"), ge=0)
+    move_time: Decimal = Field(Decimal("0"), ge=0)
+    minimum_batch: Decimal = Field(Decimal("1"), ge=1)
+    maximum_batch: Decimal = Field(Decimal("0"), ge=0)  # 0 means no limit
     inspection_required: bool = False
-    inspection_percentage: Decimal = Decimal("100")
-    labor_cost_per_hour: Decimal = Decimal("0")
-    machine_cost_per_hour: Decimal = Decimal("0")
+    inspection_percentage: Decimal = Field(Decimal("100"), ge=0, le=100)
+    labor_cost_per_hour: Decimal = Field(Decimal("0"), ge=0)
+    machine_cost_per_hour: Decimal = Field(Decimal("0"), ge=0)
     work_instructions: Optional[str] = None
 
 

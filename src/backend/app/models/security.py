@@ -16,6 +16,12 @@ from sqlalchemy.orm import relationship
 
 from app.models.base import Base
 
+# Import EncryptedStringType for sensitive data
+try:
+    from app.core.encryption import EncryptedStringType
+except ImportError:
+    EncryptedStringType = None
+
 
 # Enums
 class SecurityEventType(str, enum.Enum):
@@ -130,11 +136,11 @@ class SecurityPolicy(Base):
 
     # IP restrictions
     ip_whitelist_enabled = Column(Boolean, default=False)
-    ip_whitelist = Column(ARRAY(String), default=[])
+    ip_whitelist = Column(ARRAY(String), default=list)
     ip_blacklist_enabled = Column(Boolean, default=False)
-    ip_blacklist = Column(ARRAY(String), default=[])
+    ip_blacklist = Column(ARRAY(String), default=list)
     geo_restrictions_enabled = Column(Boolean, default=False)
-    allowed_countries = Column(ARRAY(String), default=[])
+    allowed_countries = Column(ARRAY(String), default=list)
 
     # API security
     api_rate_limit_per_minute = Column(Integer, default=60)
@@ -153,7 +159,7 @@ class SecurityPolicy(Base):
     alert_on_new_device = Column(Boolean, default=True)
     alert_on_permission_change = Column(Boolean, default=True)
     alert_on_bulk_data_access = Column(Boolean, default=True)
-    alert_email_recipients = Column(ARRAY(String), default=[])
+    alert_email_recipients = Column(ARRAY(String), default=list)
 
     # Compliance
     gdpr_compliant = Column(Boolean, default=False)
@@ -300,7 +306,7 @@ class AccessToken(Base):
     token_prefix = Column(String(20), nullable=False)  # First few chars for identification
 
     # Permissions
-    scopes = Column(ARRAY(String), default=[])  # API scopes this token can access
+    scopes = Column(ARRAY(String), default=list)  # API scopes this token can access
     permissions = Column(JSONB, nullable=True)  # Granular permissions
 
     # Rate limiting
@@ -308,7 +314,7 @@ class AccessToken(Base):
     rate_limit_per_hour = Column(Integer, nullable=True)
 
     # IP restrictions
-    ip_whitelist = Column(ARRAY(String), default=[])
+    ip_whitelist = Column(ARRAY(String), default=list)
     ip_whitelist_enabled = Column(Boolean, default=False)
 
     # Usage tracking
@@ -455,9 +461,9 @@ class MFAConfig(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, unique=True)
 
-    # TOTP
+    # TOTP - secret encrypted at rest
     totp_enabled = Column(Boolean, default=False)
-    totp_secret = Column(String(255), nullable=True)  # Encrypted
+    totp_secret = Column(EncryptedStringType() if EncryptedStringType else String(500), nullable=True)
     totp_verified_at = Column(DateTime, nullable=True)
 
     # SMS
@@ -472,7 +478,7 @@ class MFAConfig(Base):
 
     # Backup codes
     backup_codes_generated = Column(Boolean, default=False)
-    backup_codes = Column(ARRAY(String), default=[])  # Hashed codes
+    backup_codes = Column(ARRAY(String), default=list)  # Hashed codes
     backup_codes_used = Column(Integer, default=0)
     backup_codes_generated_at = Column(DateTime, nullable=True)
 
@@ -518,9 +524,9 @@ class SecurityIncident(Base):
 
     # Impact
     affected_users = Column(Integer, default=0)
-    affected_systems = Column(ARRAY(String), default=[])
+    affected_systems = Column(ARRAY(String), default=list)
     data_compromised = Column(Boolean, default=False)
-    data_types_affected = Column(ARRAY(String), default=[])
+    data_types_affected = Column(ARRAY(String), default=list)
 
     # Response
     containment_started_at = Column(DateTime, nullable=True)
@@ -544,7 +550,7 @@ class SecurityIncident(Base):
     preventive_measures = Column(Text, nullable=True)
 
     # Related audit logs
-    related_audit_log_ids = Column(ARRAY(UUID(as_uuid=True)), default=[])
+    related_audit_log_ids = Column(ARRAY(UUID(as_uuid=True)), default=list)
 
     # Notifications
     notifications_sent = Column(Boolean, default=False)
@@ -657,8 +663,8 @@ class DataAccessLog(Base):
 
     # Access details
     access_type = Column(String(50), nullable=False)  # read, export, print, download
-    fields_accessed = Column(ARRAY(String), default=[])
-    sensitive_fields_accessed = Column(ARRAY(String), default=[])  # PII, financial, health
+    fields_accessed = Column(ARRAY(String), default=list)
+    sensitive_fields_accessed = Column(ARRAY(String), default=list)  # PII, financial, health
 
     # Context
     access_reason = Column(String(255), nullable=True)  # Business justification

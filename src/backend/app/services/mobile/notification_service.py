@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.schemas.mobile import (
     PushNotificationCreate, PushNotificationResponse,
     NotificationType
@@ -41,7 +42,7 @@ class MobileNotificationService:
             delivered_count=0,
             failed_count=0,
             created_by=user_id,
-            created_at=datetime.utcnow()
+            created_at=utc_now()
         )
 
         # Get target devices
@@ -64,7 +65,7 @@ class MobileNotificationService:
         notification.delivered_count = delivered
         notification.failed_count = failed
         notification.status = "sent"
-        notification.sent_at = datetime.utcnow()
+        notification.sent_at = utc_now()
 
         return notification
 

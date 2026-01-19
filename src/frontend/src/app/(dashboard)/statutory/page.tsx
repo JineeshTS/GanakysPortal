@@ -202,7 +202,7 @@ export default function StatutoryPage() {
       <PageHeader
         title="Statutory Compliance"
         description="Manage PF, ESI, TDS, and Professional Tax filings"
-        icon={<FileText className="h-6 w-6" />}
+        icon={FileText}
         actions={
           <Button>
             <Calendar className="h-4 w-4 mr-2" />

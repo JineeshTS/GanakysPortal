@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import select, func, and_, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.hsseq import (
     HSEIncident, IncidentStatus, IncidentType, IncidentSeverity,
     CorrectiveAction, ActionStatus,
@@ -321,7 +322,7 @@ class DashboardService:
         company_id: UUID,
     ) -> HSEDashboardPermits:
         """Get work permit statistics"""
-        now = datetime.utcnow()
+        now = utc_now()
         today_end = datetime.combine(date.today(), datetime.max.time())
 
         # Active permits

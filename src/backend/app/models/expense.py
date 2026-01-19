@@ -101,7 +101,7 @@ class ExpensePolicy(Base, TimestampMixin, SoftDeleteMixin):
     grade_levels: Mapped[Optional[List[str]]] = mapped_column(ARRAY(String))
 
     # Rules
-    policy_rules: Mapped[dict] = mapped_column(JSON, default={})
+    policy_rules: Mapped[dict] = mapped_column(JSON, default=dict)
     # Example: {"travel": {"flight_class": "economy", "daily_allowance": 3000}}
 
     # Limits

@@ -5,6 +5,7 @@ Journal entry management
 from decimal import Decimal
 from typing import List, Dict, Any, Optional
 from datetime import date, datetime
+from app.core.datetime_utils import utc_now
 from uuid import uuid4
 
 
@@ -93,7 +94,7 @@ class JournalService:
             "status": "draft",
             "lines": journal_lines,
             "created_by": created_by,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": utc_now().isoformat()
         }
 
     @classmethod

@@ -6,10 +6,18 @@ import uuid
 import enum
 from datetime import datetime, date
 from sqlalchemy import Column, String, Boolean, DateTime, Date, Integer, ForeignKey, Enum, Numeric
+
+from app.core.datetime_utils import utc_now
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
+
+# Import encrypted string type for sensitive data at rest
+try:
+    from app.core.encryption import EncryptedStringType
+except ImportError:
+    EncryptedStringType = String  # Fallback to String if encryption unavailable
 
 
 class EmploymentStatus(str, enum.Enum):
@@ -47,15 +55,21 @@ class Employee(Base):
     department_id = Column(UUID(as_uuid=True), ForeignKey("departments.id"), nullable=True)
     designation_id = Column(UUID(as_uuid=True), ForeignKey("designations.id"), nullable=True)
     reporting_to = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True)
-    employment_status = Column(String(50), default="active")  # Changed from Enum to String for DB compatibility
-    employment_type = Column(String(50), default="full_time")  # Changed from Enum to String for DB compatibility
+    employment_status = Column(
+        Enum(EmploymentStatus, name='employment_status_enum', native_enum=False),
+        default=EmploymentStatus.active
+    )
+    employment_type = Column(
+        Enum(EmploymentType, name='employment_type_enum', native_enum=False),
+        default=EmploymentType.full_time
+    )
     date_of_joining = Column(Date, nullable=False)
     date_of_leaving = Column(Date, nullable=True)
     probation_end_date = Column(Date, nullable=True)
     confirmation_date = Column(Date, nullable=True)
     notice_period_days = Column(Integer, default=30)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
     created_by = Column(UUID(as_uuid=True), nullable=True)
     updated_by = Column(UUID(as_uuid=True), nullable=True)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
@@ -103,8 +117,8 @@ class EmployeeContact(Base):
     permanent_city = Column(String(100), nullable=True)
     permanent_state = Column(String(100), nullable=True)
     permanent_pincode = Column(String(10), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     # Relationships
     employee = relationship("Employee", back_populates="contact")
@@ -116,8 +130,8 @@ class EmployeeIdentity(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=False)
-    pan = Column(String(20), nullable=True)
-    aadhaar = Column(String(20), nullable=True)  # Stored encrypted
+    pan = Column(EncryptedStringType() if EncryptedStringType else String(500), nullable=True)  # Encrypted at rest
+    aadhaar = Column(EncryptedStringType() if EncryptedStringType else String(500), nullable=True)  # Encrypted at rest
     passport_number = Column(String(50), nullable=True)
     passport_expiry = Column(Date, nullable=True)
     uan = Column(String(20), nullable=True)  # Universal Account Number for PF
@@ -126,8 +140,8 @@ class EmployeeIdentity(Base):
     voter_id = Column(String(50), nullable=True)
     driving_license = Column(String(50), nullable=True)
     driving_license_expiry = Column(Date, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     # Relationships
     employee = relationship("Employee", back_populates="identity")
@@ -141,12 +155,12 @@ class EmployeeBank(Base):
     employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=False)
     bank_name = Column(String(100), nullable=False)
     branch_name = Column(String(100), nullable=True)
-    account_number = Column(String(50), nullable=False)  # Stored encrypted
+    account_number = Column(EncryptedStringType() if EncryptedStringType else String(500), nullable=False)  # Encrypted at rest
     ifsc_code = Column(String(20), nullable=False)
     account_type = Column(String(20), default="savings")
     is_primary = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     # Relationships
     employee = relationship("Employee", back_populates="bank")

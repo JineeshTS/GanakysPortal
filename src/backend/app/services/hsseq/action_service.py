@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hsseq import CorrectiveAction, ActionStatus
 from app.schemas.hsseq import CorrectiveActionCreate, CorrectiveActionUpdate, HSECategory
+from app.core.datetime_utils import utc_now
 
 
 class ActionService:
@@ -44,7 +45,7 @@ class ActionService:
             estimated_cost=obj_in.estimated_cost,
             currency=obj_in.currency or "INR",
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -146,7 +147,7 @@ class ActionService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -165,7 +166,7 @@ class ActionService:
         db_obj.verification_notes = notes
         db_obj.effectiveness_rating = rating
         db_obj.status = ActionStatus.closed
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(db_obj)

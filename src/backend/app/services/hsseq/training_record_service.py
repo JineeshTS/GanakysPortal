@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hsseq import TrainingRecord
 from app.schemas.hsseq import TrainingRecordCreate, TrainingRecordUpdate
+from app.core.datetime_utils import utc_now
 
 
 class TrainingRecordService:
@@ -28,7 +29,7 @@ class TrainingRecordService:
             employee_id=obj_in.employee_id,
             attended=False,
             status="registered",
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -109,7 +110,7 @@ class TrainingRecordService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

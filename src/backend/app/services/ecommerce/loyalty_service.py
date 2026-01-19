@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.ecommerce import LoyaltyProgram, LoyaltyPoints, LoyaltyTransaction
 from app.schemas.ecommerce import (
     LoyaltyProgramCreate, LoyaltyProgramUpdate,
@@ -101,7 +102,7 @@ class LoyaltyService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(program, field, value)
-        program.updated_at = datetime.utcnow()
+        program.updated_at = utc_now()
         await db.commit()
         await db.refresh(program)
         return program
@@ -196,7 +197,7 @@ class LoyaltyService:
         # Update loyalty balance
         loyalty.total_earned += points
         loyalty.current_balance += points
-        loyalty.updated_at = datetime.utcnow()
+        loyalty.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(transaction)
@@ -230,7 +231,7 @@ class LoyaltyService:
         # Update loyalty balance
         loyalty.total_redeemed += points
         loyalty.current_balance -= points
-        loyalty.updated_at = datetime.utcnow()
+        loyalty.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(transaction)
@@ -275,7 +276,7 @@ class LoyaltyService:
                 db.add(expire_txn)
 
                 loyalty.current_balance -= txn.points
-                loyalty.updated_at = datetime.utcnow()
+                loyalty.updated_at = utc_now()
 
                 # Mark original transaction as expired
                 txn.points = Decimal('0')

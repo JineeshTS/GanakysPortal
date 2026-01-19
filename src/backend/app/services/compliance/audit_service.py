@@ -6,6 +6,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.compliance import ComplianceAudit
 from app.schemas.compliance import ComplianceAuditCreate, ComplianceAuditUpdate
+from app.core.datetime_utils import utc_now
 
 class AuditService:
     async def create(self, db: AsyncSession, obj_in: ComplianceAuditCreate, company_id: UUID, user_id: UUID) -> ComplianceAudit:
@@ -17,7 +18,7 @@ class AuditService:
             scheduled_date=obj_in.scheduled_date, auditor_type=obj_in.auditor_type,
             auditor_name=obj_in.auditor_name, auditor_firm=obj_in.auditor_firm,
             status="planned", total_observations=0, critical_findings=0, major_findings=0, minor_findings=0,
-            created_by=user_id, created_at=datetime.utcnow(),
+            created_by=user_id, created_at=utc_now(),
         )
         db.add(db_obj)
         await db.commit()
@@ -47,7 +48,7 @@ class AuditService:
     async def update(self, db: AsyncSession, db_obj: ComplianceAudit, obj_in: ComplianceAuditUpdate) -> ComplianceAudit:
         for field, value in obj_in.model_dump(exclude_unset=True).items():
             setattr(db_obj, field, value)
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.supply_chain import (
     ReorderRule, ReorderMethod,
     GoodsReceipt, GoodsReceiptItem
@@ -121,7 +122,7 @@ class InventoryService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(rule, field, value)
-        rule.updated_at = datetime.utcnow()
+        rule.updated_at = utc_now()
         await db.commit()
         await db.refresh(rule)
         return rule
@@ -157,7 +158,7 @@ class InventoryService:
     def generate_grn_number() -> str:
         """Generate goods receipt number."""
         from datetime import datetime
-        timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        timestamp = utc_now().strftime('%Y%m%d%H%M%S')
         return f"GRN-{timestamp}"
 
     @staticmethod
@@ -172,7 +173,7 @@ class InventoryService:
             id=uuid4(),
             company_id=company_id,
             grn_number=InventoryService.generate_grn_number(),
-            receipt_date=datetime.utcnow().date(),
+            receipt_date=utc_now().date(),
             status="pending",
             quality_status="pending",
             created_by=user_id,
@@ -253,7 +254,7 @@ class InventoryService:
     ) -> GoodsReceipt:
         """Mark goods receipt as completed."""
         receipt.status = "completed"
-        receipt.updated_at = datetime.utcnow()
+        receipt.updated_at = utc_now()
         await db.commit()
         await db.refresh(receipt)
         return receipt

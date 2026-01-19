@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.gst import (
     GSTReturn, GSTR1, GSTR2A, GSTR3B, GSTReconciliation, HSNSummary,
     GSTReturnType, GSTReturnStatus, GSTR2AAction, ReconciliationStatus,
@@ -725,7 +726,7 @@ class GSTService:
             unmatched_gstr2a_count=len(only_in_gstr2a),
             value_mismatch_count=len(mismatched_items),
             status=status,
-            last_reconciled_at=datetime.utcnow()
+            last_reconciled_at=utc_now()
         )
 
         self.db.add(recon)

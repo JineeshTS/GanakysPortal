@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
+from app.core.datetime_utils import utc_now
 from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData
 from app.models.leave import (
@@ -170,6 +171,65 @@ async def update_leave_type(
     return LeaveTypeResponse.model_validate(leave_type)
 
 
+@router.delete("/types/{leave_type_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_leave_type(
+    leave_type_id: UUID,
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Delete a leave type.
+    Admin or HR only. Cannot delete system leave types.
+    Cannot delete leave types that are in use (have balances or requests).
+    """
+    if current_user.role not in ["admin", "hr"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin or HR access required"
+        )
+
+    query = select(LeaveType).where(LeaveType.id == leave_type_id)
+    result = await db.execute(query)
+    leave_type = result.scalar_one_or_none()
+
+    if not leave_type:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Leave type not found"
+        )
+
+    if leave_type.is_system:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete system leave types"
+        )
+
+    # Check if leave type is in use
+    from sqlalchemy import func
+    balance_count = await db.execute(
+        select(func.count(LeaveBalance.id)).where(LeaveBalance.leave_type_id == leave_type_id)
+    )
+    if balance_count.scalar() > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete leave type with existing balances"
+        )
+
+    request_count = await db.execute(
+        select(func.count(LeaveRequest.id)).where(LeaveRequest.leave_type_id == leave_type_id)
+    )
+    if request_count.scalar() > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete leave type with existing requests"
+        )
+
+    # Soft delete by setting is_active to False (preferred) or hard delete
+    leave_type.is_active = False
+    leave_type.updated_by = UUID(current_user.user_id) if current_user.user_id else None
+    await db.flush()
+
+
 # ===== Leave Balance =====
 
 @router.get("/balance", response_model=EmployeeLeaveBalanceResponse)
@@ -181,6 +241,8 @@ async def get_my_leave_balance(
     """
     Get current user's leave balance.
     """
+    from app.models.employee import Employee
+
     if not current_user.user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -190,11 +252,17 @@ async def get_my_leave_balance(
     employee_id = UUID(current_user.user_id)
     fy = financial_year or LeaveService.get_financial_year()
 
+    # Fetch employee name
+    employee_query = select(Employee).where(Employee.id == employee_id)
+    employee_result = await db.execute(employee_query)
+    employee = employee_result.scalar_one_or_none()
+    employee_name = employee.full_name if employee else ""
+
     balances = await LeaveService.get_leave_balance_summary(db, employee_id, fy)
 
     return EmployeeLeaveBalanceResponse(
         employee_id=employee_id,
-        employee_name="",  # TODO: Fetch from employee
+        employee_name=employee_name,
         financial_year=fy,
         balances=balances
     )
@@ -212,15 +280,41 @@ async def get_employee_leave_balance(
     Managers can view their team members' balance.
     HR/Admin can view any employee's balance.
     """
+    from app.models.employee import Employee
+
     # Authorization check
     is_self = current_user.user_id and UUID(current_user.user_id) == employee_id
     is_admin_or_hr = current_user.role in ["admin", "hr"]
+    is_manager = False
 
     if not is_self and not is_admin_or_hr:
-        # TODO: Check if current user is manager of employee
+        # Check if current user is manager of the employee
+        if current_user.user_id:
+            manager_check = await db.execute(
+                select(Employee).where(
+                    and_(
+                        Employee.id == employee_id,
+                        Employee.reporting_to == UUID(current_user.user_id)
+                    )
+                )
+            )
+            is_manager = manager_check.scalar_one_or_none() is not None
+
+        if not is_manager:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to view this employee's leave balance"
+            )
+
+    # Fetch employee details
+    employee_query = select(Employee).where(Employee.id == employee_id)
+    employee_result = await db.execute(employee_query)
+    employee = employee_result.scalar_one_or_none()
+
+    if not employee:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view this employee's leave balance"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found"
         )
 
     fy = financial_year or LeaveService.get_financial_year()
@@ -228,7 +322,7 @@ async def get_employee_leave_balance(
 
     return EmployeeLeaveBalanceResponse(
         employee_id=employee_id,
-        employee_name="",  # TODO: Fetch from employee
+        employee_name=employee.full_name,
         financial_year=fy,
         balances=balances
     )
@@ -603,7 +697,7 @@ async def submit_leave_request(
 
     from datetime import datetime
     leave_request.status = LeaveStatus.PENDING
-    leave_request.submitted_at = datetime.utcnow()
+    leave_request.submitted_at = utc_now()
     leave_request.updated_by = UUID(current_user.user_id)
 
     # Update pending balance
@@ -994,19 +1088,35 @@ async def get_leave_calendar(
 ):
     """
     Get leave calendar view with leaves and holidays.
+    - Admin/HR: See all employees
+    - Managers: See themselves + their direct reports
+    - Regular employees: See only themselves
     """
+    from app.models.employee import Employee
+
     if not current_user.company_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not properly authenticated"
         )
 
-    # Determine which employees to show
+    # Determine which employees to show based on role
     employee_ids = None
     if current_user.role not in ["admin", "hr"]:
-        # Regular employees/managers see limited view
-        # TODO: Implement team-based filtering
-        employee_ids = [UUID(current_user.user_id)] if current_user.user_id else None
+        # Start with current user
+        employee_ids = []
+        if current_user.user_id:
+            current_emp_id = UUID(current_user.user_id)
+            employee_ids.append(current_emp_id)
+
+            # If manager, also include direct reports
+            if current_user.role == "manager":
+                direct_reports_query = select(Employee.id).where(
+                    Employee.reporting_to == current_emp_id
+                )
+                direct_reports_result = await db.execute(direct_reports_query)
+                direct_report_ids = [row[0] for row in direct_reports_result.fetchall()]
+                employee_ids.extend(direct_report_ids)
 
     entries, holidays = await LeaveService.get_leave_calendar(
         db=db,
@@ -1187,7 +1297,7 @@ async def list_leave_policies(
         LeavePolicy.company_id == UUID(current_user.company_id)
     )
     if active_only:
-        query = query.where(LeavePolicy.is_active == True)
+        query = query.where(LeavePolicy.is_active.is_(True))
 
     result = await db.execute(query)
     policies = list(result.scalars().all())

@@ -9,6 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData
 from app.models.mobile import (
@@ -157,7 +158,7 @@ async def device_heartbeat(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
 
     await DeviceService.update_heartbeat(db, device)
-    return {"success": True, "timestamp": datetime.utcnow().isoformat()}
+    return {"success": True, "timestamp": utc_now().isoformat()}
 
 
 # ============================================================================

@@ -118,7 +118,7 @@ class AnomalyRule(Base):
     # Aggregation settings
     aggregation_period = Column(String(20), nullable=True)  # daily, weekly, monthly
     aggregation_function = Column(String(20), nullable=True)  # sum, avg, count, max, min
-    group_by_fields = Column(ARRAY(String), default=[])
+    group_by_fields = Column(ARRAY(String), default=list)
 
     # Thresholds
     severity = Column(Enum(AnomalySeverity), default=AnomalySeverity.medium)
@@ -130,7 +130,7 @@ class AnomalyRule(Base):
 
     # Alert settings
     alert_enabled = Column(Boolean, default=True)
-    alert_recipients = Column(ARRAY(String), default=[])
+    alert_recipients = Column(ARRAY(String), default=list)
     cooldown_minutes = Column(Integer, default=60)  # Min time between alerts
 
     # Status
@@ -243,7 +243,7 @@ class AnomalyDetection(Base):
     # Context
     context_data = Column(JSONB, nullable=True)  # Additional context
     comparison_data = Column(JSONB, nullable=True)  # Baseline comparison
-    related_records = Column(ARRAY(UUID(as_uuid=True)), default=[])
+    related_records = Column(ARRAY(UUID(as_uuid=True)), default=list)
 
     # Time context
     anomaly_date = Column(Date, nullable=False)
@@ -336,7 +336,7 @@ class AnomalyModel(Base):
 
     # Configuration
     config = Column(JSONB, nullable=True)  # Model hyperparameters
-    feature_columns = Column(ARRAY(String), default=[])
+    feature_columns = Column(ARRAY(String), default=list)
     target_column = Column(String(100), nullable=True)
 
     # Training data
@@ -393,8 +393,8 @@ class AnomalyAlert(Base):
     severity = Column(Enum(AnomalySeverity), default=AnomalySeverity.medium)
 
     # Recipients
-    recipients = Column(ARRAY(String), default=[])  # Email addresses
-    user_recipients = Column(ARRAY(UUID(as_uuid=True)), default=[])  # User IDs
+    recipients = Column(ARRAY(String), default=list)  # Email addresses
+    user_recipients = Column(ARRAY(UUID(as_uuid=True)), default=list)  # User IDs
 
     # Delivery status
     email_sent = Column(Boolean, default=False)

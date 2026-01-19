@@ -17,6 +17,7 @@ from sqlalchemy import select, func, and_
 
 logger = logging.getLogger(__name__)
 
+from app.core.datetime_utils import utc_now
 from app.models.company import (
     CompanyProfile, CompanyExtendedProfile, CompanyProduct,
     Department, Designation, AIRecommendation, AIRecommendationItem
@@ -93,7 +94,7 @@ class OrgBuilderService:
         self.db = db
         self.api_key = os.getenv("ANTHROPIC_API_KEY")
         if self.api_key:
-            logger.info(f"OrgBuilderService initialized with API key: {self.api_key[:15]}...")
+            logger.info("OrgBuilderService initialized with API key configured")
         else:
             logger.warning("OrgBuilderService: ANTHROPIC_API_KEY not found in environment")
 
@@ -150,7 +151,7 @@ class OrgBuilderService:
             rationale=recommendation_data.get("summary", "AI-generated organizational structure"),
             ai_model_used=self.MODEL,
             ai_prompt_hash=prompt_hash,
-            expires_at=datetime.utcnow() + timedelta(days=30)
+            expires_at=utc_now() + timedelta(days=30)
         )
 
         self.db.add(recommendation)
@@ -340,7 +341,7 @@ Return ONLY valid JSON."""
             recommendation_data=result,
             rationale=result.get("rationale", "Product change analysis"),
             ai_model_used=self.MODEL,
-            expires_at=datetime.utcnow() + timedelta(days=14)
+            expires_at=utc_now() + timedelta(days=14)
         )
 
         self.db.add(recommendation)
@@ -544,7 +545,7 @@ Return ONLY valid JSON, no additional text."""
                 "name": dept_name,
                 "code": dept_code,
                 "description": f"{dept_name} department for the organization",
-                "headcount_target": max(1, target // len(pattern.get("core_departments", ["Engineering"]))),
+                "headcount_target": max(1, target // len(pattern.get("core_departments") or ["Engineering"])),
                 "parent_department": None,
                 "rationale": f"Core {dept_name.lower()} function"
             })

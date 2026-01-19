@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
+import { useAuth } from "@/hooks/use-auth"
 import { StatCard } from '@/components/layout/stat-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -143,29 +144,30 @@ export default function SubscriptionDashboardPage() {
   const [dashboard, setDashboard] = useState<SubscriptionDashboard | null>(null)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
+  const { fetchWithAuth } = useAuth()
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
       // Fetch dashboard
-      const dashboardRes = await fetch(`${apiUrl}/subscriptions/dashboard`)
+      const dashboardRes = await fetchWithAuth(`${apiUrl}/subscriptions/dashboard`)
       if (dashboardRes.ok) {
         const data = await dashboardRes.json()
         setDashboard(data)
       }
 
       // Fetch recent subscriptions
-      const subsRes = await fetch(`${apiUrl}/subscriptions?limit=5`)
+      const subsRes = await fetchWithAuth(`${apiUrl}/subscriptions?limit=5`)
       if (subsRes.ok) {
         const data = await subsRes.json()
         setSubscriptions(data)
       }
 
       // Fetch recent invoices
-      const invoicesRes = await fetch(`${apiUrl}/subscriptions/invoices?limit=5`)
+      const invoicesRes = await fetchWithAuth(`${apiUrl}/subscriptions/invoices?limit=5`)
       if (invoicesRes.ok) {
         const data = await invoicesRes.json()
         setInvoices(data)
@@ -207,11 +209,11 @@ export default function SubscriptionDashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [fetchWithAuth])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
   return (
     <div className="space-y-6">
@@ -259,26 +261,26 @@ export default function SubscriptionDashboardPage() {
             <StatCard
               title="Monthly Recurring Revenue"
               value={formatCurrency(dashboard.mrr)}
-              icon={<IndianRupee className="h-4 w-4" />}
+              icon={IndianRupee}
               description="MRR this month"
               trend="up"
             />
             <StatCard
               title="Annual Recurring Revenue"
               value={formatCurrency(dashboard.arr)}
-              icon={<TrendingUp className="h-4 w-4" />}
+              icon={TrendingUp}
               description="ARR projection"
             />
             <StatCard
               title="Avg Revenue Per User"
               value={formatCurrency(dashboard.avg_revenue_per_user)}
-              icon={<BarChart3 className="h-4 w-4" />}
+              icon={BarChart3}
               description="ARPU"
             />
             <StatCard
               title="Total Employees"
               value={dashboard.total_employees_billed.toLocaleString()}
-              icon={<Users className="h-4 w-4" />}
+              icon={Users}
               description="Billable employees"
             />
           </div>
@@ -288,25 +290,25 @@ export default function SubscriptionDashboardPage() {
             <StatCard
               title="Total Subscriptions"
               value={dashboard.total_subscriptions}
-              icon={<Building2 className="h-4 w-4" />}
+              icon={Building2}
               description="All companies"
             />
             <StatCard
               title="Active"
               value={dashboard.active_subscriptions}
-              icon={<CheckCircle2 className="h-4 w-4 text-green-600" />}
+              icon={CheckCircle2}
               description="Paying customers"
             />
             <StatCard
               title="In Trial"
               value={dashboard.trial_subscriptions}
-              icon={<Clock className="h-4 w-4 text-blue-600" />}
+              icon={Clock}
               description="14-day trial"
             />
             <StatCard
               title="Churned"
               value={dashboard.churned_subscriptions}
-              icon={<AlertTriangle className="h-4 w-4 text-red-600" />}
+              icon={AlertTriangle}
               description="Cancelled/Expired"
               trend={dashboard.churned_subscriptions > 5 ? 'up' : undefined}
             />
@@ -424,21 +426,21 @@ export default function SubscriptionDashboardPage() {
                   label="API Calls"
                   used={8500}
                   limit={10000}
-                  icon={<Zap className="h-4 w-4" />}
+                  icon={Zap}
                   unit=""
                 />
                 <UsageMeter
                   label="AI Queries"
                   used={75}
                   limit={100}
-                  icon={<Bot className="h-4 w-4" />}
+                  icon={Bot}
                   unit=""
                 />
                 <UsageMeter
                   label="Storage"
                   used={6.5}
                   limit={10}
-                  icon={<Cloud className="h-4 w-4" />}
+                  icon={Cloud}
                   unit=" GB"
                 />
               </div>

@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData
+from app.core.datetime_utils import utc_now
 
 
 router = APIRouter()
@@ -147,17 +148,39 @@ class BillSummary(BaseModel):
 
 # ============= Helper Functions =============
 
-def generate_bill_number(company_id: str) -> str:
-    """Generate bill number in format BILL/2024-25/0001"""
+async def generate_bill_number(db: AsyncSession, company_id: UUID) -> str:
+    """
+    Generate bill number in format BILL/2024-25/0001.
+    Uses database sequence to ensure uniqueness and sequential ordering.
+    """
     today = date.today()
     if today.month >= 4:
         fy = f"{today.year}-{str(today.year + 1)[2:]}"
     else:
         fy = f"{today.year - 1}-{str(today.year)[2:]}"
 
-    import random
-    seq = random.randint(1, 9999)
-    return f"BILL/{fy}/{seq:04d}"
+    prefix = f"BILL/{fy}/"
+
+    # Query max bill number for this company and FY
+    from sqlalchemy import text
+    query = text("""
+        SELECT COALESCE(MAX(
+            CAST(SUBSTRING(bill_number FROM :pattern) AS INTEGER)
+        ), 0)
+        FROM bills
+        WHERE company_id = :company_id
+        AND bill_number LIKE :prefix_pattern
+    """)
+
+    result = await db.execute(query, {
+        "company_id": str(company_id),
+        "pattern": f"BILL/{fy}/([0-9]+)$",
+        "prefix_pattern": f"{prefix}%"
+    })
+    max_seq = result.scalar() or 0
+    next_seq = max_seq + 1
+
+    return f"{prefix}{next_seq:04d}"
 
 
 def calculate_bill_totals(items: List[BillItemCreate], is_igst: bool) -> dict:
@@ -305,8 +328,8 @@ async def list_bills(
             status="approved",
             payment_terms="Net 30",
             items=[],
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=utc_now(),
+            updated_at=utc_now()
         )
     ]
 
@@ -388,8 +411,8 @@ async def create_bill(
         payment_terms=bill_data.payment_terms,
         notes=bill_data.notes,
         items=[BillItemResponse(**item) for item in totals["items"]],
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=utc_now(),
+        updated_at=utc_now()
     )
 
     return bill
@@ -402,9 +425,108 @@ async def get_bill(
     db: AsyncSession = Depends(get_db)
 ):
     """Get bill details by ID."""
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Bill not found"
+    from sqlalchemy import select
+    from app.models.bill import Bill, BillItem
+    from app.models.customer import Party
+
+    company_id = UUID(current_user.company_id)
+
+    # Fetch bill
+    query = select(Bill).where(
+        Bill.id == bill_id,
+        Bill.company_id == company_id
+    )
+    result = await db.execute(query)
+    bill = result.scalar_one_or_none()
+
+    if not bill:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bill not found"
+        )
+
+    # Get vendor name
+    vendor_name = None
+    if bill.vendor_id:
+        vendor_result = await db.execute(
+            select(Party).where(Party.id == bill.vendor_id)
+        )
+        vendor = vendor_result.scalar_one_or_none()
+        if vendor:
+            vendor_name = vendor.name
+
+    # Get bill items
+    items_query = select(BillItem).where(
+        BillItem.bill_id == bill_id
+    ).order_by(BillItem.line_number)
+    items_result = await db.execute(items_query)
+    items = items_result.scalars().all()
+
+    item_responses = []
+    for item in items:
+        item_responses.append(BillItemResponse(
+            id=item.id,
+            line_number=item.line_number,
+            description=item.description,
+            hsn_sac_code=item.hsn_sac_code,
+            quantity=item.quantity,
+            uom=item.uom,
+            unit_price=item.unit_price,
+            discount_amount=item.discount_amount or Decimal("0"),
+            taxable_amount=item.taxable_amount,
+            gst_rate=item.gst_rate,
+            cgst_amount=item.cgst_amount or Decimal("0"),
+            sgst_amount=item.sgst_amount or Decimal("0"),
+            igst_amount=item.igst_amount or Decimal("0"),
+            tds_applicable=item.tds_applicable or False,
+            tds_section=item.tds_section,
+            tds_rate=item.tds_rate or Decimal("0"),
+            tds_amount=item.tds_amount or Decimal("0"),
+            total_amount=item.total_amount
+        ))
+
+    return BillResponse(
+        id=bill.id,
+        company_id=bill.company_id,
+        vendor_id=bill.vendor_id,
+        vendor_name=vendor_name,
+        bill_number=bill.bill_number,
+        vendor_invoice_number=bill.vendor_invoice_number,
+        vendor_invoice_date=bill.vendor_invoice_date,
+        bill_type=bill.bill_type.value if hasattr(bill.bill_type, 'value') else str(bill.bill_type),
+        bill_date=bill.bill_date,
+        due_date=bill.due_date,
+        po_number=bill.po_number,
+        vendor_gstin=bill.vendor_gstin,
+        place_of_supply=bill.place_of_supply,
+        is_igst=bill.is_igst or False,
+        reverse_charge=bill.reverse_charge or False,
+        itc_eligible=bill.itc_eligible if bill.itc_eligible is not None else True,
+        currency=bill.currency or "INR",
+        subtotal=bill.subtotal or Decimal("0"),
+        discount_amount=bill.discount_amount or Decimal("0"),
+        taxable_amount=bill.taxable_amount or Decimal("0"),
+        cgst_amount=bill.cgst_amount or Decimal("0"),
+        sgst_amount=bill.sgst_amount or Decimal("0"),
+        igst_amount=bill.igst_amount or Decimal("0"),
+        total_tax=bill.total_tax or Decimal("0"),
+        tds_applicable=bill.tds_applicable or False,
+        tds_section=bill.tds_section.value if hasattr(bill.tds_section, 'value') else (str(bill.tds_section) if bill.tds_section else None),
+        tds_rate=bill.tds_rate or Decimal("0"),
+        tds_amount=bill.tds_amount or Decimal("0"),
+        total_amount=bill.total_amount or Decimal("0"),
+        round_off=bill.round_off or Decimal("0"),
+        grand_total=bill.grand_total or Decimal("0"),
+        net_payable=bill.net_payable or Decimal("0"),
+        amount_paid=bill.amount_paid or Decimal("0"),
+        amount_due=bill.amount_due or Decimal("0"),
+        status=bill.status.value if hasattr(bill.status, 'value') else str(bill.status),
+        payment_terms=bill.payment_terms,
+        notes=bill.notes,
+        attachment_path=bill.attachment_path,
+        items=item_responses,
+        created_at=bill.created_at,
+        updated_at=bill.updated_at
     )
 
 
@@ -416,10 +538,100 @@ async def update_bill(
     db: AsyncSession = Depends(get_db)
 ):
     """Update a draft bill."""
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Bill not found"
+    from sqlalchemy import select, delete
+    from app.models.bill import Bill, BillItem, BillStatus
+
+    company_id = UUID(current_user.company_id)
+
+    # Fetch bill
+    query = select(Bill).where(
+        Bill.id == bill_id,
+        Bill.company_id == company_id
     )
+    result = await db.execute(query)
+    bill = result.scalar_one_or_none()
+
+    if not bill:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bill not found"
+        )
+
+    # Only draft bills can be updated
+    if bill.status != BillStatus.DRAFT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only draft bills can be updated"
+        )
+
+    # Update bill fields
+    update_data = bill_data.model_dump(exclude_unset=True)
+    new_items = update_data.pop("items", None)
+
+    for field, value in update_data.items():
+        if hasattr(bill, field) and value is not None:
+            setattr(bill, field, value)
+
+    # If items provided, recalculate and replace
+    if new_items is not None:
+        company_state = "27"
+        is_igst = bill.place_of_supply and bill.place_of_supply != company_state
+
+        # Delete existing items
+        await db.execute(delete(BillItem).where(BillItem.bill_id == bill_id))
+
+        # Calculate new totals
+        totals = calculate_bill_totals(new_items, is_igst)
+
+        # Update bill totals
+        bill.subtotal = totals["subtotal"]
+        bill.discount_amount = totals["discount_amount"]
+        bill.taxable_amount = totals["taxable_amount"]
+        bill.cgst_amount = totals["cgst_amount"]
+        bill.sgst_amount = totals["sgst_amount"]
+        bill.igst_amount = totals["igst_amount"]
+        bill.total_tax = totals["total_tax"]
+        bill.tds_amount = totals["tds_amount"]
+        bill.total_amount = totals["total_amount"]
+        bill.round_off = totals["round_off"]
+        bill.grand_total = totals["grand_total"]
+        bill.net_payable = totals["net_payable"]
+        bill.amount_due = totals["net_payable"] - (bill.amount_paid or Decimal("0"))
+        bill.is_igst = is_igst
+
+        # Determine TDS at bill level
+        bill.tds_applicable = any(item.tds_applicable for item in new_items)
+
+        # Add new items
+        for item_data in totals["items"]:
+            item = BillItem(
+                id=item_data["id"],
+                bill_id=bill_id,
+                line_number=item_data["line_number"],
+                description=item_data["description"],
+                hsn_sac_code=item_data["hsn_sac_code"],
+                quantity=item_data["quantity"],
+                uom=item_data["uom"],
+                unit_price=item_data["unit_price"],
+                discount_amount=item_data["discount_amount"],
+                taxable_amount=item_data["taxable_amount"],
+                gst_rate=item_data["gst_rate"],
+                cgst_amount=item_data["cgst_amount"],
+                sgst_amount=item_data["sgst_amount"],
+                igst_amount=item_data["igst_amount"],
+                tds_applicable=item_data["tds_applicable"],
+                tds_section=item_data["tds_section"],
+                tds_rate=item_data["tds_rate"],
+                tds_amount=item_data["tds_amount"],
+                total_amount=item_data["total_amount"]
+            )
+            db.add(item)
+
+    bill.updated_at = utc_now()
+    await db.commit()
+    await db.refresh(bill)
+
+    return await get_bill(bill_id, current_user, db)
 
 
 @router.delete("/bills/{bill_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -429,10 +641,47 @@ async def delete_bill(
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a draft bill."""
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Bill not found"
+    from sqlalchemy import select, delete
+    from app.models.bill import Bill, BillItem, BillStatus
+
+    company_id = UUID(current_user.company_id)
+
+    # Fetch bill
+    query = select(Bill).where(
+        Bill.id == bill_id,
+        Bill.company_id == company_id
     )
+    result = await db.execute(query)
+    bill = result.scalar_one_or_none()
+
+    if not bill:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bill not found"
+        )
+
+    # Only draft bills can be deleted
+    if bill.status != BillStatus.DRAFT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only draft bills can be deleted. Use cancel for approved bills."
+        )
+
+    # Check permissions
+    if current_user.role not in ["admin", "finance", "accountant"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied"
+        )
+
+    # Delete bill items first
+    await db.execute(delete(BillItem).where(BillItem.bill_id == bill_id))
+
+    # Delete bill
+    await db.execute(delete(Bill).where(Bill.id == bill_id))
+
+    await db.commit()
+    return None
 
 
 # ============= Bill Actions =============
@@ -581,5 +830,5 @@ async def get_tds_payable(
             {"section": "194I(b)", "description": "Rent", "amount": 2500, "count": 1}
         ],
         "total_tds_payable": 12000,
-        "due_date": date(date.today().year, date.today().month + 1 if date.today().month < 12 else 1, 7).isoformat()
+        "due_date": (date(date.today().year + 1, 1, 7) if date.today().month == 12 else date(date.today().year, date.today().month + 1, 7)).isoformat()
     }

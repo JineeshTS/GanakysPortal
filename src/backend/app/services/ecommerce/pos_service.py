@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.ecommerce import (
     POSTerminal, POSTerminalStatus,
     POSTransaction, POSTransactionItem,
@@ -95,7 +96,7 @@ class POSService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(terminal, field, value)
-        terminal.updated_at = datetime.utcnow()
+        terminal.updated_at = utc_now()
         await db.commit()
         await db.refresh(terminal)
         return terminal
@@ -106,8 +107,8 @@ class POSService:
         terminal: POSTerminal
     ) -> POSTerminal:
         """Update terminal sync timestamp."""
-        terminal.last_sync_at = datetime.utcnow()
-        terminal.updated_at = datetime.utcnow()
+        terminal.last_sync_at = utc_now()
+        terminal.updated_at = utc_now()
         await db.commit()
         await db.refresh(terminal)
         return terminal
@@ -116,7 +117,7 @@ class POSService:
     @staticmethod
     def generate_transaction_number() -> str:
         """Generate transaction number."""
-        timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        timestamp = utc_now().strftime('%Y%m%d%H%M%S')
         return f"TXN-{timestamp}"
 
     @staticmethod
@@ -229,7 +230,7 @@ class POSService:
         """Void a transaction."""
         transaction.transaction_type = "void"
         transaction.payment_status = PaymentStatus.REFUNDED
-        transaction.updated_at = datetime.utcnow()
+        transaction.updated_at = utc_now()
         await db.commit()
         await db.refresh(transaction)
         return transaction

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
+import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -146,12 +147,13 @@ function PhaseDetailCard({ phase }: { phase: WBSPhase }) {
 export default function WBSPhasesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [phases, setPhases] = useState<WBSPhase[]>([])
+  const { fetchWithAuth } = useAuth()
 
-  const fetchPhases = async () => {
+  const fetchPhases = useCallback(async () => {
     setIsLoading(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-      const res = await fetch(`${apiUrl}/wbs/phases`)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+      const res = await fetchWithAuth(`${apiUrl}/wbs/phases`)
       if (res.ok) {
         const data = await res.json()
         setPhases(data)
@@ -161,11 +163,11 @@ export default function WBSPhasesPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [fetchWithAuth])
 
   useEffect(() => {
     fetchPhases()
-  }, [])
+  }, [fetchPhases])
 
   // Calculate stats
   const totalPhases = phases.length

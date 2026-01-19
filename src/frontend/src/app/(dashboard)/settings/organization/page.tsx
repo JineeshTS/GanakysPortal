@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { useApi, useToast, useAuthStore } from '@/hooks'
+import { useApi, useToast, useAuth } from '@/hooks'
 import {
   Building2,
   Briefcase,
@@ -456,7 +456,7 @@ function OrgNodeComponent({ node, level = 0 }: { node: OrgNode; level?: number }
 
 export default function OrganizationSetupPage() {
   const searchParams = useSearchParams()
-  const { accessToken } = useAuthStore()
+  const { fetchWithAuth } = useAuth()
   const { showToast } = useToast()
   const { get, post } = useApi()
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
@@ -505,22 +505,22 @@ export default function OrganizationSetupPage() {
   const [deptForm, setDeptForm] = useState({ name: '', code: '', parent_id: '', head_employee_id: '' })
   const [desigForm, setDesigForm] = useState({ name: '', code: '', level: 1 })
 
-  // API helpers
+  // API helpers - using fetchWithAuth for token refresh handling
   const apiGet = useCallback(async (endpoint: string) => {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    const response = await fetchWithAuth(`${API_BASE}${endpoint}`, {
+      headers: { 'Content-Type': 'application/json' },
     })
     if (!response.ok) {
       if (response.status === 404) return null
       throw new Error('Request failed')
     }
     return response.json()
-  }, [API_BASE, accessToken])
+  }, [API_BASE, fetchWithAuth])
 
   const apiPost = useCallback(async (endpoint: string, data: any) => {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const response = await fetchWithAuth(`${API_BASE}${endpoint}`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
     if (!response.ok) {
@@ -528,12 +528,12 @@ export default function OrganizationSetupPage() {
       throw new Error(err.detail || 'Request failed')
     }
     return response.json()
-  }, [API_BASE, accessToken])
+  }, [API_BASE, fetchWithAuth])
 
   const apiPut = useCallback(async (endpoint: string, data: any) => {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const response = await fetchWithAuth(`${API_BASE}${endpoint}`, {
       method: 'PUT',
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
     if (!response.ok) {
@@ -541,15 +541,14 @@ export default function OrganizationSetupPage() {
       throw new Error(err.detail || 'Request failed')
     }
     return response.json()
-  }, [API_BASE, accessToken])
+  }, [API_BASE, fetchWithAuth])
 
   const apiDelete = useCallback(async (endpoint: string) => {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const response = await fetchWithAuth(`${API_BASE}${endpoint}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${accessToken}` },
     })
     return response.ok
-  }, [API_BASE, accessToken])
+  }, [API_BASE, fetchWithAuth])
 
   // Fetch all data
   const fetchData = useCallback(async () => {

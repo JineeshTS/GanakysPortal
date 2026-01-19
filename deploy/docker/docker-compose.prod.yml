@@ -53,7 +53,7 @@ services:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.frontend
       args:
-        - NEXT_PUBLIC_API_URL=https://portal.ganakys.com/api
+        - NEXT_PUBLIC_API_URL=/api/v1
         - NEXT_PUBLIC_APP_ENV=production
     container_name: ganaportal-frontend
     restart: always
@@ -168,12 +168,22 @@ services:
     restart: always
     networks:
       - ganaportal-network
-    command: celery -A app.celery_app worker --loglevel=info --concurrency=4
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+    init: true
     env_file:
       - ../env/.env.production
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/3
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/4
     depends_on:
       - db
       - redis
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     deploy:
       resources:
         limits:
@@ -192,11 +202,21 @@ services:
     networks:
       - ganaportal-network
     command: celery -A app.celery_app beat --loglevel=info
+    init: true
     env_file:
       - ../env/.env.production
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/3
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/4
     depends_on:
       - db
       - redis
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery.*beat' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     deploy:
       resources:
         limits:

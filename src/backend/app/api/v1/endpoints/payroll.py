@@ -2,13 +2,34 @@
 Payroll API Endpoints - BE-011
 """
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Annotated
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from pydantic import BaseModel, Field
 from uuid import UUID
+from sqlalchemy.ext.asyncio import AsyncSession
 
-router = APIRouter()
+from app.api.deps import get_current_user, get_db
+from app.models.user import User
+from app.services.payroll.payroll_db_service import (
+    PayrollDBService, PayrollDBServiceError, PayrollRunNotFoundError
+)
+
+
+async def require_auth(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Require authenticated user for endpoint access."""
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return current_user
+
+
+router = APIRouter(dependencies=[Depends(require_auth)])
 
 
 # Request/Response Models
@@ -242,8 +263,8 @@ async def calculate_pt(request: PTCalculationRequest):
 @router.post("/run", summary="Run payroll for company")
 async def run_payroll(
     request: PayrollRunRequest,
-    company_id: UUID = Query(..., description="Company ID"),
-    background_tasks: BackgroundTasks = None
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Run monthly payroll for a company.
@@ -254,26 +275,28 @@ async def run_payroll(
     3. Applies all statutory deductions
     4. Generates payslips
     5. Returns summary
-
-    Note: This is a demo endpoint. In production, this would:
-    - Fetch employee data from database
-    - Store payroll results
-    - Trigger payslip generation
     """
-    # Demo response - in production, would call PayrollService
-    return {
-        "message": "Payroll run initiated",
-        "run_id": "demo-run-id",
-        "company_id": str(company_id),
-        "period": f"{request.month:02d}/{request.year}",
-        "status": "processing",
-        "note": "This is a demo endpoint. Connect to database for full functionality."
-    }
+    company_id = UUID(current_user.company_id)
+    service = PayrollDBService(db, company_id)
+
+    try:
+        result = await service.create_payroll_run(
+            year=request.year,
+            month=request.month,
+            user_id=current_user.id,
+            working_days=request.working_days,
+            tax_regime_default=request.tax_regime_default,
+            employee_ids=request.employee_ids
+        )
+        return result
+    except PayrollDBServiceError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/runs", summary="List payroll runs")
 async def list_payroll_runs(
-    company_id: UUID = Query(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
     year: Optional[int] = None,
     month: Optional[int] = None,
     status: Optional[str] = None,
@@ -281,68 +304,113 @@ async def list_payroll_runs(
     page_size: int = Query(default=20, ge=1, le=100)
 ):
     """List all payroll runs for a company with optional filters."""
+    company_id = UUID(current_user.company_id)
+    service = PayrollDBService(db, company_id)
+
+    items, total = await service.list_payroll_runs(
+        year=year,
+        month=month,
+        status=status,
+        page=page,
+        page_size=page_size
+    )
+
     return {
-        "items": [],
-        "total": 0,
+        "items": items,
+        "total": total,
         "page": page,
         "page_size": page_size,
-        "note": "Demo endpoint - connect to database for data"
+        "total_pages": (total + page_size - 1) // page_size
     }
 
 
 @router.get("/runs/{run_id}", summary="Get payroll run details")
-async def get_payroll_run(run_id: UUID):
+async def get_payroll_run(
+    run_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """Get detailed information about a specific payroll run."""
-    return {
-        "run_id": str(run_id),
-        "status": "not_found",
-        "note": "Demo endpoint - connect to database for data"
-    }
+    company_id = UUID(current_user.company_id)
+    service = PayrollDBService(db, company_id)
+
+    try:
+        return await service.get_payroll_run(run_id)
+    except PayrollRunNotFoundError:
+        raise HTTPException(status_code=404, detail="Payroll run not found")
 
 
 @router.get("/runs/{run_id}/payslips", summary="Get payslips for a payroll run")
 async def get_payslips(
     run_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100)
 ):
     """Get all payslips generated in a payroll run."""
-    return {
-        "items": [],
-        "total": 0,
-        "page": page,
-        "page_size": page_size,
-        "note": "Demo endpoint - connect to database for data"
-    }
+    company_id = UUID(current_user.company_id)
+    service = PayrollDBService(db, company_id)
+
+    try:
+        items, total = await service.get_payslips_for_run(
+            run_id=run_id,
+            page=page,
+            page_size=page_size
+        )
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total + page_size - 1) // page_size
+        }
+    except PayrollRunNotFoundError:
+        raise HTTPException(status_code=404, detail="Payroll run not found")
 
 
 @router.get("/employee/{employee_id}/payslips", summary="Get employee payslips")
 async def get_employee_payslips(
     employee_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
     year: Optional[int] = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=12, ge=1, le=100)
 ):
     """Get all payslips for an employee."""
+    company_id = UUID(current_user.company_id)
+    service = PayrollDBService(db, company_id)
+
+    items, total = await service.get_employee_payslips(
+        employee_id=employee_id,
+        year=year,
+        page=page,
+        page_size=page_size
+    )
+
     return {
         "employee_id": str(employee_id),
-        "items": [],
-        "total": 0,
-        "note": "Demo endpoint - connect to database for data"
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": (total + page_size - 1) // page_size
     }
 
 
 @router.get("/employee/{employee_id}/ytd", summary="Get YTD summary")
-async def get_ytd_summary(employee_id: UUID, financial_year: str = "2024-25"):
+async def get_ytd_summary(
+    employee_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    financial_year: str = "2024-25"
+):
     """Get Year-to-Date salary summary for an employee."""
-    return {
-        "employee_id": str(employee_id),
-        "financial_year": financial_year,
-        "ytd_gross": 0,
-        "ytd_pf": 0,
-        "ytd_esi": 0,
-        "ytd_pt": 0,
-        "ytd_tds": 0,
-        "ytd_net": 0,
-        "note": "Demo endpoint - connect to database for data"
-    }
+    company_id = UUID(current_user.company_id)
+    service = PayrollDBService(db, company_id)
+
+    return await service.get_ytd_summary(
+        employee_id=employee_id,
+        financial_year=financial_year
+    )

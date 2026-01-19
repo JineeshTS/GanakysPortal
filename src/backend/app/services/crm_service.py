@@ -13,6 +13,7 @@ from sqlalchemy import select, func, and_, or_, case, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.datetime_utils import utc_now
 from app.models.crm import (
     Lead, Contact, Customer, Opportunity, Activity, Note, Pipeline,
     LeadSource, LeadStatus, OpportunityStage, ActivityType, EntityType,
@@ -98,8 +99,8 @@ class CRMService:
             description=lead_data.description,
             requirements=lead_data.requirements,
             created_by=created_by,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=utc_now(),
+            updated_at=utc_now()
         )
 
         # Calculate initial lead score
@@ -133,7 +134,7 @@ class CRMService:
                 setattr(lead, field, value)
 
         lead.updated_by = updated_by
-        lead.updated_at = datetime.utcnow()
+        lead.updated_at = utc_now()
 
         # Recalculate score
         lead.score = cls._calculate_lead_score_internal(lead)
@@ -160,7 +161,7 @@ class CRMService:
 
         lead.status = status_update.status
         lead.updated_by = updated_by
-        lead.updated_at = datetime.utcnow()
+        lead.updated_at = utc_now()
 
         await db.flush()
         await db.refresh(lead)
@@ -359,7 +360,7 @@ class CRMService:
         if not lead.created_at:
             return 0
 
-        days_old = (datetime.utcnow() - lead.created_at).days
+        days_old = (utc_now() - lead.created_at).days
         if days_old <= 7:
             return 10
         elif days_old <= 14:
@@ -448,8 +449,8 @@ class CRMService:
             converted_from_lead_id=lead.id,
             is_active=True,
             created_by=converted_by,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=utc_now(),
+            updated_at=utc_now()
         )
         db.add(customer)
 
@@ -466,8 +467,8 @@ class CRMService:
             is_primary=True,
             is_active=True,
             created_by=converted_by,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=utc_now(),
+            updated_at=utc_now()
         )
         db.add(contact)
 
@@ -491,15 +492,15 @@ class CRMService:
                 weighted_value=opportunity_value * Decimal("0.20"),
                 currency="INR",
                 stage=OpportunityStage.QUALIFICATION,
-                stage_changed_at=datetime.utcnow(),
+                stage_changed_at=utc_now(),
                 expected_close_date=lead.expected_close_date,
                 source=lead.source,
                 owner_id=lead.assigned_to or converted_by,
                 description=lead.description,
                 requirements=lead.requirements,
                 created_by=converted_by,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
+                created_at=utc_now(),
+                updated_at=utc_now()
             )
             db.add(opportunity)
             opportunity_id = opportunity.id
@@ -507,10 +508,10 @@ class CRMService:
 
         # Update lead status
         lead.status = LeadStatus.CONVERTED
-        lead.converted_at = datetime.utcnow()
+        lead.converted_at = utc_now()
         lead.converted_customer_id = customer.id
         lead.updated_by = converted_by
-        lead.updated_at = datetime.utcnow()
+        lead.updated_at = utc_now()
 
         await db.flush()
 
@@ -583,8 +584,8 @@ class CRMService:
             notes=contact_data.notes,
             is_active=True,
             created_by=created_by,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=utc_now(),
+            updated_at=utc_now()
         )
 
         db.add(contact)
@@ -624,7 +625,7 @@ class CRMService:
             if hasattr(contact, field):
                 setattr(contact, field, value)
 
-        contact.updated_at = datetime.utcnow()
+        contact.updated_at = utc_now()
 
         await db.flush()
         await db.refresh(contact)
@@ -760,8 +761,8 @@ class CRMService:
             is_active=True,
             notes=customer_data.notes,
             created_by=created_by,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=utc_now(),
+            updated_at=utc_now()
         )
 
         # Set billing address
@@ -831,7 +832,7 @@ class CRMService:
             customer.shipping_country = customer_data.shipping_address.country
 
         customer.updated_by = updated_by
-        customer.updated_at = datetime.utcnow()
+        customer.updated_at = utc_now()
 
         await db.flush()
         await db.refresh(customer)
@@ -1049,7 +1050,7 @@ class CRMService:
             weighted_value=weighted_value,
             currency=opportunity_data.currency,
             stage=OpportunityStage.PROSPECTING,
-            stage_changed_at=datetime.utcnow(),
+            stage_changed_at=utc_now(),
             expected_close_date=opportunity_data.expected_close_date,
             source=opportunity_data.source,
             owner_id=opportunity_data.owner_id or created_by,
@@ -1062,8 +1063,8 @@ class CRMService:
             products=opportunity_data.products,
             is_closed=False,
             created_by=created_by,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=utc_now(),
+            updated_at=utc_now()
         )
 
         db.add(opportunity)
@@ -1095,7 +1096,7 @@ class CRMService:
         opportunity.weighted_value = opportunity.value * Decimal(str(opportunity.probability)) / Decimal("100")
 
         opportunity.updated_by = updated_by
-        opportunity.updated_at = datetime.utcnow()
+        opportunity.updated_at = utc_now()
 
         await db.flush()
         await db.refresh(opportunity)
@@ -1120,7 +1121,7 @@ class CRMService:
         new_stage = stage_update.stage
 
         opportunity.stage = new_stage
-        opportunity.stage_changed_at = datetime.utcnow()
+        opportunity.stage_changed_at = utc_now()
 
         # Update probability based on stage
         opportunity.probability = DEFAULT_STAGE_PROBABILITIES.get(new_stage, 10)
@@ -1136,7 +1137,7 @@ class CRMService:
                 opportunity.competitor_lost_to = stage_update.competitor_lost_to
 
         opportunity.updated_by = updated_by
-        opportunity.updated_at = datetime.utcnow()
+        opportunity.updated_at = utc_now()
 
         await db.flush()
         await db.refresh(opportunity)
@@ -1452,8 +1453,8 @@ class CRMService:
             priority=activity_data.priority,
             reminder_at=activity_data.reminder_at,
             created_by=created_by,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=utc_now(),
+            updated_at=utc_now()
         )
 
         # Set direct foreign keys based on entity type
@@ -1489,7 +1490,7 @@ class CRMService:
             if hasattr(activity, field):
                 setattr(activity, field, value)
 
-        activity.updated_at = datetime.utcnow()
+        activity.updated_at = utc_now()
 
         await db.flush()
         await db.refresh(activity)
@@ -1511,9 +1512,9 @@ class CRMService:
             return None
 
         activity.status = "completed"
-        activity.completed_at = complete_data.completed_at or datetime.utcnow()
+        activity.completed_at = complete_data.completed_at or utc_now()
         activity.outcome = complete_data.outcome
-        activity.updated_at = datetime.utcnow()
+        activity.updated_at = utc_now()
 
         await db.flush()
         await db.refresh(activity)
@@ -1627,7 +1628,7 @@ class CRMService:
         limit: int = 20
     ) -> List[Activity]:
         """Get upcoming activities for a user within the specified days."""
-        now = datetime.utcnow()
+        now = utc_now()
         end_date = now + timedelta(days=days)
 
         result = await db.execute(
@@ -1672,8 +1673,8 @@ class CRMService:
             is_pinned=note_data.is_pinned,
             is_private=note_data.is_private,
             created_by=created_by,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=utc_now(),
+            updated_at=utc_now()
         )
 
         # Set direct foreign keys based on entity type
@@ -1718,7 +1719,7 @@ class CRMService:
             if hasattr(note, field):
                 setattr(note, field, value)
 
-        note.updated_at = datetime.utcnow()
+        note.updated_at = utc_now()
 
         await db.flush()
         await db.refresh(note)
@@ -1979,7 +1980,7 @@ class CRMService:
                 and_(
                     Activity.company_id == company_id,
                     Activity.status.in_(["scheduled", "in_progress"]),
-                    Activity.scheduled_at < datetime.utcnow()
+                    Activity.scheduled_at < utc_now()
                 )
             )
         )

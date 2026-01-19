@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import select, delete, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData
 from app.models.company import CompanyProfile
@@ -88,7 +89,7 @@ async def update_company_settings(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(company, field, value)
-    company.updated_at = datetime.utcnow()
+    company.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(company)
@@ -150,7 +151,7 @@ async def update_branch(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(branch, field, value)
-    branch.updated_at = datetime.utcnow()
+    branch.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(branch)
@@ -232,7 +233,7 @@ async def update_salary_component(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(component, field, value)
-    component.updated_at = datetime.utcnow()
+    component.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(component)
@@ -302,7 +303,7 @@ async def update_pf_settings(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(settings, field, value)
-    settings.updated_at = datetime.utcnow()
+    settings.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(settings)
@@ -349,7 +350,7 @@ async def update_esi_settings(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(settings, field, value)
-    settings.updated_at = datetime.utcnow()
+    settings.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(settings)
@@ -399,7 +400,7 @@ async def update_pt_settings(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(settings, field, value)
-    settings.updated_at = datetime.utcnow()
+    settings.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(settings)
@@ -446,7 +447,7 @@ async def update_tds_settings(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(settings, field, value)
-    settings.updated_at = datetime.utcnow()
+    settings.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(settings)
@@ -493,7 +494,7 @@ async def update_pay_schedule(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(settings, field, value)
-    settings.updated_at = datetime.utcnow()
+    settings.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(settings)
@@ -588,7 +589,7 @@ async def update_leave_type(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(leave_type, field, value)
-    leave_type.updated_at = datetime.utcnow()
+    leave_type.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(leave_type)
@@ -673,7 +674,7 @@ async def update_holiday(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(holiday, field, value)
-    holiday.updated_at = datetime.utcnow()
+    holiday.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(holiday)
@@ -748,7 +749,7 @@ async def update_week_off_settings(
         db.add(settings)
 
     settings.week_offs = data.week_offs
-    settings.updated_at = datetime.utcnow()
+    settings.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(settings)
@@ -845,7 +846,7 @@ async def update_shift(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(shift, field, value)
-    shift.updated_at = datetime.utcnow()
+    shift.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(shift)
@@ -927,7 +928,7 @@ async def update_overtime_rule(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(rule, field, value)
-    rule.updated_at = datetime.utcnow()
+    rule.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(rule)
@@ -994,7 +995,7 @@ async def update_attendance_config(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(config, field, value)
-    config.updated_at = datetime.utcnow()
+    config.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(config)
@@ -1056,7 +1057,7 @@ async def update_geo_fence_location(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(location, field, value)
-    location.updated_at = datetime.utcnow()
+    location.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(location)
@@ -1173,7 +1174,7 @@ async def update_email_template(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(template, field, value)
-    template.updated_at = datetime.utcnow()
+    template.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(template)
@@ -1255,7 +1256,7 @@ async def update_role(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(role, field, value)
-    role.updated_at = datetime.utcnow()
+    role.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(role)

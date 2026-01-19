@@ -2,9 +2,11 @@
 Authentication Endpoints
 Login, logout, token refresh, password management
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 import secrets
+import logging
+import json
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -20,8 +22,13 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from app.core.config import settings
+from app.core.security import PasswordPolicy
+
+# Setup logger
+logger = logging.getLogger(__name__)
 from app.db.session import get_db
 from app.models.user import User, UserSession, AuditLog
+from app.models.employee import Employee
 
 router = APIRouter()
 
@@ -29,14 +36,20 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login")
 
 # Redis connection for token blacklist and password reset tokens
-redis_client = None
+# Use asyncio lock to prevent race condition in async initialization
+import asyncio
+_redis_client = None
+_redis_lock = asyncio.Lock()
 
 async def get_redis():
-    """Get Redis client for token management."""
-    global redis_client
-    if redis_client is None:
-        redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
-    return redis_client
+    """Get Redis client for token management (thread-safe initialization)."""
+    global _redis_client
+    if _redis_client is None:
+        async with _redis_lock:
+            # Double-check after acquiring lock
+            if _redis_client is None:
+                _redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
+    return _redis_client
 
 
 # Schemas
@@ -137,7 +150,7 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Create JWT access token."""
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire, "type": "access"})
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
@@ -145,7 +158,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 def create_refresh_token(data: dict) -> str:
     """Create JWT refresh token."""
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
@@ -155,17 +168,23 @@ async def is_token_blacklisted(token: str) -> bool:
     try:
         r = await get_redis()
         return await r.exists(f"blacklist:{token}") > 0
-    except Exception:
+    except Exception as e:
+        # Log the error but don't fail - allow access if Redis is down
+        # This is a security trade-off: availability over strict blacklisting
+        logger.warning(f"Token blacklist check failed (allowing access): {e}")
         return False
 
 
-async def blacklist_token(token: str, expires_in: int):
-    """Add token to blacklist."""
+async def blacklist_token(token: str, expires_in: int) -> bool:
+    """Add token to blacklist. Returns True if successful."""
     try:
         r = await get_redis()
         await r.setex(f"blacklist:{token}", expires_in, "1")
-    except Exception:
-        pass
+        return True
+    except Exception as e:
+        # Log the failure - this is a security concern
+        logger.error(f"Failed to blacklist token (token may remain valid): {e}")
+        return False
 
 
 async def get_current_user(
@@ -209,8 +228,8 @@ async def log_audit(
     new_values: str | None = None,
     ip_address: str | None = None,
     user_agent: str | None = None
-):
-    """Log an audit event."""
+) -> bool:
+    """Log an audit event. Returns True if successful."""
     try:
         from uuid import UUID
         audit = AuditLog(
@@ -225,8 +244,16 @@ async def log_audit(
         )
         db.add(audit)
         await db.commit()
-    except Exception:
-        pass
+        return True
+    except Exception as e:
+        # Log the failure - audit trail is critical for compliance
+        logger.error(f"Failed to log audit event '{action}': {e}")
+        # Try to rollback to avoid leaving transaction in bad state
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        return False
 
 
 def send_email(to_email: str, subject: str, html_body: str) -> bool:
@@ -254,7 +281,7 @@ def send_email(to_email: str, subject: str, html_body: str) -> bool:
 
         return True
     except Exception as e:
-        print(f"Email send error: {e}")
+        logger.error(f"Email send error: {e}")
         return False
 
 
@@ -278,7 +305,7 @@ async def login(
     # Check if user exists
     if not user:
         await log_audit(db, None, "login_failed", "user", None, None,
-                       f'{{"email": "{form_data.username}", "reason": "user_not_found"}}',
+                       json.dumps({"email": form_data.username, "reason": "user_not_found"}),
                        request.client.host if request.client else None,
                        request.headers.get("user-agent"))
         raise HTTPException(
@@ -288,7 +315,7 @@ async def login(
         )
 
     # Check if account is locked
-    if user.locked_until and user.locked_until > datetime.utcnow():
+    if user.locked_until and user.locked_until > datetime.now(timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Account is locked. Try again after {user.locked_until.strftime('%Y-%m-%d %H:%M:%S')} UTC"
@@ -301,12 +328,12 @@ async def login(
 
         # Lock account after 5 failed attempts
         if user.failed_login_attempts >= 5:
-            user.locked_until = datetime.utcnow() + timedelta(minutes=30)
+            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=30)
 
         await db.commit()
 
         await log_audit(db, str(user.id), "login_failed", "user", str(user.id), None,
-                       f'{{"reason": "invalid_password", "attempts": {user.failed_login_attempts}}}',
+                       json.dumps({"reason": "invalid_password", "attempts": user.failed_login_attempts}),
                        request.client.host if request.client else None,
                        request.headers.get("user-agent"))
 
@@ -327,12 +354,22 @@ async def login(
     user.failed_login_attempts = 0
     user.locked_until = None
 
+    # Get user's actual name from employee record if available
+    user_name = user.email.split("@")[0].title()  # Fallback
+    if user.employee_id:
+        emp_result = await db.execute(
+            select(Employee).where(Employee.id == user.employee_id)
+        )
+        employee = emp_result.scalar_one_or_none()
+        if employee:
+            user_name = employee.full_name
+
     # Build user response
     user_data = {
         "id": str(user.id),
         "email": user.email,
         "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
-        "name": user.email.split("@")[0].title(),
+        "name": user_name,
         "company_id": str(user.company_id),
         "employee_id": str(user.employee_id) if user.employee_id else None
     }
@@ -349,7 +386,7 @@ async def login(
     refresh_token = create_refresh_token(token_data)
 
     # Update last login time
-    user.last_login = datetime.utcnow()
+    user.last_login = datetime.now(timezone.utc)
     await db.commit()
 
     # Log successful login
@@ -397,7 +434,7 @@ async def refresh_token(request: RefreshRequest):
 
         # Blacklist old refresh token
         exp = payload.get("exp", 0)
-        remaining = max(0, exp - int(datetime.utcnow().timestamp()))
+        remaining = max(0, exp - int(datetime.now(timezone.utc).timestamp()))
         await blacklist_token(request.refresh_token, remaining)
 
         access_token = create_access_token(token_data)
@@ -450,11 +487,21 @@ async def get_current_user_info(
     user = result.scalar_one_or_none()
 
     if user:
+        # Get user's actual name from employee record if available
+        user_name = user.email.split("@")[0].title()  # Fallback
+        if user.employee_id:
+            emp_result = await db.execute(
+                select(Employee).where(Employee.id == user.employee_id)
+            )
+            employee = emp_result.scalar_one_or_none()
+            if employee:
+                user_name = employee.full_name
+
         return UserResponse(
             id=str(user.id),
             email=user.email,
             role=user.role.value if hasattr(user.role, 'value') else str(user.role),
-            name=user.email.split("@")[0].title(),
+            name=user_name,
             company_id=str(user.company_id),
             employee_id=str(user.employee_id) if user.employee_id else None
         )
@@ -500,16 +547,17 @@ async def change_password(
             detail="Current password is incorrect"
         )
 
-    # Validate new password
-    if len(password_data.new_password) < 8:
+    # Validate new password using strong policy
+    is_valid, errors = PasswordPolicy.validate(password_data.new_password)
+    if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="New password must be at least 8 characters"
+            detail=f"Password does not meet requirements: {'; '.join(errors)}"
         )
 
-    # Update password
-    user.password_hash = get_password_hash(password_data.new_password)
-    user.password_changed_at = datetime.utcnow()
+    # Update password using secure hash
+    user.password_hash = PasswordPolicy.hash_password(password_data.new_password)
+    user.password_changed_at = datetime.now(timezone.utc)
     await db.commit()
 
     # Log password change
@@ -548,7 +596,7 @@ async def forgot_password(
                 str(user.id)
             )
         except Exception as e:
-            print(f"Redis error: {e}")
+            logger.error(f"Redis error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Could not process request"
@@ -620,11 +668,12 @@ async def reset_password(
             detail="Invalid or expired reset token"
         )
 
-    # Validate new password
-    if len(reset_data.new_password) < 8:
+    # Validate new password using strong policy
+    is_valid, errors = PasswordPolicy.validate(reset_data.new_password)
+    if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters"
+            detail=f"Password does not meet requirements: {'; '.join(errors)}"
         )
 
     # Get user and update password
@@ -637,9 +686,9 @@ async def reset_password(
             detail="Invalid or expired reset token"
         )
 
-    # Update password
-    user.password_hash = get_password_hash(reset_data.new_password)
-    user.password_changed_at = datetime.utcnow()
+    # Update password using secure hash
+    user.password_hash = PasswordPolicy.hash_password(reset_data.new_password)
+    user.password_changed_at = datetime.now(timezone.utc)
     user.failed_login_attempts = 0
     user.locked_until = None
     await db.commit()

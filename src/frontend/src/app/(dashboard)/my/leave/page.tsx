@@ -188,7 +188,7 @@ export default function MyLeavePage() {
         <PageHeader
           title="My Leave"
           description="View balance, apply for leave, and track requests"
-          icon={<Calendar className="h-6 w-6" />}
+          icon={Calendar}
         />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map(i => (
@@ -208,7 +208,7 @@ export default function MyLeavePage() {
       <PageHeader
         title="My Leave"
         description="View balance, apply for leave, and track requests"
-        icon={<Calendar className="h-6 w-6" />}
+        icon={Calendar}
         actions={
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>

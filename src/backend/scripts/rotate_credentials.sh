@@ -27,7 +27,7 @@ NC='\033[0m' # No Color
 # 1. DATABASE PASSWORD ROTATION
 # -----------------------------------------------------------------------------
 echo -e "${YELLOW}1. DATABASE PASSWORD ROTATION${NC}"
-echo "   Current: ganaportal123 (EXPOSED - ROTATE IMMEDIATELY)"
+echo "   Current: [REDACTED - check .env or your password manager] (EXPOSED - ROTATE IMMEDIATELY)"
 echo ""
 echo "   Steps:"
 echo "   a) Connect to PostgreSQL as superuser:"
@@ -53,7 +53,7 @@ echo ""
 # 2. ANTHROPIC API KEY ROTATION
 # -----------------------------------------------------------------------------
 echo -e "${YELLOW}2. ANTHROPIC API KEY ROTATION${NC}"
-echo "   Current: sk-ant-api03-KW4Zilw9... (EXPOSED - ROTATE IMMEDIATELY)"
+echo "   Current: [REDACTED - check .env or Anthropic console] (EXPOSED - ROTATE IMMEDIATELY)"
 echo ""
 echo "   Steps:"
 echo "   a) Go to: https://console.anthropic.com/settings/keys"
@@ -70,12 +70,12 @@ echo ""
 # 3. SMTP PASSWORD ROTATION (Hostinger)
 # -----------------------------------------------------------------------------
 echo -e "${YELLOW}3. SMTP PASSWORD ROTATION (Hostinger)${NC}"
-echo "   Current: Jeenu@2025 for snehalatha@ganakys.com (EXPOSED - ROTATE IMMEDIATELY)"
+echo "   Current: [REDACTED - check .env or Hostinger panel] for SMTP account (EXPOSED - ROTATE IMMEDIATELY)"
 echo ""
 echo "   Steps:"
 echo "   a) Log in to Hostinger control panel: https://hpanel.hostinger.com/"
 echo "   b) Go to: Emails > Email Accounts"
-echo "   c) Find snehalatha@ganakys.com and click 'Manage'"
+echo "   c) Find the SMTP account listed in your .env and click 'Manage'"
 echo "   d) Click 'Change Password'"
 echo "   e) Generate a strong password:"
 NEW_SMTP_PASS=$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)
@@ -119,7 +119,7 @@ echo "[ ] Anthropic API works:"
 echo "    curl https://api.anthropic.com/v1/messages -H 'x-api-key: YOUR_NEW_KEY' -H 'anthropic-version: 2023-06-01'"
 echo ""
 echo "[ ] SMTP works:"
-echo "    python -c \"import smtplib; s=smtplib.SMTP_SSL('smtp.hostinger.com', 465); s.login('snehalatha@ganakys.com', 'NEW_PASS'); print('SMTP OK')\""
+echo "    python -c \"import smtplib; s=smtplib.SMTP_SSL('smtp.hostinger.com', 465); s.login('YOUR_SMTP_USER', 'NEW_PASS'); print('SMTP OK')\""
 echo ""
 echo "[ ] Backend starts without errors:"
 echo "    cd /var/ganaportal/src/backend && source .venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000"

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.esg import ESGCertification, ESGCategory, CertificationStatus
 from app.schemas.esg import ESGCertificationCreate, ESGCertificationUpdate, ESGCertificationListResponse
+from app.core.datetime_utils import utc_now
 
 
 class CertificationService:
@@ -98,7 +99,7 @@ class CertificationService:
         for field, value in update_data.items():
             setattr(certification, field, value)
 
-        certification.updated_at = datetime.utcnow()
+        certification.updated_at = utc_now()
         await db.commit()
         await db.refresh(certification)
         return certification

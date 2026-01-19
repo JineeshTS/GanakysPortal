@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
 
+from app.core.datetime_utils import utc_now
 from app.models.security import (
     SecuritySession, TrustedDevice, DeviceTrustLevel
 )
@@ -86,7 +87,7 @@ class SessionService:
     ) -> SecuritySession:
         """Create a new session"""
         if not expires_at:
-            expires_at = datetime.utcnow() + timedelta(hours=8)
+            expires_at = utc_now() + timedelta(hours=8)
 
         session = SecuritySession(
             company_id=company_id,
@@ -123,7 +124,7 @@ class SessionService:
 
         if session:
             session.is_active = False
-            session.revoked_at = datetime.utcnow()
+            session.revoked_at = utc_now()
             session.revoked_by = revoked_by
             session.revoke_reason = reason
             await db.commit()
@@ -146,7 +147,7 @@ class SessionService:
             )
             .values(
                 is_active=False,
-                revoked_at=datetime.utcnow(),
+                revoked_at=utc_now(),
                 revoked_by=revoked_by,
                 revoke_reason=reason
             )
@@ -163,7 +164,7 @@ class SessionService:
         await db.execute(
             update(SecuritySession)
             .where(SecuritySession.session_token == session_token)
-            .values(last_activity_at=datetime.utcnow())
+            .values(last_activity_at=utc_now())
         )
         await db.commit()
 
@@ -226,7 +227,7 @@ class SessionService:
 
         if device:
             # Update last seen
-            device.last_seen_at = datetime.utcnow()
+            device.last_seen_at = utc_now()
             device.last_seen_ip = ip_address
             device.last_seen_location = location
             device.login_count += 1
@@ -269,9 +270,9 @@ class SessionService:
 
         if device:
             device.trust_level = DeviceTrustLevel.trusted
-            device.trusted_at = datetime.utcnow()
+            device.trusted_at = utc_now()
             device.trusted_by = trusted_by
-            device.trusted_until = datetime.utcnow() + timedelta(days=trust_days)
+            device.trusted_until = utc_now() + timedelta(days=trust_days)
             if device_name:
                 device.device_name = device_name
             await db.commit()
@@ -295,7 +296,7 @@ class SessionService:
 
         if device:
             device.trust_level = DeviceTrustLevel.blocked
-            device.blocked_at = datetime.utcnow()
+            device.blocked_at = utc_now()
             device.blocked_by = blocked_by
             device.block_reason = reason
             await db.commit()

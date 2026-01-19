@@ -14,6 +14,25 @@ import hashlib
 import hmac
 
 from app.db.session import get_db
+from app.api.deps import get_current_user
+from app.models.user import User, UserRole
+from app.core.datetime_utils import utc_now
+from app.services.notification.notification_service import NotificationService, NotificationChannel
+
+
+async def require_auth(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Require authenticated user for endpoint access."""
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return current_user
+
+
 from app.models.subscription import (
     SubscriptionPlan, PricingTier, Subscription, BillingCycle,
     SubscriptionInvoice, SubscriptionPayment, UsageMeter,
@@ -45,7 +64,11 @@ from app.schemas.subscription import (
 )
 from app.core.config import settings
 
-router = APIRouter(prefix="/subscriptions", tags=["Subscription & Billing"])
+router = APIRouter(
+    prefix="/subscriptions",
+    tags=["Subscription & Billing"],
+    dependencies=[Depends(require_auth)]
+)
 
 
 # ============================================================================
@@ -173,9 +196,9 @@ async def list_plans(
     query = select(SubscriptionPlan).options(selectinload(SubscriptionPlan.pricing_tiers))
 
     if active_only:
-        query = query.where(SubscriptionPlan.is_active == True)
+        query = query.where(SubscriptionPlan.is_active.is_(True))
     if public_only:
-        query = query.where(SubscriptionPlan.is_public == True)
+        query = query.where(SubscriptionPlan.is_public.is_(True))
     if plan_type:
         query = query.where(SubscriptionPlan.plan_type == plan_type)
 
@@ -409,7 +432,7 @@ async def create_subscription(
     )
 
     # Create subscription
-    now = datetime.utcnow()
+    now = utc_now()
     trial_end = now + timedelta(days=plan.trial_days) if plan.trial_days > 0 else None
 
     # Calculate period end based on interval
@@ -525,7 +548,7 @@ async def get_subscription(subscription_id: UUID, db: AsyncSession = Depends(get
     usage_query = select(UsageMeter).where(
         and_(
             UsageMeter.subscription_id == subscription_id,
-            UsageMeter.period_end >= datetime.utcnow()
+            UsageMeter.period_end >= utc_now()
         )
     )
     usage_result = await db.execute(usage_query)
@@ -580,7 +603,7 @@ async def update_subscription(
     # Handle cancellation
     if 'cancel_at_period_end' in update_data and update_data['cancel_at_period_end']:
         subscription.cancel_at_period_end = True
-        subscription.cancelled_at = datetime.utcnow()
+        subscription.cancelled_at = utc_now()
 
     for field, value in update_data.items():
         if field not in ['employee_count', 'cancel_at_period_end']:
@@ -605,7 +628,7 @@ async def cancel_subscription(
     if subscription.status == SubscriptionStatus.cancelled:
         raise HTTPException(status_code=400, detail="Subscription already cancelled")
 
-    subscription.cancelled_at = datetime.utcnow()
+    subscription.cancelled_at = utc_now()
 
     if immediate:
         subscription.status = SubscriptionStatus.cancelled
@@ -733,7 +756,7 @@ async def update_invoice(
 
         if invoice.amount_due <= 0:
             invoice.status = InvoiceStatus.paid
-            invoice.paid_at = datetime.utcnow()
+            invoice.paid_at = utc_now()
         elif invoice.amount_paid > 0:
             invoice.status = InvoiceStatus.partially_paid
 
@@ -799,7 +822,7 @@ async def record_payment(
         invoice_id=payment_in.invoice_id,
         company_id=invoice.company_id,
         payment_number=payment_number,
-        payment_date=payment_in.payment_date or datetime.utcnow(),
+        payment_date=payment_in.payment_date or utc_now(),
         amount=payment_in.amount,
         currency=invoice.currency,
         payment_method=payment_in.payment_method.value,
@@ -816,7 +839,7 @@ async def record_payment(
 
     if invoice.amount_due <= 0:
         invoice.status = InvoiceStatus.paid
-        invoice.paid_at = datetime.utcnow()
+        invoice.paid_at = utc_now()
     elif invoice.amount_paid > 0:
         invoice.status = InvoiceStatus.partially_paid
 
@@ -856,7 +879,7 @@ async def record_usage(
 ):
     """Record usage for a subscription (internal API)."""
     # Get current meter
-    now = datetime.utcnow()
+    now = utc_now()
     meter = await db.scalar(
         select(UsageMeter).where(
             and_(
@@ -883,8 +906,32 @@ async def record_usage(
     if meter.quantity_limit:
         percent_used = (meter.quantity_used / meter.quantity_limit) * 100
         if percent_used >= meter.alert_threshold_percent and not meter.alert_sent_at:
-            meter.alert_sent_at = datetime.utcnow()
-            # TODO: Send alert notification
+            meter.alert_sent_at = utc_now()
+            # Send alert notification to company admins
+            admin_users = await db.execute(
+                select(User).where(
+                    and_(
+                        User.company_id == meter.company_id,
+                        User.role == UserRole.admin,
+                        User.is_active.is_(True)
+                    )
+                )
+            )
+            for admin in admin_users.scalars().all():
+                notification = NotificationService.create_notification(
+                    user_id=str(admin.id),
+                    template_name="usage_threshold_alert",
+                    variables={
+                        "usage_type": usage_type.value.replace("_", " ").title(),
+                        "percent_used": float(percent_used),
+                        "quantity_used": float(meter.quantity_used),
+                        "quantity_limit": float(meter.quantity_limit),
+                    },
+                    channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+                    action_url="/settings/subscription/usage",
+                    data={"subscription_id": str(subscription_id), "usage_type": usage_type.value}
+                )
+                NotificationService.send_notification(notification)
 
     # Update daily usage
     today = now.strftime("%Y-%m-%d")
@@ -919,10 +966,10 @@ async def list_discounts(
     if active_only:
         query = query.where(
             and_(
-                Discount.is_active == True,
+                Discount.is_active.is_(True),
                 or_(
                     Discount.valid_until.is_(None),
-                    Discount.valid_until >= datetime.utcnow()
+                    Discount.valid_until >= utc_now()
                 )
             )
         )
@@ -988,7 +1035,7 @@ async def _validate_discount(
             message="Invalid discount code"
         )
 
-    now = datetime.utcnow()
+    now = utc_now()
 
     # Check if active
     if not discount.is_active:
@@ -1147,7 +1194,7 @@ async def razorpay_webhook(
                     invoice_id=invoice.id,
                     company_id=invoice.company_id,
                     payment_number=f"RZP-{payment_entity.get('id', '')}",
-                    payment_date=datetime.utcnow(),
+                    payment_date=utc_now(),
                     amount=Decimal(str(payment_entity.get("amount", 0) / 100)),
                     currency=payment_entity.get("currency", "INR"),
                     payment_method=PaymentMethod.razorpay.value,
@@ -1163,7 +1210,7 @@ async def razorpay_webhook(
 
                 if invoice.amount_due <= 0:
                     invoice.status = InvoiceStatus.paid
-                    invoice.paid_at = datetime.utcnow()
+                    invoice.paid_at = utc_now()
 
                 await db.commit()
 
@@ -1185,7 +1232,7 @@ async def razorpay_webhook(
                     invoice_id=invoice.id,
                     company_id=invoice.company_id,
                     payment_number=f"RZP-{payment_entity.get('id', '')}-FAILED",
-                    payment_date=datetime.utcnow(),
+                    payment_date=utc_now(),
                     amount=Decimal(str(payment_entity.get("amount", 0) / 100)),
                     currency=payment_entity.get("currency", "INR"),
                     payment_method=PaymentMethod.razorpay.value,
@@ -1225,7 +1272,7 @@ async def razorpay_webhook(
 
         if subscription:
             subscription.status = SubscriptionStatus.cancelled
-            subscription.cancelled_at = datetime.utcnow()
+            subscription.cancelled_at = utc_now()
             await db.commit()
 
     return {"status": "ok"}

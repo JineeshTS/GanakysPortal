@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.integration import (
     IntegrationConnector, IntegrationEndpoint, DataMapping,
     ConnectorType, AuthType
@@ -100,7 +101,7 @@ class ConnectorService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(connector, field, value)
-        connector.updated_at = datetime.utcnow()
+        connector.updated_at = utc_now()
         await db.commit()
         await db.refresh(connector)
         return connector
@@ -114,12 +115,12 @@ class ConnectorService:
         try:
             # Placeholder for actual connection test
             # Would use httpx or similar to test the connection
-            connector.last_tested_at = datetime.utcnow()
+            connector.last_tested_at = utc_now()
             connector.last_test_status = "success"
             await db.commit()
             return True, "Connection successful"
         except Exception as e:
-            connector.last_tested_at = datetime.utcnow()
+            connector.last_tested_at = utc_now()
             connector.last_test_status = "failed"
             await db.commit()
             return False, str(e)
@@ -130,7 +131,7 @@ class ConnectorService:
         connector: IntegrationConnector
     ) -> None:
         """Soft delete connector."""
-        connector.deleted_at = datetime.utcnow()
+        connector.deleted_at = utc_now()
         await db.commit()
 
     # Endpoint Methods
@@ -183,7 +184,7 @@ class ConnectorService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(endpoint, field, value)
-        endpoint.updated_at = datetime.utcnow()
+        endpoint.updated_at = utc_now()
         await db.commit()
         await db.refresh(endpoint)
         return endpoint
@@ -266,7 +267,7 @@ class ConnectorService:
         for field, value in update_data.items():
             setattr(mapping, field, value)
         mapping.version += 1
-        mapping.updated_at = datetime.utcnow()
+        mapping.updated_at = utc_now()
         await db.commit()
         await db.refresh(mapping)
         return mapping

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.esg import ESGCompanyConfig
 from app.schemas.esg import ESGCompanyConfigCreate, ESGCompanyConfigUpdate
+from app.core.datetime_utils import utc_now
 
 
 class ConfigService:
@@ -66,7 +67,7 @@ class ConfigService:
         for field, value in update_data.items():
             setattr(config, field, value)
 
-        config.updated_at = datetime.utcnow()
+        config.updated_at = utc_now()
         await db.commit()
         await db.refresh(config)
         return config

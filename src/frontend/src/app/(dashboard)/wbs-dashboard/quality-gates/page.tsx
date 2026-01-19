@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
+import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -110,11 +111,11 @@ function QualityGateCard({ gate }: { gate: WBSQualityGate }) {
         )}
 
         {/* Criteria */}
-        {gate.criteria.length > 0 && (
+        {(gate.criteria?.length || 0) > 0 && (
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">Criteria</p>
             <ul className="space-y-1">
-              {gate.criteria.map((criterion, i) => (
+              {gate.criteria?.map((criterion, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm">
                   <Target className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                   <span>{criterion}</span>
@@ -196,12 +197,13 @@ function GateFlowDiagram({ gates }: { gates: WBSQualityGate[] }) {
 export default function WBSQualityGatesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [gates, setGates] = useState<WBSQualityGate[]>([])
+  const { fetchWithAuth } = useAuth()
 
-  const fetchGates = async () => {
+  const fetchGates = useCallback(async () => {
     setIsLoading(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-      const res = await fetch(`${apiUrl}/wbs/quality-gates`)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+      const res = await fetchWithAuth(`${apiUrl}/wbs/quality-gates`)
       if (res.ok) {
         const data = await res.json()
         setGates(data)
@@ -211,11 +213,11 @@ export default function WBSQualityGatesPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [fetchWithAuth])
 
   useEffect(() => {
     fetchGates()
-  }, [])
+  }, [fetchGates])
 
   // Calculate stats
   const totalGates = gates.length

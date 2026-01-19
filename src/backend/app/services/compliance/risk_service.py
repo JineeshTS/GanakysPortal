@@ -6,6 +6,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.compliance import ComplianceRiskAssessment, RiskLevel
 from app.schemas.compliance import RiskAssessmentCreate, RiskAssessmentUpdate
+from app.core.datetime_utils import utc_now
 
 class RiskService:
     async def create(self, db: AsyncSession, obj_in: RiskAssessmentCreate, company_id: UUID, user_id: UUID) -> ComplianceRiskAssessment:
@@ -20,7 +21,7 @@ class RiskService:
             risk_description=obj_in.risk_description, potential_consequences=obj_in.potential_consequences,
             existing_controls=obj_in.existing_controls, control_effectiveness=obj_in.control_effectiveness,
             mitigation_plan=obj_in.mitigation_plan, mitigation_owner=obj_in.mitigation_owner,
-            target_date=obj_in.target_date, status="open", assessed_by=user_id, created_at=datetime.utcnow(),
+            target_date=obj_in.target_date, status="open", assessed_by=user_id, created_at=utc_now(),
         )
         db.add(db_obj)
         await db.commit()
@@ -38,7 +39,7 @@ class RiskService:
         if obj_in.likelihood_score or obj_in.impact_score:
             db_obj.risk_score = db_obj.likelihood_score * db_obj.impact_score
             db_obj.risk_level = self._calculate_risk_level(db_obj.risk_score)
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

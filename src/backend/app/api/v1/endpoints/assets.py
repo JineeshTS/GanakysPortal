@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData
+from app.core.datetime_utils import utc_now
 
 
 router = APIRouter()
@@ -209,7 +210,7 @@ async def list_assets(
             accumulated_depreciation=Decimal("17000"),
             book_value=Decimal("68000"),
             status="in_use",
-            created_at=datetime.utcnow()
+            created_at=utc_now()
         ),
         AssetResponse(
             id=uuid4(),
@@ -232,7 +233,7 @@ async def list_assets(
             accumulated_depreciation=Decimal("1350"),
             book_value=Decimal("13650"),
             status="in_use",
-            created_at=datetime.utcnow()
+            created_at=utc_now()
         ),
         AssetResponse(
             id=uuid4(),
@@ -256,7 +257,7 @@ async def list_assets(
             accumulated_depreciation=Decimal("212500"),
             book_value=Decimal("637500"),
             status="in_use",
-            created_at=datetime.utcnow()
+            created_at=utc_now()
         )
     ]
 
@@ -311,7 +312,7 @@ async def create_asset(
         accumulated_depreciation=Decimal("0"),
         book_value=asset_data.purchase_value,
         status="in_use",
-        created_at=datetime.utcnow()
+        created_at=utc_now()
     )
 
     return asset

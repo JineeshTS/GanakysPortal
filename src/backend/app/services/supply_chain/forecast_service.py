@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.supply_chain import PurchaseForecast, ForecastMethod
 from app.schemas.supply_chain import PurchaseForecastCreate, PurchaseForecastUpdate
+from app.core.datetime_utils import utc_now
 
 
 class ForecastService:
@@ -27,7 +28,7 @@ class ForecastService:
         forecast = PurchaseForecast(
             id=uuid4(),
             company_id=company_id,
-            generated_at=datetime.utcnow(),
+            generated_at=utc_now(),
             **data.model_dump()
         )
         db.add(forecast)
@@ -93,7 +94,7 @@ class ForecastService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(forecast, field, value)
-        forecast.updated_at = datetime.utcnow()
+        forecast.updated_at = utc_now()
         await db.commit()
         await db.refresh(forecast)
         return forecast

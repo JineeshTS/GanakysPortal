@@ -37,6 +37,13 @@ class CompanyProfile(Base):
     currency = Column(String(3), default="INR")
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
 
     # Relationships
     statutory = relationship("CompanyStatutory", back_populates="company", uselist=False)
@@ -58,6 +65,13 @@ class CompanyStatutory(Base):
     professional_tax_state = Column(String(50), default="Karnataka")
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
 
     # Relationships
     company = relationship("CompanyProfile", back_populates="statutory")
@@ -76,6 +90,8 @@ class Department(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
 
     # AI Org Builder fields
     description = Column(Text, nullable=True)
@@ -83,6 +99,11 @@ class Department(Base):
     headcount_current = Column(Integer, default=0)
     ai_generated = Column(Boolean, default=False)
     source_recommendation_id = Column(UUID(as_uuid=True), ForeignKey("ai_org_recommendations.id"), nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
 
     # Relationships
     company = relationship("CompanyProfile", back_populates="departments")
@@ -124,6 +145,11 @@ class Designation(Base):
     # AI Org Builder tracking
     ai_generated = Column(Boolean, default=False)
     source_recommendation_id = Column(UUID(as_uuid=True), ForeignKey("ai_org_recommendations.id"), nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
 
     # Relationships
     company = relationship("CompanyProfile", back_populates="designations")

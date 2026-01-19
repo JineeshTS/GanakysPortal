@@ -11,6 +11,7 @@ from sqlalchemy import select, func
 
 from app.models.security import DataAccessLog
 from app.schemas.security import DataAccessLogResponse, DataAccessLogListResponse
+from app.core.datetime_utils import utc_now
 
 
 class DataAccessService:
@@ -79,7 +80,7 @@ class DataAccessService:
 
         # Check for unusual access patterns (simple heuristic)
         # Could be enhanced with ML-based anomaly detection
-        hour_ago = datetime.utcnow()
+        hour_ago = utc_now()
 
         result = await db.execute(
             select(func.count(DataAccessLog.id)).where(

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.legal import LegalExpense
 from app.schemas.legal import LegalExpenseCreate, LegalExpenseUpdate
+from app.core.datetime_utils import utc_now
 
 
 class ExpenseService:
@@ -49,7 +50,7 @@ class ExpenseService:
             hearing_id=obj_in.hearing_id,
             notes=obj_in.notes,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -125,7 +126,7 @@ class ExpenseService:
         if 'amount' in update_data or 'gst_amount' in update_data:
             db_obj.total_amount = db_obj.amount + (db_obj.gst_amount or Decimal("0"))
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -140,7 +141,7 @@ class ExpenseService:
         db_obj.payment_status = "approved"
         db_obj.approved_by = user_id
         db_obj.approved_date = date.today()
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(db_obj)

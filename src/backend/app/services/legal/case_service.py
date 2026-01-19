@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.legal import LegalCase, CaseType, CaseStatus, CasePriority, CourtLevel
 from app.schemas.legal import LegalCaseCreate, LegalCaseUpdate
+from app.core.datetime_utils import utc_now
 
 
 class CaseService:
@@ -61,7 +62,7 @@ class CaseService:
             internal_notes=obj_in.internal_notes,
             is_appealed=False,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -150,7 +151,7 @@ class CaseService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

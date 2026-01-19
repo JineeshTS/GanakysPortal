@@ -5,8 +5,10 @@ from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from enum import Enum
+
+from app.schemas.validators import validate_phone
 
 
 class WarehouseType(str, Enum):
@@ -68,11 +70,16 @@ class WarehouseBase(BaseModel):
     country: Optional[str] = None
     pincode: Optional[str] = None
     contact_person: Optional[str] = None
-    phone: Optional[str] = None
+    phone: Optional[str] = Field(None, max_length=20)
     email: Optional[str] = None
     capacity_sqft: Optional[Decimal] = None
     rack_count: Optional[int] = None
     is_active: bool = True
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone_field(cls, v):
+        return validate_phone(v)
 
 
 class WarehouseCreate(WarehouseBase):
@@ -90,11 +97,16 @@ class WarehouseUpdate(BaseModel):
     country: Optional[str] = None
     pincode: Optional[str] = None
     contact_person: Optional[str] = None
-    phone: Optional[str] = None
+    phone: Optional[str] = Field(None, max_length=20)
     email: Optional[str] = None
     capacity_sqft: Optional[Decimal] = None
     rack_count: Optional[int] = None
     is_active: Optional[bool] = None
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone_field(cls, v):
+        return validate_phone(v)
 
 
 class WarehouseResponse(WarehouseBase):
@@ -278,11 +290,11 @@ class SupplierBase(BaseModel):
     state: Optional[str] = None
     country: Optional[str] = None
     pincode: Optional[str] = None
-    phone: Optional[str] = None
+    phone: Optional[str] = Field(None, max_length=20)
     email: Optional[str] = None
     website: Optional[str] = None
     contact_person: Optional[str] = None
-    contact_phone: Optional[str] = None
+    contact_phone: Optional[str] = Field(None, max_length=20)
     contact_email: Optional[str] = None
     payment_terms: Optional[int] = None
     credit_limit: Optional[Decimal] = None
@@ -293,6 +305,11 @@ class SupplierBase(BaseModel):
     default_category_ids: Optional[List[str]] = None
     lead_time_days: Optional[int] = None
     min_order_value: Optional[Decimal] = None
+
+    @field_validator('phone', 'contact_phone')
+    @classmethod
+    def validate_phone_fields(cls, v):
+        return validate_phone(v)
 
 
 class SupplierCreate(SupplierBase):
@@ -313,11 +330,11 @@ class SupplierUpdate(BaseModel):
     state: Optional[str] = None
     country: Optional[str] = None
     pincode: Optional[str] = None
-    phone: Optional[str] = None
+    phone: Optional[str] = Field(None, max_length=20)
     email: Optional[str] = None
     website: Optional[str] = None
     contact_person: Optional[str] = None
-    contact_phone: Optional[str] = None
+    contact_phone: Optional[str] = Field(None, max_length=20)
     contact_email: Optional[str] = None
     payment_terms: Optional[int] = None
     credit_limit: Optional[Decimal] = None
@@ -330,6 +347,11 @@ class SupplierUpdate(BaseModel):
     min_order_value: Optional[Decimal] = None
     status: Optional[SupplierStatus] = None
     tier: Optional[SupplierTier] = None
+
+    @field_validator('phone', 'contact_phone')
+    @classmethod
+    def validate_phone_fields(cls, v):
+        return validate_phone(v)
 
 
 class SupplierResponse(SupplierBase):

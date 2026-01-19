@@ -6,6 +6,7 @@ Automated actions and intelligent task queue management
 from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from app.core.datetime_utils import utc_now
 from enum import Enum
 import asyncio
 import uuid
@@ -210,7 +211,7 @@ class AutoActionService:
             id=str(uuid.uuid4()),
             action_id=action_id,
             status=ActionStatus.IN_PROGRESS,
-            started_at=datetime.utcnow(),
+            started_at=utc_now(),
             completed_at=None,
             result=None,
             error=None,
@@ -229,16 +230,16 @@ class AutoActionService:
 
             execution.status = ActionStatus.COMPLETED
             execution.result = result
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = utc_now()
 
             # Update action stats
-            action.last_run = datetime.utcnow()
+            action.last_run = utc_now()
             action.run_count += 1
 
         except Exception as e:
             execution.status = ActionStatus.FAILED
             execution.error = str(e)
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = utc_now()
 
         self._executions.append(execution)
         return execution
@@ -482,7 +483,7 @@ class TaskQueueService:
             priority=priority,
             payload=payload,
             status=ActionStatus.PENDING,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
             started_at=None,
             completed_at=None
         )
@@ -501,7 +502,7 @@ class TaskQueueService:
             return None
 
         task.status = ActionStatus.IN_PROGRESS
-        task.started_at = datetime.utcnow()
+        task.started_at = utc_now()
         self._processing.append(task)
 
         try:
@@ -532,7 +533,7 @@ class TaskQueueService:
             self._processing.remove(task)
 
             if task.status == ActionStatus.COMPLETED:
-                task.completed_at = datetime.utcnow()
+                task.completed_at = utc_now()
                 self._completed.append(task)
 
         return task

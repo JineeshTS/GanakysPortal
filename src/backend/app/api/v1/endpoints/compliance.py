@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_current_user
+from app.core.errors import not_found
 from app.models.user import User
 from app.schemas.compliance import (
     ComplianceMasterCreate, ComplianceMasterUpdate, ComplianceMasterInDB, ComplianceMasterList,
@@ -71,7 +72,7 @@ async def get_compliance(
 ):
     compliance = await compliance_service.get(db, compliance_id, current_user.company_id)
     if not compliance:
-        raise HTTPException(status_code=404, detail="Compliance not found")
+        raise not_found("Compliance")
     return compliance
 
 
@@ -84,7 +85,7 @@ async def update_compliance(
 ):
     compliance = await compliance_service.get(db, compliance_id, current_user.company_id)
     if not compliance:
-        raise HTTPException(status_code=404, detail="Compliance not found")
+        raise not_found("Compliance")
     return await compliance_service.update(db, compliance, obj_in)
 
 

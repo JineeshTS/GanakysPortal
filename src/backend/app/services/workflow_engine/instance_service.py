@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.workflow import (
     WorkflowDefinition, WorkflowInstance, WorkflowNode,
     WorkflowTask, WorkflowHistory, WorkflowTransition,
@@ -22,7 +23,7 @@ class InstanceService:
     @staticmethod
     def generate_instance_number() -> str:
         """Generate instance number."""
-        timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        timestamp = utc_now().strftime('%Y%m%d%H%M%S')
         return f"WF-{timestamp}"
 
     @staticmethod
@@ -49,7 +50,7 @@ class InstanceService:
         # Calculate SLA due date
         sla_due = None
         if workflow.sla_hours:
-            sla_due = datetime.utcnow() + timedelta(hours=workflow.sla_hours)
+            sla_due = utc_now() + timedelta(hours=workflow.sla_hours)
 
         instance = WorkflowInstance(
             id=uuid4(),
@@ -61,7 +62,7 @@ class InstanceService:
             status=InstanceStatus.IN_PROGRESS,
             current_node_id=start_node.id if start_node else None,
             variables=variables or {},
-            started_at=datetime.utcnow(),
+            started_at=utc_now(),
             started_by=user_id,
             sla_due_at=sla_due
         )
@@ -148,7 +149,7 @@ class InstanceService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(instance, field, value)
-        instance.updated_at = datetime.utcnow()
+        instance.updated_at = utc_now()
         await db.commit()
         await db.refresh(instance)
         return instance
@@ -177,7 +178,7 @@ class InstanceService:
         # Check if end node
         if current_node.is_end:
             instance.status = InstanceStatus.COMPLETED
-            instance.completed_at = datetime.utcnow()
+            instance.completed_at = utc_now()
             await db.commit()
             await db.refresh(instance)
             return instance
@@ -224,7 +225,7 @@ class InstanceService:
             # Check if next node is end
             if next_node and next_node.is_end:
                 instance.status = InstanceStatus.COMPLETED
-                instance.completed_at = datetime.utcnow()
+                instance.completed_at = utc_now()
             elif next_node and next_node.task_type == TaskType.USER_TASK:
                 await InstanceService._create_task_for_node(db, instance, next_node)
 
@@ -241,8 +242,8 @@ class InstanceService:
     ) -> WorkflowInstance:
         """Cancel a workflow instance."""
         instance.status = InstanceStatus.CANCELLED
-        instance.completed_at = datetime.utcnow()
-        instance.updated_at = datetime.utcnow()
+        instance.completed_at = utc_now()
+        instance.updated_at = utc_now()
 
         # Cancel pending tasks
         result = await db.execute(
@@ -256,7 +257,7 @@ class InstanceService:
         tasks = result.scalars().all()
         for task in tasks:
             task.status = TaskStatus.CANCELLED
-            task.updated_at = datetime.utcnow()
+            task.updated_at = utc_now()
 
         # Record history
         history = WorkflowHistory(
@@ -282,7 +283,7 @@ class InstanceService:
         # Calculate due date
         due_at = None
         if node.sla_hours:
-            due_at = datetime.utcnow() + timedelta(hours=node.sla_hours)
+            due_at = utc_now() + timedelta(hours=node.sla_hours)
 
         task = WorkflowTask(
             id=uuid4(),

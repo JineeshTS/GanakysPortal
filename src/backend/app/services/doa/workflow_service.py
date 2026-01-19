@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
+from app.core.datetime_utils import utc_now
 from app.models.doa import (
     ApprovalWorkflowTemplate, ApprovalWorkflowLevel, ApprovalAuditLog,
     WorkflowType
@@ -229,7 +230,7 @@ class WorkflowService:
         for key, value in update_data.items():
             setattr(template, key, value)
 
-        template.updated_at = datetime.utcnow()
+        template.updated_at = utc_now()
 
         await db.commit()
 
@@ -251,7 +252,7 @@ class WorkflowService:
         template = result.scalar_one()
 
         template.is_active = False
-        template.updated_at = datetime.utcnow()
+        template.updated_at = utc_now()
 
         await db.commit()
 
@@ -272,7 +273,7 @@ class WorkflowService:
             raise ValueError("Workflow template not found")
 
         # Generate new code
-        new_code = f"{original.code}_COPY_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        new_code = f"{original.code}_COPY_{utc_now().strftime('%Y%m%d%H%M%S')}"
 
         # Create new template
         template = ApprovalWorkflowTemplate(

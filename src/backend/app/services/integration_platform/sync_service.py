@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.integration import (
     SyncJob, SyncRun, IntegrationLog,
     SyncDirection, SyncStatus
@@ -96,7 +97,7 @@ class SyncService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(job, field, value)
-        job.updated_at = datetime.utcnow()
+        job.updated_at = utc_now()
         await db.commit()
         await db.refresh(job)
         return job
@@ -107,7 +108,7 @@ class SyncService:
         job: SyncJob
     ) -> None:
         """Soft delete sync job."""
-        job.deleted_at = datetime.utcnow()
+        job.deleted_at = utc_now()
         await db.commit()
 
     # Sync Run Methods
@@ -122,7 +123,7 @@ class SyncService:
             id=uuid4(),
             job_id=job.id,
             status=SyncStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=utc_now(),
             records_processed=0,
             records_succeeded=0,
             records_failed=0,
@@ -130,7 +131,7 @@ class SyncService:
         )
         db.add(run)
 
-        job.last_run_at = datetime.utcnow()
+        job.last_run_at = utc_now()
         job.last_status = "running"
 
         await db.commit()
@@ -196,7 +197,7 @@ class SyncService:
     ) -> SyncRun:
         """Complete a sync run."""
         run.status = status
-        run.completed_at = datetime.utcnow()
+        run.completed_at = utc_now()
         run.error_message = error_message
 
         # Update job status
@@ -206,7 +207,7 @@ class SyncService:
         job = result.scalar_one_or_none()
         if job:
             job.last_status = status.value
-            job.updated_at = datetime.utcnow()
+            job.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(run)
@@ -286,7 +287,7 @@ class SyncService:
             select(SyncJob).where(
                 and_(
                     SyncJob.is_active == True,
-                    SyncJob.next_run_at <= datetime.utcnow(),
+                    SyncJob.next_run_at <= utc_now(),
                     SyncJob.deleted_at.is_(None)
                 )
             )

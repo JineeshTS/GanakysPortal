@@ -94,7 +94,17 @@ async def seed_database():
             else:
                 # Create admin user
                 admin_id = uuid4()
-                password_hash = get_password_hash("Admin@2026")
+                # SECURITY: Password must be set via environment variable
+                admin_password = os.getenv("ADMIN_PASSWORD")
+                if not admin_password:
+                    # Generate a secure random password if not provided
+                    import secrets
+                    import string
+                    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+                    admin_password = ''.join(secrets.choice(alphabet) for _ in range(16))
+                    print(f"⚠️  IMPORTANT: Generated admin password: {admin_password}")
+                    print("⚠️  Please change this password immediately after first login!")
+                password_hash = get_password_hash(admin_password)
 
                 await session.execute(text("""
                     INSERT INTO users (
@@ -116,7 +126,6 @@ async def seed_database():
                     "updated_at": datetime.utcnow()
                 })
                 print(f"✓ Created admin user: admin@ganakys.com (ID: {admin_id})")
-                print("  Password: Admin@2026")
 
             # Create additional test users
             test_users = [
@@ -161,11 +170,14 @@ async def seed_database():
             print("\n" + "="*50)
             print("LOGIN CREDENTIALS")
             print("="*50)
-            print("Admin:      admin@ganakys.com / Admin@2026")
+            print("Admin:      admin@ganakys.com")
+            print("            (password from ADMIN_PASSWORD env var or generated above)")
             print("HR:         hr@ganakys.com / Hr@2026")
             print("Accountant: accountant@ganakys.com / Account@2026")
             print("Employee:   employee@ganakys.com / Employee@2026")
             print("="*50)
+            print("\n⚠️  WARNING: Test user passwords are hardcoded for demo only!")
+            print("   Change these in production or use environment variables.")
 
         except Exception as e:
             print(f"✗ Error seeding database: {e}")

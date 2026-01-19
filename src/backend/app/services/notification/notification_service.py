@@ -4,6 +4,7 @@ In-app and push notifications
 """
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from app.core.datetime_utils import utc_now
 from enum import Enum
 from dataclasses import dataclass
 import json
@@ -108,6 +109,11 @@ class NotificationService:
             "message": "{message}",
             "type": NotificationType.SYSTEM,
         },
+        "usage_threshold_alert": {
+            "title": "Usage Threshold Alert",
+            "message": "Your {usage_type} usage has reached {percent_used:.0f}% of your limit ({quantity_used}/{quantity_limit})",
+            "type": NotificationType.WARNING,
+        },
     }
 
     @classmethod
@@ -154,7 +160,7 @@ class NotificationService:
             channels=channels,
             action_url=action_url,
             data=data or {},
-            created_at=datetime.utcnow()
+            created_at=utc_now()
         )
 
         return notification

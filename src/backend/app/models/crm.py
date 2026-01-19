@@ -280,8 +280,14 @@ class Lead(Base):
     country = Column(String(100), default="India")
 
     # Lead details
-    source = Column(Enum(LeadSource), default=LeadSource.OTHER)
-    status = Column(Enum(LeadStatus), default=LeadStatus.NEW)
+    source = Column(
+        Enum(LeadSource, name='lead_source_enum', native_enum=False),
+        default=LeadSource.OTHER
+    )
+    status = Column(
+        Enum(LeadStatus, name='lead_status_enum', native_enum=False),
+        default=LeadStatus.NEW
+    )
 
     # Lead scoring (0-100)
     score = Column(Integer, default=0)
@@ -397,7 +403,10 @@ class Customer(Base):
     # Legal/Tax details (India-specific)
     gstin = Column(String(15))  # 15-char GSTIN
     pan = Column(String(10))  # 10-char PAN
-    gst_registration_type = Column(Enum(GSTRegistrationType), default=GSTRegistrationType.REGULAR)
+    gst_registration_type = Column(
+        Enum(GSTRegistrationType, name='gst_registration_type_enum', native_enum=False),
+        default=GSTRegistrationType.REGULAR
+    )
     tan = Column(String(10))  # For TDS
     cin = Column(String(21))  # Company Identification Number
 
@@ -430,7 +439,10 @@ class Customer(Base):
     # Credit terms
     credit_limit = Column(Numeric(18, 2), default=0)
     credit_used = Column(Numeric(18, 2), default=0)
-    payment_terms = Column(Enum(PaymentTerms), default=PaymentTerms.NET_30)
+    payment_terms = Column(
+        Enum(PaymentTerms, name='payment_terms_enum', native_enum=False),
+        default=PaymentTerms.NET_30
+    )
     credit_days = Column(Integer, default=30)
 
     # Default currency
@@ -527,7 +539,10 @@ class Opportunity(Base):
     currency = Column(String(3), default="INR")
 
     # Stage tracking
-    stage = Column(Enum(OpportunityStage), default=OpportunityStage.PROSPECTING)
+    stage = Column(
+        Enum(OpportunityStage, name='opportunity_stage_enum', native_enum=False),
+        default=OpportunityStage.PROSPECTING
+    )
     stage_changed_at = Column(DateTime)
 
     # Timeline
@@ -541,7 +556,10 @@ class Opportunity(Base):
     competitor_lost_to = Column(String(255))
 
     # Source tracking
-    source = Column(Enum(LeadSource))
+    source = Column(
+        Enum(LeadSource, name='lead_source_enum', native_enum=False),
+        nullable=True
+    )
     campaign_id = Column(UUID(as_uuid=True))
 
     # Assignment
@@ -591,7 +609,10 @@ class Activity(Base):
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True)
 
     # Polymorphic reference
-    entity_type = Column(Enum(EntityType), nullable=False)
+    entity_type = Column(
+        Enum(EntityType, name='entity_type_enum', native_enum=False),
+        nullable=False
+    )
     entity_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     # Direct foreign keys for efficient querying
@@ -600,7 +621,10 @@ class Activity(Base):
     customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id"), index=True)
 
     # Activity details
-    type = Column(Enum(ActivityType), nullable=False)
+    type = Column(
+        Enum(ActivityType, name='activity_type_enum', native_enum=False),
+        nullable=False
+    )
     subject = Column(String(255), nullable=False)
     description = Column(Text)
 
@@ -657,7 +681,10 @@ class Note(Base):
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True)
 
     # Polymorphic reference
-    entity_type = Column(Enum(EntityType), nullable=False)
+    entity_type = Column(
+        Enum(EntityType, name='entity_type_enum', native_enum=False),
+        nullable=False
+    )
     entity_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     # Direct foreign keys for efficient querying

@@ -89,7 +89,7 @@ export default function ESIPage() {
       <PageHeader
         title="ESI Contribution"
         description="Employee State Insurance contribution and return filing"
-        icon={<Heart className="h-6 w-6" />}
+        icon={Heart}
         actions={
           <div className="flex gap-2">
             {isGenerated && (

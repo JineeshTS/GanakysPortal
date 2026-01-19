@@ -12,6 +12,7 @@ import calendar
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
+from app.core.datetime_utils import utc_now
 from app.schemas.reports import (
     ReportTypeEnum, ReportCategoryEnum, OutputFormatEnum,
     DateRange, ReportFilter, ColumnConfig,
@@ -133,7 +134,7 @@ class ReportService:
         return {
             "report_name": "Attendance Summary Report",
             "period": f"{from_date.strftime('%d-%b-%Y')} to {to_date.strftime('%d-%b-%Y')}",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "summary": {
                 "total_employees": 50,
                 "working_days": 22,
@@ -181,7 +182,7 @@ class ReportService:
         return {
             "report_name": "Leave Summary Report",
             "period": f"{from_date.strftime('%d-%b-%Y')} to {to_date.strftime('%d-%b-%Y')}",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "leave_type_summary": [
                 {"type": "Casual Leave", "availed": 45, "balance": 155, "pending": 5},
                 {"type": "Sick Leave", "availed": 22, "balance": 178, "pending": 2},
@@ -213,7 +214,7 @@ class ReportService:
         return {
             "report_name": "Payroll Register",
             "period": f"{calendar.month_name[request.month]} {request.year}",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "summary": {
                 "employee_count": 50,
                 "total_gross": Decimal("4500000"),
@@ -262,7 +263,7 @@ class ReportService:
             "report_name": "Bank Payment Statement",
             "period": f"{calendar.month_name[request.month]} {request.year}",
             "payment_date": date.today().isoformat(),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "company_bank": {
                 "bank_name": "HDFC Bank",
                 "account_number": "XXXXX5678",
@@ -301,7 +302,7 @@ class ReportService:
         return {
             "report_name": "Cost to Company Report",
             "period": f"{calendar.month_name[request.month]} {request.year}",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "summary": {
                 "employee_count": 50,
                 "total_gross_salary": Decimal("4500000"),
@@ -344,7 +345,7 @@ class ReportService:
             "report_name": "PF ECR - Electronic Challan cum Return",
             "period": f"{calendar.month_name[request.month]} {request.year}",
             "due_date": (date(request.year, request.month, 1) + timedelta(days=44)).isoformat(),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "establishment_details": {
                 "name": "Company Name",
                 "code": "KABLR0012345000",
@@ -395,7 +396,7 @@ class ReportService:
             "report_name": "ESI Monthly Contribution Report",
             "period": f"{calendar.month_name[request.month]} {request.year}",
             "due_date": (date(request.year, request.month, 1) + timedelta(days=44)).isoformat(),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "establishment_details": {
                 "code": "12345678901234567",
                 "name": "Company Name",
@@ -439,7 +440,7 @@ class ReportService:
         return {
             "report_name": "Professional Tax Report (Karnataka)",
             "period": f"{calendar.month_name[request.month]} {request.year}",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "summary": {
                 "total_employees": 50,
                 "exempt_employees": 5,
@@ -482,7 +483,7 @@ class ReportService:
             "report_name": "Form 16 - TDS Certificate",
             "financial_year": financial_year,
             "assessment_year": f"{end_year}-{end_year + 1 - 2000}",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "employer": {
                 "name": "Company Name",
                 "tan": "BLRX12345X",
@@ -561,7 +562,7 @@ class ReportService:
             "report_name": "Form 24Q - Quarterly TDS Return",
             "financial_year": request.financial_year or f"{request.year}-{request.year + 1 - 2000}",
             "quarter": f"Q{quarter} ({quarter_months[quarter][0]} - {quarter_months[quarter][2]})",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "deductor_details": {
                 "name": "Company Name",
                 "tan": "BLRX12345X",
@@ -628,7 +629,7 @@ class ReportService:
             "report_name": "GSTR-1 - Outward Supplies",
             "period": f"{calendar.month_name[request.month]} {request.year}",
             "due_date": (date(request.year, request.month, 1) + timedelta(days=41)).isoformat(),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "gstin": "29AAACC1234A1Z5",
             "summary": {
                 "b2b_invoices": 25,
@@ -663,7 +664,7 @@ class ReportService:
             "report_name": "GSTR-3B - Summary Return",
             "period": f"{calendar.month_name[request.month]} {request.year}",
             "due_date": (date(request.year, request.month, 1) + timedelta(days=50)).isoformat(),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "gstin": "29AAACC1234A1Z5",
             "tables": {
                 "3.1_outward_supplies": {
@@ -731,7 +732,7 @@ class ReportService:
         return {
             "report_name": "Trial Balance",
             "as_of_date": as_of.isoformat(),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "company": {
                 "name": "Company Name",
                 "financial_year": request.financial_year or "2024-25"
@@ -781,7 +782,7 @@ class ReportService:
         return {
             "report_name": "Profit & Loss Statement",
             "period": f"{from_date.strftime('%d-%b-%Y')} to {to_date.strftime('%d-%b-%Y')}",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "company": {
                 "name": "Company Name",
                 "financial_year": request.financial_year or "2024-25"
@@ -846,7 +847,7 @@ class ReportService:
         return {
             "report_name": "Balance Sheet",
             "as_of_date": as_of.isoformat(),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "company": {
                 "name": "Company Name",
                 "financial_year": request.financial_year or "2024-25"
@@ -923,7 +924,7 @@ class ReportService:
         return {
             "report_name": "Cash Flow Statement",
             "period": f"{from_date.strftime('%d-%b-%Y')} to {to_date.strftime('%d-%b-%Y')}",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "company": {
                 "name": "Company Name"
             },
@@ -979,7 +980,7 @@ class ReportService:
         return {
             "report_name": "Accounts Receivable Aging",
             "as_of_date": as_of.isoformat(),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "summary": {
                 "total_customers": 25,
                 "current": Decimal("1500000"),
@@ -1020,7 +1021,7 @@ class ReportService:
         return {
             "report_name": "Accounts Payable Aging",
             "as_of_date": as_of.isoformat(),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "summary": {
                 "total_vendors": 15,
                 "current": Decimal("800000"),
@@ -1067,7 +1068,7 @@ class ReportService:
         return {
             "report_name": "Headcount Report",
             "as_of_date": as_of.isoformat(),
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "summary": {
                 "total_employees": 150,
                 "active": 145,
@@ -1142,7 +1143,7 @@ class ReportService:
         return {
             "report_name": "Attrition Report",
             "period": f"{from_date.strftime('%d-%b-%Y')} to {to_date.strftime('%d-%b-%Y')}",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "summary": {
                 "opening_headcount": 140,
                 "joined": 25,

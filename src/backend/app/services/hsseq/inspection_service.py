@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hsseq import HSEInspection
 from app.schemas.hsseq import HSEInspectionCreate, HSEInspectionUpdate, HSEInspectionSubmit, HSECategory, InspectionType
+from app.core.datetime_utils import utc_now
 
 
 class InspectionService:
@@ -43,7 +44,7 @@ class InspectionService:
             accompanied_by=obj_in.accompanied_by or [],
             status="draft",
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -148,7 +149,7 @@ class InspectionService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -189,7 +190,7 @@ class InspectionService:
         db_obj.immediate_actions_taken = submit_data.immediate_actions_taken
         db_obj.actual_date = date.today()
         db_obj.status = "submitted"
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(db_obj)

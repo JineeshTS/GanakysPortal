@@ -632,7 +632,7 @@ export default function RecruitmentPage() {
         <PageHeader
           title="Recruitment"
           description="Manage job openings and candidate pipeline"
-          icon={<Briefcase className="h-6 w-6" />}
+          icon={Briefcase}
         />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -657,7 +657,7 @@ export default function RecruitmentPage() {
       <PageHeader
         title="Recruitment"
         description="Manage job openings and candidate pipeline"
-        icon={<Briefcase className="h-6 w-6" />}
+        icon={Briefcase}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={fetchData}>

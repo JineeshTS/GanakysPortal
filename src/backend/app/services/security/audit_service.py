@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
+from app.core.datetime_utils import utc_now
 from app.models.security import (
     SecurityAuditLog, LoginHistory, SecurityAlert, SecurityIncident,
     SecuritySession, IPBlocklist, SecurityEventType, SecurityEventSeverity
@@ -189,7 +190,7 @@ class SecurityAuditService:
         company_id: UUID
     ) -> SecurityDashboardMetrics:
         """Get security dashboard metrics"""
-        now = datetime.utcnow()
+        now = utc_now()
         day_ago = now - timedelta(days=1)
         week_ago = now - timedelta(days=7)
 

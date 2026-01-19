@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.csr import CSRImpactMetric
 from app.schemas.csr import CSRImpactMetricCreate, CSRImpactMetricUpdate
+from app.core.datetime_utils import utc_now
 
 
 class ImpactService:
@@ -38,7 +39,7 @@ class ImpactService:
             sdg_goal=obj_in.sdg_goal,
             sdg_target=obj_in.sdg_target,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -124,7 +125,7 @@ class ImpactService:
             else:
                 db_obj.trend = "stable"
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

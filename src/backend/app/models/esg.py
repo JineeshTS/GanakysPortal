@@ -101,8 +101,8 @@ class ESGFramework(Base):
     organization = Column(String(100))
     website_url = Column(String(500))
     is_mandatory = Column(Boolean, default=False)
-    applicable_regions = Column(ARRAY(String), default=[])
-    applicable_industries = Column(ARRAY(String), default=[])
+    applicable_regions = Column(ARRAY(String), default=list)
+    applicable_industries = Column(ARRAY(String), default=list)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
@@ -127,7 +127,7 @@ class ESGMetricDefinition(Base):
     metric_type = Column(SQLEnum(ESGMetricType, name="esg_metric_type_enum", create_type=False), nullable=False)
     unit = Column(String(50))
     calculation_method = Column(Text)
-    data_sources = Column(ARRAY(String), default=[])
+    data_sources = Column(ARRAY(String), default=list)
     reporting_frequency = Column(SQLEnum(ESGFrequency, name="esg_frequency_enum", create_type=False))
     is_mandatory = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
@@ -148,7 +148,7 @@ class ESGCompanyConfig(Base):
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     company_id = Column(PGUUID(as_uuid=True), ForeignKey("companies.id"), nullable=False)
     fiscal_year_start_month = Column(Integer, default=4)  # April for India
-    reporting_frameworks = Column(ARRAY(String), default=[])  # GRI, SASB, etc.
+    reporting_frameworks = Column(ARRAY(String), default=list)  # GRI, SASB, etc.
     materiality_threshold = Column(Float, default=0.05)
     baseline_year = Column(Integer)
     target_year = Column(Integer)
@@ -202,7 +202,7 @@ class ESGCompanyMetric(Base):
     # Metadata
     data_source = Column(String(200))
     calculation_notes = Column(Text)
-    evidence_documents = Column(ARRAY(String), default=[])
+    evidence_documents = Column(ARRAY(String), default=list)
     verified = Column(Boolean, default=False)
     verified_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
     verified_at = Column(DateTime)
@@ -447,22 +447,22 @@ class ESGInitiative(Base):
     # Impact metrics
     expected_impact = Column(Text)
     actual_impact = Column(Text)
-    impact_metrics = Column(JSONB, default={})
+    impact_metrics = Column(JSONB, default=dict)
 
     # Targets
-    target_metrics = Column(JSONB, default={})  # e.g., {"co2_reduction_mt": 100}
-    achieved_metrics = Column(JSONB, default={})
+    target_metrics = Column(JSONB, default=dict)  # e.g., {"co2_reduction_mt": 100}
+    achieved_metrics = Column(JSONB, default=dict)
 
     # Team
     owner_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
-    team_members = Column(ARRAY(PGUUID(as_uuid=True)), default=[])
+    team_members = Column(ARRAY(PGUUID(as_uuid=True)), default=list)
 
     # SDG alignment
-    sdg_goals = Column(ARRAY(Integer), default=[])  # UN SDG numbers (1-17)
+    sdg_goals = Column(ARRAY(Integer), default=list)  # UN SDG numbers (1-17)
 
     # Progress
     progress_pct = Column(Float, default=0)
-    milestones = Column(JSONB, default=[])
+    milestones = Column(JSONB, default=list)
 
     # Notes
     notes = Column(Text)
@@ -510,7 +510,7 @@ class ESGRisk(Base):
     review_frequency = Column(String(50))
 
     # Linked initiatives
-    linked_initiatives = Column(ARRAY(PGUUID(as_uuid=True)), default=[])
+    linked_initiatives = Column(ARRAY(PGUUID(as_uuid=True)), default=list)
 
     is_active = Column(Boolean, default=True)
     notes = Column(Text)
@@ -584,8 +584,8 @@ class ESGReport(Base):
 
     # Content
     executive_summary = Column(Text)
-    report_content = Column(JSONB, default={})
-    appendices = Column(JSONB, default={})
+    report_content = Column(JSONB, default=dict)
+    appendices = Column(JSONB, default=dict)
 
     # File
     file_path = Column(String(500))
@@ -643,10 +643,10 @@ class ESGTarget(Base):
     on_track = Column(Boolean)
 
     # Interim targets
-    interim_targets = Column(JSONB, default=[])  # [{"year": 2025, "value": 50}]
+    interim_targets = Column(JSONB, default=list)  # [{"year": 2025, "value": 50}]
 
     # SDG alignment
-    sdg_goals = Column(ARRAY(Integer), default=[])
+    sdg_goals = Column(ARRAY(Integer), default=list)
 
     # SBTi validation
     sbti_validated = Column(Boolean, default=False)

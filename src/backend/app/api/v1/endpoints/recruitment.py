@@ -13,6 +13,7 @@ from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.datetime_utils import utc_now
 from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData
 from app.models.recruitment import JobOpening, Candidate, JobApplication, Interview
@@ -36,11 +37,31 @@ router = APIRouter()
 # Helper Functions
 # ============================================================================
 
-def generate_job_code(company_id: str) -> str:
-    """Generate unique job code like JOB-2026-001."""
+async def generate_job_code(db: AsyncSession, company_id: UUID) -> str:
+    """Generate unique sequential job code like JOB-2026-001."""
     year = date.today().year
-    random_part = ''.join(random.choices(string.digits, k=3))
-    return f"JOB-{year}-{random_part}"
+    prefix = f"JOB-{year}-"
+
+    # Query max job code for this company and year
+    from sqlalchemy import text
+    query = text("""
+        SELECT COALESCE(MAX(
+            CAST(SUBSTRING(job_code FROM :pattern) AS INTEGER)
+        ), 0)
+        FROM job_openings
+        WHERE company_id = :company_id
+        AND job_code LIKE :prefix_pattern
+    """)
+
+    result = await db.execute(query, {
+        "company_id": str(company_id),
+        "pattern": f"JOB-{year}-([0-9]+)$",
+        "prefix_pattern": f"{prefix}%"
+    })
+    max_seq = result.scalar() or 0
+    next_seq = max_seq + 1
+
+    return f"{prefix}{next_seq:03d}"
 
 
 async def get_next_employee_code(db: AsyncSession, company_id: UUID) -> str:
@@ -177,9 +198,10 @@ async def create_job_opening(
     current_user: TokenData = Depends(get_current_user)
 ):
     """Create a new job opening."""
+    job_code = await generate_job_code(db, UUID(current_user.company_id))
     job = JobOpening(
         company_id=UUID(current_user.company_id),
-        job_code=generate_job_code(current_user.company_id),
+        job_code=job_code,
         title=data.title,
         department_id=data.department_id,
         designation_id=data.designation_id,
@@ -1182,7 +1204,7 @@ async def update_application(
     if "stage" in update_data:
         if update_data["stage"]:
             update_data["stage"] = update_data["stage"].value
-        update_data["stage_updated_at"] = datetime.utcnow()
+        update_data["stage_updated_at"] = utc_now()
 
     for key, value in update_data.items():
         setattr(application, key, value)
@@ -1320,7 +1342,7 @@ async def update_interview(
     if "status" in update_data and update_data["status"]:
         update_data["status"] = update_data["status"].value
         if update_data["status"] == "completed":
-            update_data["completed_at"] = datetime.utcnow()
+            update_data["completed_at"] = utc_now()
     if "recommendation" in update_data and update_data["recommendation"]:
         update_data["recommendation"] = update_data["recommendation"].value
 
@@ -1428,7 +1450,7 @@ async def hire_candidate(
 
     # Update application
     application.stage = "hired"
-    application.stage_updated_at = datetime.utcnow()
+    application.stage_updated_at = utc_now()
 
     # Update job positions filled
     if job:
@@ -1454,8 +1476,8 @@ async def hire_candidate(
             template_result = await db.execute(
                 select(OnboardingTemplate).where(
                     OnboardingTemplate.company_id == company_id,
-                    OnboardingTemplate.is_default == True,
-                    OnboardingTemplate.is_active == True
+                    OnboardingTemplate.is_default.is_(True),
+                    OnboardingTemplate.is_active.is_(True)
                 )
             )
             template = template_result.scalar_one_or_none()

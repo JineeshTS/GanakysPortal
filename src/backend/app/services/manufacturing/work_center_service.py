@@ -6,6 +6,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.manufacturing import WorkCenter, WorkCenterStatus, WorkCenterType
 from app.schemas.manufacturing import WorkCenterCreate, WorkCenterUpdate
+from app.core.datetime_utils import utc_now
 
 
 class WorkCenterService:
@@ -99,7 +100,7 @@ class WorkCenterService:
         work_center = await self.get_by_id(db, work_center_id, company_id)
         if not work_center:
             return False
-        work_center.deleted_at = datetime.utcnow()
+        work_center.deleted_at = utc_now()
         await db.commit()
         return True
 

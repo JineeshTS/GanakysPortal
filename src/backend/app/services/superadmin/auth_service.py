@@ -8,11 +8,12 @@ import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 from uuid import UUID
-import jwt
+from jose import jwt
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.datetime_utils import utc_now
 from app.models.superadmin import (
     SuperAdmin, SuperAdminSession, SuperAdminAuditLog,
     PlatformSettings
@@ -43,25 +44,25 @@ class SuperAdminAuthService:
     @classmethod
     def create_access_token(cls, admin_id: UUID, role: str) -> str:
         """Create a JWT access token"""
-        expire = datetime.utcnow() + timedelta(minutes=cls.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = utc_now() + timedelta(minutes=cls.ACCESS_TOKEN_EXPIRE_MINUTES)
         payload = {
             "sub": str(admin_id),
             "role": role,
             "type": "access",
             "exp": expire,
-            "iat": datetime.utcnow()
+            "iat": utc_now()
         }
         return jwt.encode(payload, cls.JWT_SECRET, algorithm=cls.JWT_ALGORITHM)
 
     @classmethod
     def create_refresh_token(cls, admin_id: UUID) -> str:
         """Create a JWT refresh token"""
-        expire = datetime.utcnow() + timedelta(days=cls.REFRESH_TOKEN_EXPIRE_DAYS)
+        expire = utc_now() + timedelta(days=cls.REFRESH_TOKEN_EXPIRE_DAYS)
         payload = {
             "sub": str(admin_id),
             "type": "refresh",
             "exp": expire,
-            "iat": datetime.utcnow(),
+            "iat": utc_now(),
             "jti": secrets.token_urlsafe(16)  # Unique token ID
         }
         return jwt.encode(payload, cls.JWT_SECRET, algorithm=cls.JWT_ALGORITHM)
@@ -155,7 +156,7 @@ class SuperAdminAuthService:
                 return None, "Invalid MFA code", "INVALID_MFA"
 
         # Update last login
-        admin.last_login = datetime.utcnow()
+        admin.last_login = utc_now()
         admin.last_login_ip = ip_address
 
         # Log successful login
@@ -204,7 +205,7 @@ class SuperAdminAuthService:
             refresh_token_hash=refresh_hash,
             device_info=device_info,
             ip_address=ip_address,
-            expires_at=datetime.utcnow() + timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS)
+            expires_at=utc_now() + timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS)
         )
         db.add(session)
         await db.commit()
@@ -230,7 +231,7 @@ class SuperAdminAuthService:
         result = await db.execute(
             select(SuperAdminSession).where(
                 SuperAdminSession.admin_id == admin_id,
-                SuperAdminSession.expires_at > datetime.utcnow()
+                SuperAdminSession.expires_at > utc_now()
             )
         )
         sessions = result.scalars().all()
@@ -382,7 +383,7 @@ class SuperAdminAuthService:
 
         # Hash new password
         admin.password_hash = self.hash_password(new_password)
-        admin.updated_at = datetime.utcnow()
+        admin.updated_at = utc_now()
 
         # Invalidate all sessions (force re-login)
         await db.execute(

@@ -6,6 +6,7 @@ Detect anomalies in business data and provide intelligent suggestions
 from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime, date, timedelta
+from app.core.datetime_utils import utc_now
 from enum import Enum
 import statistics
 
@@ -140,7 +141,7 @@ class AnomalyDetectionService:
                     expected_value=avg_gross,
                     actual_value=current_gross,
                     deviation_percentage=variance * 100,
-                    detected_at=datetime.utcnow(),
+                    detected_at=utc_now(),
                     context={
                         "historical_avg": avg_gross,
                         "historical_std": std_gross,
@@ -176,7 +177,7 @@ class AnomalyDetectionService:
                             expected_value=avg_emp_gross,
                             actual_value=current_emp_gross,
                             deviation_percentage=emp_variance * 100,
-                            detected_at=datetime.utcnow(),
+                            detected_at=utc_now(),
                             context={"employee_id": employee_id},
                             suggested_action="Verify salary components and deductions"
                         ))
@@ -216,7 +217,7 @@ class AnomalyDetectionService:
                         expected_value=budget,
                         actual_value=total,
                         deviation_percentage=(utilization - 1) * 100,
-                        detected_at=datetime.utcnow(),
+                        detected_at=utc_now(),
                         context={"category": category, "budget": budget},
                         suggested_action=f"Review {category} expenses and implement cost controls"
                     ))
@@ -236,7 +237,7 @@ class AnomalyDetectionService:
                     expected_value=1,
                     actual_value=len(seen_expenses[key]) + 1,
                     deviation_percentage=100,
-                    detected_at=datetime.utcnow(),
+                    detected_at=utc_now(),
                     context={"similar_expenses": seen_expenses[key]},
                     suggested_action="Verify if this is a legitimate expense or duplicate entry"
                 ))
@@ -272,7 +273,7 @@ class AnomalyDetectionService:
                     expected_value=2,
                     actual_value=absences,
                     deviation_percentage=((absences - 2) / 2) * 100,
-                    detected_at=datetime.utcnow(),
+                    detected_at=utc_now(),
                     context={"employee_id": emp_id, "department": department},
                     suggested_action="Review attendance and discuss with employee if needed"
                 ))
@@ -285,7 +286,7 @@ class AnomalyDetectionService:
             if anomaly.id == anomaly_id:
                 anomaly.is_acknowledged = True
                 anomaly.context["acknowledged_by"] = user_id
-                anomaly.context["acknowledged_at"] = datetime.utcnow().isoformat()
+                anomaly.context["acknowledged_at"] = utc_now().isoformat()
                 anomaly.context["notes"] = notes
                 return True
         return False

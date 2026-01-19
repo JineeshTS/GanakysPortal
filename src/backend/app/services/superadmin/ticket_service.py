@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
+from app.core.datetime_utils import utc_now
 from app.models.superadmin import (
     SupportTicket, TicketResponse, SuperAdmin, SuperAdminAuditLog,
     TicketStatus, TicketPriority
@@ -45,7 +46,7 @@ class TicketService:
     ) -> SupportTicket:
         """Create a new support ticket"""
         # Generate ticket number
-        year = datetime.utcnow().year
+        year = utc_now().year
         count_result = await db.execute(
             select(func.count(SupportTicket.id))
             .where(SupportTicket.created_at >= datetime(year, 1, 1))
@@ -55,7 +56,7 @@ class TicketService:
 
         # Calculate resolution due date based on SLA
         sla_hours = self.SLA_HOURS.get(priority, 24)
-        resolution_due = datetime.utcnow() + timedelta(hours=sla_hours)
+        resolution_due = utc_now() + timedelta(hours=sla_hours)
 
         ticket = SupportTicket(
             ticket_number=ticket_number,
@@ -100,7 +101,7 @@ class TicketService:
         if ticket.status == TicketStatus.open:
             ticket.status = TicketStatus.in_progress
 
-        ticket.updated_at = datetime.utcnow()
+        ticket.updated_at = utc_now()
 
         # Audit log
         audit = SuperAdminAuditLog(
@@ -138,14 +139,14 @@ class TicketService:
 
         ticket.escalated_to = escalated_to
         ticket.escalation_reason = reason
-        ticket.updated_at = datetime.utcnow()
+        ticket.updated_at = utc_now()
 
         # Update priority if not already critical
         if ticket.priority not in [TicketPriority.critical, TicketPriority.urgent]:
             ticket.priority = TicketPriority.high
             # Update SLA
             sla_hours = self.SLA_HOURS[TicketPriority.high]
-            ticket.resolution_due_at = datetime.utcnow() + timedelta(hours=sla_hours)
+            ticket.resolution_due_at = utc_now() + timedelta(hours=sla_hours)
 
         audit = SuperAdminAuditLog(
             admin_id=escalated_by,
@@ -185,7 +186,7 @@ class TicketService:
 
         # Update first response time if this is first admin response
         if admin_id and not ticket.first_response_at and not is_internal:
-            ticket.first_response_at = datetime.utcnow()
+            ticket.first_response_at = utc_now()
 
         # Update status based on who responded
         if admin_id and not is_internal:
@@ -195,7 +196,7 @@ class TicketService:
             if ticket.status == TicketStatus.waiting_customer:
                 ticket.status = TicketStatus.in_progress
 
-        ticket.updated_at = datetime.utcnow()
+        ticket.updated_at = utc_now()
 
         response = TicketResponse(
             ticket_id=ticket_id,
@@ -228,8 +229,8 @@ class TicketService:
 
         ticket.status = TicketStatus.resolved
         ticket.resolution_summary = resolution_summary
-        ticket.resolved_at = datetime.utcnow()
-        ticket.updated_at = datetime.utcnow()
+        ticket.resolved_at = utc_now()
+        ticket.updated_at = utc_now()
 
         audit = SuperAdminAuditLog(
             admin_id=resolved_by,
@@ -265,8 +266,8 @@ class TicketService:
             raise ValueError("Only resolved tickets can be closed")
 
         ticket.status = TicketStatus.closed
-        ticket.closed_at = datetime.utcnow()
-        ticket.updated_at = datetime.utcnow()
+        ticket.closed_at = utc_now()
+        ticket.updated_at = utc_now()
 
         audit = SuperAdminAuditLog(
             admin_id=closed_by,
@@ -303,11 +304,11 @@ class TicketService:
         ticket.resolved_at = None
         ticket.closed_at = None
         ticket.resolution_summary = None
-        ticket.updated_at = datetime.utcnow()
+        ticket.updated_at = utc_now()
 
         # Reset SLA
         sla_hours = self.SLA_HOURS.get(ticket.priority, 24)
-        ticket.resolution_due_at = datetime.utcnow() + timedelta(hours=sla_hours)
+        ticket.resolution_due_at = utc_now() + timedelta(hours=sla_hours)
 
         audit = SuperAdminAuditLog(
             admin_id=reopened_by,
@@ -345,7 +346,7 @@ class TicketService:
 
         ticket.satisfaction_rating = rating
         ticket.satisfaction_feedback = feedback
-        ticket.updated_at = datetime.utcnow()
+        ticket.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(ticket)
@@ -365,7 +366,7 @@ class TicketService:
                     TicketStatus.in_progress,
                     TicketStatus.waiting_customer
                 ]),
-                SupportTicket.resolution_due_at < datetime.utcnow()
+                SupportTicket.resolution_due_at < utc_now()
             )
             .order_by(SupportTicket.resolution_due_at)
         )

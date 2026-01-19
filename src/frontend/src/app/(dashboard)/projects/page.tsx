@@ -711,34 +711,32 @@ export default function ProjectsPage() {
         <StatCard
           title="Total Projects"
           value={dashboardData?.total_projects || projectStats.totalProjects}
-          icon={<FolderKanban className="h-4 w-4" />}
+          icon={FolderKanban}
           description={`${dashboardData?.active_projects || projectStats.activeProjects} active`}
         />
         <StatCard
           title="Total Budget"
           value={formatCurrency(dashboardData?.total_budget || projectStats.totalBudget)}
-          icon={<IndianRupee className="h-4 w-4" />}
+          icon={IndianRupee}
           description={`${formatCurrency(dashboardData?.total_spent || projectStats.totalSpent)} spent`}
         />
         <StatCard
           title="Avg Completion"
           value={`${dashboardData?.avg_completion || projectStats.avgCompletion}%`}
-          icon={<TrendingUp className="h-4 w-4" />}
+          icon={TrendingUp}
           description="Across all projects"
         />
         <StatCard
           title="Team Members"
           value={dashboardData?.team_members || projectStats.teamMembers}
-          icon={<Users className="h-4 w-4" />}
+          icon={Users}
           description="Assigned to projects"
         />
         <StatCard
           title="Overdue"
           value={dashboardData?.overdue_projects || projectStats.overdueProjects}
-          icon={<AlertCircle className="h-4 w-4" />}
+          icon={AlertCircle}
           description="Need attention"
-          trend={(dashboardData?.overdue_projects || projectStats.overdueProjects) > 0 ? 'up' : undefined}
-          trendValue={(dashboardData?.overdue_projects || projectStats.overdueProjects) > 0 ? 'Action required' : undefined}
         />
       </div>
 

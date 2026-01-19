@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useApi, useAuthStore, useToast } from '@/hooks'
+import { useApi, useAuth, useToast } from '@/hooks'
 import {
   FileText,
   Upload,
@@ -157,7 +157,7 @@ export default function MyDocumentsPage() {
   })
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { user } = useAuthStore()
+  const { user, fetchWithAuth } = useAuth()
   const { showToast } = useToast()
 
   // API hooks
@@ -225,12 +225,9 @@ export default function MyDocumentsPage() {
     }
 
     try {
-      const response = await fetch(`/api/v1/documents?${params.toString()}`, {
+      const response = await fetchWithAuth(`/api/v1/documents?${params.toString()}`, {
         method: 'POST',
         body: formData,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
       })
 
       if (response.ok) {
@@ -250,11 +247,7 @@ export default function MyDocumentsPage() {
 
   const handleDownload = async (docId: string, fileName: string) => {
     try {
-      const response = await fetch(`/api/v1/documents/${docId}/download`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+      const response = await fetchWithAuth(`/api/v1/documents/${docId}/download`)
 
       if (response.ok) {
         const blob = await response.blob()
@@ -282,7 +275,7 @@ export default function MyDocumentsPage() {
         <PageHeader
           title="My Documents"
           description="Manage your personal and company documents"
-          icon={<FileText className="h-6 w-6" />}
+          icon={FileText}
         />
         <Card>
           <CardContent className="pt-6">
@@ -307,7 +300,7 @@ export default function MyDocumentsPage() {
       <PageHeader
         title="My Documents"
         description="Manage your personal and company documents"
-        icon={<FileText className="h-6 w-6" />}
+        icon={FileText}
         actions={
           <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
             <DialogTrigger asChild>

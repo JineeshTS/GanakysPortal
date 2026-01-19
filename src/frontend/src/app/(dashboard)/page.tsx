@@ -311,7 +311,7 @@ export default function DashboardPage() {
             <CardDescription>Intelligent analysis of your business data</CardDescription>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/ai">
+            <Link href="/ai">
               Open AI Assistant
               <ArrowRight className="h-4 w-4 ml-2" />
             </Link>

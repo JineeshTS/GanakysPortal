@@ -18,6 +18,7 @@ from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.datetime_utils import utc_now
 from app.models.leave import (
     LeaveType, LeavePolicy, LeaveBalance, LeaveRequest, Holiday,
     CompensatoryOff, LeaveEncashment, LeaveTransaction,
@@ -531,7 +532,7 @@ class LeaveService:
             contact_address=request_data.contact_address,
             status=status,
             created_by=created_by,
-            submitted_at=datetime.utcnow() if request_data.submit else None,
+            submitted_at=utc_now() if request_data.submit else None,
             is_lop=not (leave_type.is_paid if leave_type else True)
         )
 
@@ -582,9 +583,9 @@ class LeaveService:
         # Update request
         request.status = LeaveStatus.APPROVED
         request.approver_id = approver_id
-        request.approved_at = datetime.utcnow()
+        request.approved_at = utc_now()
         request.approver_remarks = remarks
-        request.updated_at = datetime.utcnow()
+        request.updated_at = utc_now()
 
         # Update balance: move from pending to used
         leave_type = await cls._get_leave_type(db, request.leave_type_id)
@@ -630,9 +631,9 @@ class LeaveService:
 
         # Update request
         request.status = LeaveStatus.REJECTED
-        request.rejected_at = datetime.utcnow()
+        request.rejected_at = utc_now()
         request.rejection_reason = reason
-        request.updated_at = datetime.utcnow()
+        request.updated_at = utc_now()
 
         # Restore pending balance
         leave_type = await cls._get_leave_type(db, request.leave_type_id)
@@ -676,10 +677,10 @@ class LeaveService:
 
         # Update request
         request.status = LeaveStatus.CANCELLED
-        request.cancelled_at = datetime.utcnow()
+        request.cancelled_at = utc_now()
         request.cancellation_reason = reason
         request.cancelled_by = cancelled_by
-        request.updated_at = datetime.utcnow()
+        request.updated_at = utc_now()
 
         # Restore balance
         leave_type = await cls._get_leave_type(db, request.leave_type_id)
@@ -728,10 +729,10 @@ class LeaveService:
 
         # Update request
         request.status = LeaveStatus.REVOKED
-        request.revoked_at = datetime.utcnow()
+        request.revoked_at = utc_now()
         request.revocation_reason = reason
         request.revoked_by = revoked_by
-        request.updated_at = datetime.utcnow()
+        request.updated_at = utc_now()
 
         # Credit back the balance
         leave_type = await cls._get_leave_type(db, request.leave_type_id)
@@ -907,7 +908,7 @@ class LeaveService:
             "financial_year": financial_year,
             "policies_processed": len(policies),
             "results": results,
-            "credited_at": datetime.utcnow().isoformat()
+            "credited_at": utc_now().isoformat()
         }
 
     @classmethod

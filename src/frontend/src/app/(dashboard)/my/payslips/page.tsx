@@ -121,7 +121,7 @@ export default function MyPayslipsPage() {
         <PageHeader
           title="My Payslips"
           description="View and download your salary statements"
-          icon={<Receipt className="h-6 w-6" />}
+          icon={Receipt}
         />
         <Card>
           <CardContent className="pt-6">
@@ -142,7 +142,7 @@ export default function MyPayslipsPage() {
         <PageHeader
           title="My Payslips"
           description="View and download your salary statements"
-          icon={<Receipt className="h-6 w-6" />}
+          icon={Receipt}
         />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map(i => (
@@ -162,7 +162,7 @@ export default function MyPayslipsPage() {
       <PageHeader
         title="My Payslips"
         description="View and download your salary statements"
-        icon={<Receipt className="h-6 w-6" />}
+        icon={Receipt}
         actions={
           <Select value={selectedYear} onValueChange={setSelectedYear}>
             <SelectTrigger className="w-40">

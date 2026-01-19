@@ -9,11 +9,13 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
+from app.core.datetime_utils import utc_now
 from app.models.digital_signature import SignatureProvider
 from app.schemas.digital_signature import (
     SignatureProviderCreate, SignatureProviderUpdate,
     SignatureProviderResponse, SignatureProviderListResponse
 )
+from app.core.encryption import encryption_service
 
 
 class SignatureProviderService:
@@ -26,14 +28,23 @@ class SignatureProviderService:
         provider_in: SignatureProviderCreate
     ) -> SignatureProviderResponse:
         """Create a new signature provider"""
+        # Encrypt API credentials before storing
+        encrypted_api_key = None
+        encrypted_api_secret = None
+
+        if provider_in.api_key:
+            encrypted_api_key = encryption_service.encrypt(provider_in.api_key)
+        if provider_in.api_secret:
+            encrypted_api_secret = encryption_service.encrypt(provider_in.api_secret)
+
         provider = SignatureProvider(
             company_id=company_id,
             name=provider_in.name,
             provider_type=provider_in.provider_type,
             description=provider_in.description,
             api_endpoint=provider_in.api_endpoint,
-            api_key_encrypted=provider_in.api_key,  # TODO: encrypt
-            api_secret_encrypted=provider_in.api_secret,  # TODO: encrypt
+            api_key_encrypted=encrypted_api_key,
+            api_secret_encrypted=encrypted_api_secret,
             config=provider_in.config or {},
             supported_signature_types=provider_in.supported_signature_types or [],
             supported_document_types=provider_in.supported_document_types or [],
@@ -123,14 +134,16 @@ class SignatureProviderService:
 
         # Handle API key/secret encryption
         if "api_key" in update_data:
-            provider.api_key_encrypted = update_data.pop("api_key")
+            api_key = update_data.pop("api_key")
+            provider.api_key_encrypted = encryption_service.encrypt(api_key) if api_key else None
         if "api_secret" in update_data:
-            provider.api_secret_encrypted = update_data.pop("api_secret")
+            api_secret = update_data.pop("api_secret")
+            provider.api_secret_encrypted = encryption_service.encrypt(api_secret) if api_secret else None
 
         for field, value in update_data.items():
             setattr(provider, field, value)
 
-        provider.updated_at = datetime.utcnow()
+        provider.updated_at = utc_now()
         await db.commit()
         await db.refresh(provider)
         return SignatureProviderResponse.model_validate(provider)
@@ -172,3 +185,30 @@ class SignatureProviderService:
 
         result = await db.execute(query)
         return result.scalar_one_or_none()
+
+    def get_provider_credentials(
+        self,
+        provider: SignatureProvider
+    ) -> tuple[Optional[str], Optional[str]]:
+        """
+        Get decrypted API credentials for a provider.
+
+        Returns:
+            Tuple of (api_key, api_secret) - decrypted values
+        """
+        api_key = None
+        api_secret = None
+
+        if provider.api_key_encrypted:
+            try:
+                api_key = encryption_service.decrypt(provider.api_key_encrypted)
+            except Exception:
+                pass  # Return None if decryption fails
+
+        if provider.api_secret_encrypted:
+            try:
+                api_secret = encryption_service.decrypt(provider.api_secret_encrypted)
+            except Exception:
+                pass  # Return None if decryption fails
+
+        return api_key, api_secret

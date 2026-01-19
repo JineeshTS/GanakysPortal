@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useApi, useToast, useAuthStore } from '@/hooks'
+import { useApi, useToast, useAuth } from '@/hooks'
 import {
   Check,
   Building2,
@@ -131,7 +131,7 @@ const setupSteps: SetupStep[] = [
 ]
 
 export default function SetupWizardPage() {
-  const { accessToken } = useAuthStore()
+  const { fetchWithAuth, isAuthenticated } = useAuth()
   const { showToast } = useToast()
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
@@ -140,10 +140,9 @@ export default function SetupWizardPage() {
   const [isGoingLive, setIsGoingLive] = useState(false)
 
   const fetchStatus = useCallback(async () => {
+    if (!isAuthenticated) return
     try {
-      const response = await fetch(`${API_BASE}/company/setup-status`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` },
-      })
+      const response = await fetchWithAuth(`${API_BASE}/company/setup-status`)
       if (response.ok) {
         const data = await response.json()
         // Map the API response to our expected format
@@ -161,9 +160,12 @@ export default function SetupWizardPage() {
           overall_complete: data.overall_complete || false,
           completion_percentage: data.completion_percentage || 0,
         })
+      } else {
+        showToast({ title: 'Error', description: 'Failed to fetch setup status', variant: 'destructive' })
       }
     } catch (error) {
       console.error('Failed to fetch setup status:', error)
+      showToast({ title: 'Error', description: 'Failed to fetch setup status', variant: 'destructive' })
       // Set default status on error
       setStatus({
         company_configured: false,
@@ -182,7 +184,7 @@ export default function SetupWizardPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [API_BASE, accessToken])
+  }, [API_BASE, fetchWithAuth, isAuthenticated, showToast])
 
   useEffect(() => {
     fetchStatus()

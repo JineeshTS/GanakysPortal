@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any
 from uuid import UUID
 from decimal import Decimal
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 # ============================================================================
@@ -110,8 +110,7 @@ class WBSPhaseResponse(WBSPhaseBase):
     task_count: Optional[int] = None
     completed_count: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -150,8 +149,7 @@ class WBSModuleResponse(WBSModuleBase):
     task_count: Optional[int] = None
     completed_count: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -219,8 +217,7 @@ class WBSTaskResponse(WBSTaskBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class WBSTaskDetailResponse(WBSTaskResponse):
@@ -228,6 +225,17 @@ class WBSTaskDetailResponse(WBSTaskResponse):
     module: Optional[WBSModuleResponse] = None
     contexts: List["WBSAgentContextResponse"] = []
     recent_logs: List["WBSExecutionLogResponse"] = []
+
+
+class WBSTaskListResponse(BaseModel):
+    """Paginated list of WBS tasks."""
+    tasks: List[WBSTaskResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -261,8 +269,7 @@ class WBSAgentContextResponse(WBSAgentContextBase):
     handoff_data: Dict[str, Any]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -284,8 +291,7 @@ class WBSExecutionLogResponse(BaseModel):
     details: Dict[str, Any]
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -321,8 +327,7 @@ class WBSQualityGateResponse(WBSQualityGateBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -361,8 +366,7 @@ class WBSAgentConfigResponse(WBSAgentConfigBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -425,6 +429,84 @@ class WBSTaskFilter(BaseModel):
     priority: Optional[List[TaskPriority]] = None
     feature_code: Optional[str] = None
     search: Optional[str] = None
+
+
+# ============================================================================
+# Issue Schemas
+# ============================================================================
+
+class IssueSeverity(str, Enum):
+    critical = "critical"
+    high = "high"
+    medium = "medium"
+    low = "low"
+
+
+class IssueCategory(str, Enum):
+    bug = "bug"
+    missing_feature = "missing_feature"
+    security = "security"
+    performance = "performance"
+    ui = "ui"
+    api = "api"
+    database = "database"
+    configuration = "configuration"
+    documentation = "documentation"
+
+
+class IssueStatus(str, Enum):
+    open = "open"
+    in_progress = "in_progress"
+    resolved = "resolved"
+    wont_fix = "wont_fix"
+    duplicate = "duplicate"
+
+
+class WBSIssueBase(BaseModel):
+    title: str = Field(..., min_length=1, max_length=300)
+    description: Optional[str] = None
+    category: IssueCategory
+    severity: IssueSeverity = IssueSeverity.medium
+    module: Optional[str] = None
+    file_path: Optional[str] = None
+    line_number: Optional[int] = Field(None, ge=1, description="Line number in source file (must be positive)")
+    related_task_id: Optional[str] = None
+
+
+class WBSIssueCreate(WBSIssueBase):
+    pass
+
+
+class WBSIssueUpdate(BaseModel):
+    title: Optional[str] = Field(None, max_length=300)
+    description: Optional[str] = None
+    category: Optional[IssueCategory] = None
+    severity: Optional[IssueSeverity] = None
+    module: Optional[str] = None
+    file_path: Optional[str] = None
+    line_number: Optional[int] = Field(None, ge=1, description="Line number in source file (must be positive)")
+    status: Optional[IssueStatus] = None
+    resolution: Optional[str] = None
+    related_task_id: Optional[str] = None
+
+
+class WBSIssueResponse(WBSIssueBase):
+    id: UUID
+    issue_code: str
+    status: IssueStatus
+    resolution: Optional[str] = None
+    resolved_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WBSIssueSummary(BaseModel):
+    total: int
+    by_status: Dict[str, int]
+    by_severity: Dict[str, int]
+    by_category: Dict[str, int]
 
 
 # Forward reference updates

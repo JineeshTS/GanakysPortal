@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
+from app.core.datetime_utils import utc_now
 from app.models.doa import (
     DoAAuthorityMatrix, DoAAuthorityHolder, ApprovalAuditLog,
     AuthorityType
@@ -160,7 +161,7 @@ class AuthorityService:
             old_values[key] = getattr(matrix, key)
             setattr(matrix, key, value)
 
-        matrix.updated_at = datetime.utcnow()
+        matrix.updated_at = utc_now()
 
         # Audit log
         audit = ApprovalAuditLog(
@@ -198,7 +199,7 @@ class AuthorityService:
         matrix = result.scalar_one()
 
         matrix.is_active = False
-        matrix.updated_at = datetime.utcnow()
+        matrix.updated_at = utc_now()
 
         # Audit log
         audit = ApprovalAuditLog(
@@ -324,7 +325,7 @@ class AuthorityService:
 
         holder.is_active = False
         holder.revoked_by = revoked_by
-        holder.revoked_at = datetime.utcnow()
+        holder.revoked_at = utc_now()
 
         # Audit log
         audit = ApprovalAuditLog(

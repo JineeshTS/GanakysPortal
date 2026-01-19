@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.anomaly_detection import AnomalyModel, ModelStatus
 from app.schemas.anomaly_detection import (
     AnomalyModelCreate, AnomalyModelUpdate, TrainModelRequest
@@ -67,7 +68,7 @@ class ModelService:
     ) -> AnomalyModel:
         """Create a new model"""
         # Generate version
-        version = f"1.0.{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        version = f"1.0.{utc_now().strftime('%Y%m%d%H%M%S')}"
 
         model = AnomalyModel(
             company_id=company_id,
@@ -123,7 +124,7 @@ class ModelService:
         for field, value in update_data.items():
             setattr(model, field, value)
 
-        model.updated_at = datetime.utcnow()
+        model.updated_at = utc_now()
         await db.commit()
         await db.refresh(model)
         return model
@@ -162,7 +163,7 @@ class ModelService:
         model.training_end_date = training_end_date
         await db.commit()
 
-        started_at = datetime.utcnow()
+        started_at = utc_now()
 
         # In production, this would:
         # 1. Fetch training data from the data source
@@ -180,7 +181,7 @@ class ModelService:
 
         # Update model with training results
         model.status = ModelStatus.trained
-        model.trained_at = datetime.utcnow()
+        model.trained_at = utc_now()
         model.training_duration_seconds = training_duration
         model.training_samples = 1000  # Placeholder
 
@@ -191,7 +192,7 @@ class ModelService:
         model.f1_score = 0.90
         model.auc_roc = 0.94
 
-        model.updated_at = datetime.utcnow()
+        model.updated_at = utc_now()
         await db.commit()
         await db.refresh(model)
         return model
@@ -207,7 +208,7 @@ class ModelService:
         model_create = AnomalyModelCreate(
             name=request.name,
             model_type=request.model_type,
-            version=f"1.0.{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            version=f"1.0.{utc_now().strftime('%Y%m%d%H%M%S')}",
             feature_columns=request.feature_columns,
             target_column=request.target_column,
             data_source=request.data_source,
@@ -245,7 +246,7 @@ class ModelService:
 
         # Update inference stats
         model.inference_count += 1
-        model.last_inference_at = datetime.utcnow()
+        model.last_inference_at = utc_now()
         await db.commit()
 
         # Placeholder prediction
@@ -269,7 +270,7 @@ class ModelService:
             return None
 
         model.status = ModelStatus.deployed
-        model.updated_at = datetime.utcnow()
+        model.updated_at = utc_now()
         await db.commit()
         await db.refresh(model)
         return model
@@ -286,7 +287,7 @@ class ModelService:
             return None
 
         model.status = ModelStatus.retired
-        model.updated_at = datetime.utcnow()
+        model.updated_at = utc_now()
         await db.commit()
         await db.refresh(model)
         return model

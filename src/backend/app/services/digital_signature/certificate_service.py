@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
+from app.core.datetime_utils import utc_now
 from app.models.digital_signature import SignatureCertificate, CertificateStatus
 from app.schemas.digital_signature import (
     SignatureCertificateCreate, SignatureCertificateUpdate,
@@ -126,7 +127,7 @@ class SignatureCertificateService:
         certificate = result.scalar_one()
 
         # Check validity dates
-        now = datetime.utcnow()
+        now = utc_now()
         if certificate.valid_from > now:
             raise ValueError("Certificate not yet valid")
         if certificate.valid_to < now:
@@ -162,10 +163,10 @@ class SignatureCertificateService:
         certificate = result.scalar_one()
 
         certificate.status = CertificateStatus.revoked
-        certificate.revoked_at = datetime.utcnow()
+        certificate.revoked_at = utc_now()
         certificate.revoked_by = revoked_by
         certificate.revocation_reason = reason
-        certificate.updated_at = datetime.utcnow()
+        certificate.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(certificate)
@@ -179,7 +180,7 @@ class SignatureCertificateService:
         certificate_type: Optional[str] = None
     ) -> Optional[SignatureCertificate]:
         """Get user's active certificate"""
-        now = datetime.utcnow()
+        now = utc_now()
         query = select(SignatureCertificate).where(
             SignatureCertificate.company_id == company_id,
             SignatureCertificate.user_id == user_id,
@@ -211,7 +212,7 @@ class SignatureCertificateService:
         certificate = result.scalar_one_or_none()
         if certificate:
             certificate.total_signatures = (certificate.total_signatures or 0) + 1
-            certificate.last_used_at = datetime.utcnow()
+            certificate.last_used_at = utc_now()
             await db.commit()
 
     async def check_expired_certificates(
@@ -220,7 +221,7 @@ class SignatureCertificateService:
         company_id: Optional[UUID] = None
     ) -> int:
         """Check and update expired certificates"""
-        now = datetime.utcnow()
+        now = utc_now()
         query = select(SignatureCertificate).where(
             SignatureCertificate.status == CertificateStatus.active,
             SignatureCertificate.valid_to < now

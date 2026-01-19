@@ -14,8 +14,10 @@ from app.db.session import get_db
 from app.core.config import settings
 
 # Re-export get_db for convenience
-__all__ = ["get_db", "get_current_user", "get_current_company", "oauth2_scheme"]
+__all__ = ["get_db", "get_current_user", "get_current_company", "require_current_user", "oauth2_scheme"]
 
+# auto_error=False allows endpoints to optionally handle unauthenticated requests
+# Use require_current_user for endpoints that MUST have authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 
@@ -39,8 +41,8 @@ async def get_current_user(
     try:
         payload = jwt.decode(
             token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM]
         )
         user_id: str = payload.get("sub")
         if user_id is None:
@@ -74,8 +76,8 @@ async def get_current_company(
     try:
         payload = jwt.decode(
             token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM]
         )
         company_id: str = payload.get("company_id")
         if company_id:
@@ -83,3 +85,28 @@ async def get_current_company(
         return None
     except JWTError:
         return None
+
+
+async def require_current_user(
+    user = Depends(get_current_user)
+):
+    """
+    Require authenticated user - raises 401 if not authenticated.
+
+    Use this dependency for endpoints that MUST have authentication.
+    Unlike get_current_user which returns None for unauthenticated requests,
+    this will always raise HTTPException if the user is not authenticated.
+
+    Usage:
+        @router.get("/protected")
+        async def protected_endpoint(user = Depends(require_current_user)):
+            # user is guaranteed to be non-None here
+            ...
+    """
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user

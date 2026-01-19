@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.legal import LegalCounsel
 from app.schemas.legal import LegalCounselCreate, LegalCounselUpdate
+from app.core.datetime_utils import utc_now
 
 
 class CounselService:
@@ -50,7 +51,7 @@ class CounselService:
             bank_details=obj_in.bank_details,
             is_active=True,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -127,7 +128,7 @@ class CounselService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

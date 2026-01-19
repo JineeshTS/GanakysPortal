@@ -10,6 +10,7 @@ import math
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.anomaly_detection import (
     AnomalyDetection, AnomalyRule, AnomalyBaseline, AnomalyAlert,
     AnomalyCategory, AnomalySeverity, AnomalyStatus, DetectionMethod
@@ -125,14 +126,14 @@ class DetectionService:
         if "status" in update_data:
             new_status = update_data["status"]
             if new_status == AnomalyStatus.investigating and not detection.investigated_at:
-                detection.investigated_at = datetime.utcnow()
+                detection.investigated_at = utc_now()
             elif new_status == AnomalyStatus.resolved and not detection.resolved_at:
-                detection.resolved_at = datetime.utcnow()
+                detection.resolved_at = utc_now()
 
         for field, value in update_data.items():
             setattr(detection, field, value)
 
-        detection.updated_at = datetime.utcnow()
+        detection.updated_at = utc_now()
         await db.commit()
         await db.refresh(detection)
         return detection
@@ -150,7 +151,7 @@ class DetectionService:
             return None
 
         detection.assigned_to = assignee_id
-        detection.updated_at = datetime.utcnow()
+        detection.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(detection)
@@ -170,12 +171,12 @@ class DetectionService:
             return None
 
         detection.status = new_status
-        detection.updated_at = datetime.utcnow()
+        detection.updated_at = utc_now()
 
         if new_status == AnomalyStatus.investigating:
-            detection.investigated_at = datetime.utcnow()
+            detection.investigated_at = utc_now()
         elif new_status == AnomalyStatus.resolved:
-            detection.resolved_at = datetime.utcnow()
+            detection.resolved_at = utc_now()
 
         await db.commit()
         await db.refresh(detection)
@@ -197,8 +198,8 @@ class DetectionService:
             return None
 
         detection.status = AnomalyStatus.resolved
-        detection.resolved_at = datetime.utcnow()
-        detection.updated_at = datetime.utcnow()
+        detection.resolved_at = utc_now()
+        detection.updated_at = utc_now()
 
         if resolution_notes:
             detection.resolution_notes = resolution_notes
@@ -213,7 +214,7 @@ class DetectionService:
 
     async def _generate_detection_number(self, db: AsyncSession, company_id: UUID) -> str:
         """Generate unique detection number"""
-        year = datetime.utcnow().year
+        year = utc_now().year
         prefix = f"ANM-{year}"
 
         # Count existing detections this year
@@ -322,7 +323,7 @@ class DetectionService:
     ) -> RunDetectionResponse:
         """Run anomaly detection"""
         job_id = str(uuid4())
-        started_at = datetime.utcnow()
+        started_at = utc_now()
         rules_executed = 0
         detections_created = 0
         errors = []
@@ -362,7 +363,7 @@ class DetectionService:
             rules_executed=rules_executed,
             detections_created=detections_created,
             started_at=started_at,
-            completed_at=datetime.utcnow(),
+            completed_at=utc_now(),
             status="completed" if not errors else "completed_with_errors",
             errors=errors
         )

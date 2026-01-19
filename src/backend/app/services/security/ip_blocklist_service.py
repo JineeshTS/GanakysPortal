@@ -11,6 +11,7 @@ from sqlalchemy import select, or_
 
 from app.models.security import IPBlocklist
 from app.schemas.security import IPBlockCreate, IPBlockResponse, IPBlockListResponse
+from app.core.datetime_utils import utc_now
 
 
 class IPBlocklistService:
@@ -67,7 +68,7 @@ class IPBlocklistService:
         if existing:
             # Update existing block
             existing.block_count += 1
-            existing.last_blocked_at = datetime.utcnow()
+            existing.last_blocked_at = utc_now()
             await db.commit()
             await db.refresh(existing)
             return existing
@@ -115,7 +116,7 @@ class IPBlocklistService:
         company_id: Optional[UUID] = None
     ) -> bool:
         """Check if an IP is blocked"""
-        now = datetime.utcnow()
+        now = utc_now()
 
         query = select(IPBlocklist).where(
             IPBlocklist.ip_address == ip_address,
@@ -165,7 +166,7 @@ class IPBlocklistService:
 
         if existing:
             existing.block_count += 1
-            existing.last_blocked_at = datetime.utcnow()
+            existing.last_blocked_at = utc_now()
             await db.commit()
             return existing
 
@@ -200,5 +201,5 @@ class IPBlocklistService:
 
         if block:
             block.block_count += 1
-            block.last_blocked_at = datetime.utcnow()
+            block.last_blocked_at = utc_now()
             await db.commit()

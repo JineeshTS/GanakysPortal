@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/use-auth'
 import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -203,13 +205,13 @@ function TaskDetailDialog({
             </div>
 
             {/* Dependencies */}
-            {(task.blocking_deps.length > 0 || task.non_blocking_deps.length > 0) && (
+            {((task.blocking_deps?.length || 0) > 0 || (task.non_blocking_deps?.length || 0) > 0) && (
               <div className="grid grid-cols-2 gap-4">
-                {task.blocking_deps.length > 0 && (
+                {(task.blocking_deps?.length || 0) > 0 && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Blocking Dependencies</Label>
                     <div className="mt-2 space-y-1">
-                      {task.blocking_deps.map((dep) => (
+                      {task.blocking_deps?.map((dep) => (
                         <Badge key={dep} variant="outline" className="mr-1 text-red-600 border-red-200">
                           {dep}
                         </Badge>
@@ -217,11 +219,11 @@ function TaskDetailDialog({
                     </div>
                   </div>
                 )}
-                {task.non_blocking_deps.length > 0 && (
+                {(task.non_blocking_deps?.length || 0) > 0 && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Non-Blocking Dependencies</Label>
                     <div className="mt-2 space-y-1">
-                      {task.non_blocking_deps.map((dep) => (
+                      {task.non_blocking_deps?.map((dep) => (
                         <Badge key={dep} variant="outline" className="mr-1">
                           {dep}
                         </Badge>
@@ -233,23 +235,23 @@ function TaskDetailDialog({
             )}
 
             {/* Files */}
-            {(task.input_files.length > 0 || task.output_files.length > 0) && (
+            {((task.input_files?.length || 0) > 0 || (task.output_files?.length || 0) > 0) && (
               <div className="grid grid-cols-2 gap-4">
-                {task.input_files.length > 0 && (
+                {(task.input_files?.length || 0) > 0 && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Input Files</Label>
                     <div className="mt-2 space-y-1 text-xs font-mono">
-                      {task.input_files.map((file, i) => (
+                      {task.input_files?.map((file, i) => (
                         <p key={i} className="text-muted-foreground truncate">{file}</p>
                       ))}
                     </div>
                   </div>
                 )}
-                {task.output_files.length > 0 && (
+                {(task.output_files?.length || 0) > 0 && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Output Files</Label>
                     <div className="mt-2 space-y-1 text-xs font-mono">
-                      {task.output_files.map((file, i) => (
+                      {task.output_files?.map((file, i) => (
                         <p key={i} className="text-muted-foreground truncate">{file}</p>
                       ))}
                     </div>
@@ -259,11 +261,11 @@ function TaskDetailDialog({
             )}
 
             {/* Acceptance Criteria */}
-            {task.acceptance_criteria.length > 0 && (
+            {(task.acceptance_criteria?.length || 0) > 0 && (
               <div>
                 <Label className="text-xs text-muted-foreground">Acceptance Criteria</Label>
                 <ul className="mt-2 space-y-1 text-sm list-disc list-inside">
-                  {task.acceptance_criteria.map((criterion, i) => (
+                  {task.acceptance_criteria?.map((criterion, i) => (
                     <li key={i} className="text-muted-foreground">{criterion}</li>
                   ))}
                 </ul>
@@ -364,6 +366,8 @@ export default function WBSTasksPage() {
   const [page, setPage] = useState(1)
   const [pageSize] = useState(20)
   const [totalPages, setTotalPages] = useState(0)
+  const { toast } = useToast()
+  const { fetchWithAuth } = useAuth()
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
@@ -375,7 +379,7 @@ export default function WBSTasksPage() {
   const [selectedTask, setSelectedTask] = useState<WBSTask | null>(null)
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
   const fetchTasks = useCallback(async () => {
     setIsLoading(true)
@@ -388,19 +392,24 @@ export default function WBSTasksPage() {
       if (priorityFilter !== 'all') params.set('priority', priorityFilter)
       if (searchQuery) params.set('search', searchQuery)
 
-      const res = await fetch(`${apiUrl}/wbs/tasks?${params.toString()}`)
+      const res = await fetchWithAuth(`${apiUrl}/wbs/tasks?${params.toString()}`)
       if (res.ok) {
         const data: TaskListResponse = await res.json()
         setTasks(data.tasks)
         setTotal(data.total)
         setTotalPages(data.total_pages)
+      } else {
+        const error = await res.json().catch(() => ({}))
+        toast.error('Load Failed', error.detail || 'Failed to load tasks')
       }
     } catch (err) {
       console.error('Failed to fetch tasks:', err)
+      const message = err instanceof Error ? err.message : 'Failed to load tasks'
+      toast.error('Load Failed', message)
     } finally {
       setIsLoading(false)
     }
-  }, [apiUrl, page, pageSize, statusFilter, agentFilter, priorityFilter, searchQuery])
+  }, [apiUrl, page, pageSize, statusFilter, agentFilter, priorityFilter, searchQuery, toast, fetchWithAuth])
 
   useEffect(() => {
     fetchTasks()
@@ -408,32 +417,56 @@ export default function WBSTasksPage() {
 
   const handleStartTask = async (taskId: string) => {
     try {
-      await fetch(`${apiUrl}/wbs/tasks/${taskId}/start`, { method: 'POST' })
-      fetchTasks()
+      const res = await fetchWithAuth(`${apiUrl}/wbs/tasks/${taskId}/start`, { method: 'POST' })
+      if (res.ok) {
+        toast.success('Task Started', 'Task has been marked as in progress')
+        fetchTasks()
+      } else {
+        const error = await res.json().catch(() => ({}))
+        toast.error('Start Failed', error.detail || 'Failed to start task')
+      }
     } catch (err) {
       console.error('Failed to start task:', err)
+      const message = err instanceof Error ? err.message : 'Failed to start task'
+      toast.error('Start Failed', message)
     }
   }
 
   const handleCompleteTask = async (taskId: string) => {
     try {
-      await fetch(`${apiUrl}/wbs/tasks/${taskId}/complete`, { method: 'POST' })
-      fetchTasks()
+      const res = await fetchWithAuth(`${apiUrl}/wbs/tasks/${taskId}/complete`, { method: 'POST' })
+      if (res.ok) {
+        toast.success('Task Completed', 'Task has been marked as complete')
+        fetchTasks()
+      } else {
+        const error = await res.json().catch(() => ({}))
+        toast.error('Complete Failed', error.detail || 'Failed to complete task')
+      }
     } catch (err) {
       console.error('Failed to complete task:', err)
+      const message = err instanceof Error ? err.message : 'Failed to complete task'
+      toast.error('Complete Failed', message)
     }
   }
 
   const handleFailTask = async (taskId: string, error: string) => {
     try {
-      await fetch(`${apiUrl}/wbs/tasks/${taskId}/fail`, {
+      const res = await fetchWithAuth(`${apiUrl}/wbs/tasks/${taskId}/fail`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ error_message: error }),
       })
-      fetchTasks()
+      if (res.ok) {
+        toast.warning('Task Failed', 'Task has been marked as failed')
+        fetchTasks()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast.error('Update Failed', err.detail || 'Failed to update task status')
+      }
     } catch (err) {
       console.error('Failed to mark task as failed:', err)
+      const message = err instanceof Error ? err.message : 'Failed to mark task as failed'
+      toast.error('Update Failed', message)
     }
   }
 

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.currency import CurrencyRevaluation, CurrencyRevaluationItem, ExchangeRateType
 from app.schemas.currency import CurrencyRevaluationCreate, CurrencyRevaluationUpdate
+from app.core.datetime_utils import utc_now
 
 
 class RevaluationService:
@@ -19,7 +20,7 @@ class RevaluationService:
     @staticmethod
     def generate_revaluation_number() -> str:
         """Generate revaluation number."""
-        timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        timestamp = utc_now().strftime('%Y%m%d%H%M%S')
         return f"REVAL-{timestamp}"
 
     @staticmethod
@@ -119,7 +120,7 @@ class RevaluationService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(revaluation, field, value)
-        revaluation.updated_at = datetime.utcnow()
+        revaluation.updated_at = utc_now()
         await db.commit()
         await db.refresh(revaluation)
         return revaluation
@@ -155,7 +156,7 @@ class RevaluationService:
 
         # Update total
         revaluation.total_gain_loss += gain_loss
-        revaluation.updated_at = datetime.utcnow()
+        revaluation.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(item)
@@ -187,9 +188,9 @@ class RevaluationService:
         # 3. Link journal entry to revaluation
 
         revaluation.status = "posted"
-        revaluation.posted_at = datetime.utcnow()
+        revaluation.posted_at = utc_now()
         revaluation.posted_by = user_id
-        revaluation.updated_at = datetime.utcnow()
+        revaluation.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(revaluation)
@@ -210,7 +211,7 @@ class RevaluationService:
         # 2. Update account balances
 
         revaluation.status = "reversed"
-        revaluation.updated_at = datetime.utcnow()
+        revaluation.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(revaluation)

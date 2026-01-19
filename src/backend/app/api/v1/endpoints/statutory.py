@@ -5,7 +5,7 @@ PF, ESI, TDS, Professional Tax compliance for India
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Optional, List
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +16,8 @@ from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData
 from app.models.employee import Employee
 from app.models.payroll import PayrollRun, Payslip
+from app.models.statutory import StatutoryFiling, StatutoryChallan, StatutoryReturnType, FilingStatus
+from app.core.datetime_utils import utc_now
 
 
 router = APIRouter()
@@ -171,8 +173,8 @@ async def get_pf_summary(
     query = select(Employee).where(
         and_(
             Employee.company_id == company_id,
-            Employee.is_active == True,
-            Employee.pf_applicable == True
+            Employee.is_active.is_(True),
+            Employee.pf_applicable.is_(True)
         )
     )
     result = await db.execute(query)
@@ -295,12 +297,50 @@ async def file_pf_return(
             detail="Permission denied"
         )
 
-    # TODO: Store filing status in database
+    company_id = UUID(current_user.company_id)
+    user_id = UUID(current_user.user_id)
+    now = utc_now()
+
+    # Check if filing record exists
+    query = select(StatutoryFiling).where(
+        and_(
+            StatutoryFiling.company_id == company_id,
+            StatutoryFiling.return_type == StatutoryReturnType.PF,
+            StatutoryFiling.year == year,
+            StatutoryFiling.month == month
+        )
+    )
+    result = await db.execute(query)
+    filing = result.scalar_one_or_none()
+
+    if filing:
+        # Update existing filing
+        filing.status = FilingStatus.FILED
+        filing.filed_at = now
+        filing.filed_by = user_id
+        filing.updated_at = now
+    else:
+        # Create new filing record
+        filing = StatutoryFiling(
+            company_id=company_id,
+            return_type=StatutoryReturnType.PF,
+            year=year,
+            month=month,
+            status=FilingStatus.FILED,
+            filed_at=now,
+            filed_by=user_id,
+            created_by=user_id
+        )
+        db.add(filing)
+
+    await db.commit()
+
     return {
         "message": "PF return marked as filed",
         "period": f"{year}-{month:02d}",
-        "filed_at": datetime.utcnow().isoformat(),
-        "filed_by": current_user.user_id
+        "filed_at": now.isoformat(),
+        "filed_by": current_user.user_id,
+        "filing_id": str(filing.id)
     }
 
 
@@ -324,8 +364,8 @@ async def get_esi_summary(
     query = select(Employee).where(
         and_(
             Employee.company_id == company_id,
-            Employee.is_active == True,
-            Employee.esi_applicable == True
+            Employee.is_active.is_(True),
+            Employee.esi_applicable.is_(True)
         )
     )
     result = await db.execute(query)
@@ -401,7 +441,7 @@ async def file_esi_return(
     return {
         "message": "ESI return marked as filed",
         "period": f"{year}-{month:02d}",
-        "filed_at": datetime.utcnow().isoformat()
+        "filed_at": utc_now().isoformat()
     }
 
 
@@ -439,7 +479,7 @@ async def get_tds_summary(
     query = select(Employee).where(
         and_(
             Employee.company_id == company_id,
-            Employee.is_active == True
+            Employee.is_active.is_(True)
         )
     )
     result = await db.execute(query)
@@ -569,7 +609,7 @@ async def file_tds_return(
         "quarter": quarter,
         "financial_year": financial_year,
         "acknowledgement_number": acknowledgement_number,
-        "filed_at": datetime.utcnow().isoformat()
+        "filed_at": utc_now().isoformat()
     }
 
 
@@ -609,8 +649,8 @@ async def get_pt_summary(
     query = select(Employee).where(
         and_(
             Employee.company_id == company_id,
-            Employee.is_active == True,
-            Employee.pt_applicable == True
+            Employee.is_active.is_(True),
+            Employee.pt_applicable.is_(True)
         )
     )
     result = await db.execute(query)
@@ -746,10 +786,22 @@ async def record_challan(
             detail="Permission denied"
         )
 
-    # TODO: Store challan in database
-    return ChallanResponse(
-        id=UUID("00000000-0000-0000-0000-000000000001"),
-        return_type=challan_data.return_type,
+    company_id = UUID(current_user.company_id)
+    user_id = UUID(current_user.user_id)
+
+    # Map return type string to enum
+    try:
+        return_type_enum = StatutoryReturnType(challan_data.return_type.lower())
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid return type: {challan_data.return_type}. Must be one of: pf, esi, tds, pt"
+        )
+
+    # Create challan record
+    challan = StatutoryChallan(
+        company_id=company_id,
+        return_type=return_type_enum,
         period=challan_data.period,
         amount=challan_data.amount,
         payment_date=challan_data.payment_date,
@@ -757,7 +809,23 @@ async def record_challan(
         challan_number=challan_data.challan_number,
         reference_number=challan_data.reference_number,
         status="recorded",
-        created_at=datetime.utcnow()
+        created_by=user_id
+    )
+    db.add(challan)
+    await db.commit()
+    await db.refresh(challan)
+
+    return ChallanResponse(
+        id=challan.id,
+        return_type=challan.return_type.value,
+        period=challan.period,
+        amount=challan.amount,
+        payment_date=challan.payment_date,
+        bank_name=challan.bank_name,
+        challan_number=challan.challan_number,
+        reference_number=challan.reference_number,
+        status=challan.status,
+        created_at=challan.created_at
     )
 
 
@@ -767,17 +835,70 @@ async def list_challans(
     db: AsyncSession = Depends(get_db),
     return_type: Optional[str] = None,
     from_date: Optional[date] = None,
-    to_date: Optional[date] = None
+    to_date: Optional[date] = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100)
 ):
     """
     List all recorded challans.
     """
-    # TODO: Fetch from database
+    company_id = UUID(current_user.company_id)
+
+    # Build query
+    query = select(StatutoryChallan).where(StatutoryChallan.company_id == company_id)
+    count_query = select(func.count(StatutoryChallan.id)).where(StatutoryChallan.company_id == company_id)
+
+    # Apply filters
+    if return_type:
+        try:
+            return_type_enum = StatutoryReturnType(return_type.lower())
+            query = query.where(StatutoryChallan.return_type == return_type_enum)
+            count_query = count_query.where(StatutoryChallan.return_type == return_type_enum)
+        except ValueError:
+            pass
+
+    if from_date:
+        query = query.where(StatutoryChallan.payment_date >= from_date)
+        count_query = count_query.where(StatutoryChallan.payment_date >= from_date)
+
+    if to_date:
+        query = query.where(StatutoryChallan.payment_date <= to_date)
+        count_query = count_query.where(StatutoryChallan.payment_date <= to_date)
+
+    # Get total count
+    count_result = await db.execute(count_query)
+    total = count_result.scalar() or 0
+
+    # Apply pagination and ordering
+    query = query.order_by(StatutoryChallan.payment_date.desc())
+    query = query.offset((page - 1) * page_size).limit(page_size)
+
+    result = await db.execute(query)
+    challans = result.scalars().all()
+
+    # Convert to response format
+    data = [
+        {
+            "id": str(c.id),
+            "return_type": c.return_type.value,
+            "period": c.period,
+            "amount": float(c.amount),
+            "payment_date": c.payment_date.isoformat(),
+            "bank_name": c.bank_name,
+            "challan_number": c.challan_number,
+            "reference_number": c.reference_number,
+            "status": c.status,
+            "created_at": c.created_at.isoformat() if c.created_at else None
+        }
+        for c in challans
+    ]
+
     return {
-        "data": [],
+        "data": data,
         "meta": {
-            "total": 0,
-            "page": 1,
-            "page_size": 20
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total + page_size - 1) // page_size if total > 0 else 0
         }
     }

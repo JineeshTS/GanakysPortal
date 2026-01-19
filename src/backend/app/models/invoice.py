@@ -96,7 +96,10 @@ class Invoice(Base):
 
     # Invoice identification
     invoice_number = Column(String(50), nullable=False)  # INV/2024-25/0001
-    invoice_type = Column(Enum(InvoiceType), default=InvoiceType.TAX_INVOICE)
+    invoice_type = Column(
+        Enum(InvoiceType, name='invoice_type_enum', native_enum=False),
+        default=InvoiceType.TAX_INVOICE
+    )
     invoice_date = Column(Date, nullable=False)
     due_date = Column(Date, nullable=False)
 
@@ -112,7 +115,10 @@ class Invoice(Base):
     place_of_supply = Column(String(2))  # State code
     is_igst = Column(Boolean, default=False)  # True for inter-state
     reverse_charge = Column(Boolean, default=False)
-    gst_treatment = Column(Enum(GSTTreatment), default=GSTTreatment.TAXABLE)
+    gst_treatment = Column(
+        Enum(GSTTreatment, name='gst_treatment_enum', native_enum=False),
+        default=GSTTreatment.TAXABLE
+    )
 
     # E-Invoice
     irn = Column(String(100))  # Invoice Reference Number
@@ -176,7 +182,10 @@ class Invoice(Base):
     write_off_amount = Column(Numeric(18, 2), default=0)
 
     # Status
-    status = Column(Enum(InvoiceStatus), default=InvoiceStatus.DRAFT)
+    status = Column(
+        Enum(InvoiceStatus, name='invoice_status_enum', native_enum=False),
+        default=InvoiceStatus.DRAFT
+    )
 
     # Payment terms
     payment_terms = Column(String(50))
@@ -204,6 +213,11 @@ class Invoice(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
 
     # Relationships
     customer = relationship("Party", foreign_keys=[customer_id])

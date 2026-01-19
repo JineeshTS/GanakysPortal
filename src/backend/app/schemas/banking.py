@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from enum import Enum
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 import re
 
 
@@ -185,8 +185,7 @@ class BankAccountResponse(BankAccountBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BankAccountListResponse(BaseModel):
@@ -246,8 +245,7 @@ class BankTransactionResponse(BankTransactionBase):
     source: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BankTransactionListResponse(BaseModel):
@@ -292,8 +290,7 @@ class BankStatementImportResponse(BaseModel):
     started_at: Optional[datetime]
     completed_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ParsedTransaction(BaseModel):
@@ -368,8 +365,7 @@ class ReconciliationItemResponse(BaseModel):
     is_matched: bool
     matched_with_id: Optional[UUID]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReconciliationResponse(BaseModel):
@@ -397,8 +393,7 @@ class ReconciliationResponse(BaseModel):
     completed_at: Optional[datetime]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReconciliationReport(BaseModel):
@@ -483,8 +478,7 @@ class PaymentInstructionResponse(BaseModel):
     response_message: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PaymentBatchCreate(BaseModel):
@@ -540,8 +534,7 @@ class PaymentBatchResponse(BaseModel):
     created_at: datetime
     instructions: List[PaymentInstructionResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PaymentBatchListResponse(BaseModel):
@@ -563,8 +556,7 @@ class PaymentBatchSummary(BaseModel):
     payment_mode: PaymentModeEnum
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============= Salary Payment Schemas =============

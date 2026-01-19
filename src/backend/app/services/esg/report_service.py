@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.esg import ESGReport, ESGReportStatus
 from app.schemas.esg import ESGReportCreate, ESGReportUpdate, ESGReportListResponse
+from app.core.datetime_utils import utc_now
 
 
 class ReportService:
@@ -99,7 +100,7 @@ class ReportService:
         for field, value in update_data.items():
             setattr(report, field, value)
 
-        report.updated_at = datetime.utcnow()
+        report.updated_at = utc_now()
         await db.commit()
         await db.refresh(report)
         return report
@@ -118,8 +119,8 @@ class ReportService:
 
         report.status = ESGReportStatus.approved
         report.approved_by = user_id
-        report.approved_at = datetime.utcnow()
-        report.updated_at = datetime.utcnow()
+        report.approved_at = utc_now()
+        report.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(report)
@@ -137,8 +138,8 @@ class ReportService:
             return None
 
         report.status = ESGReportStatus.published
-        report.published_at = datetime.utcnow()
-        report.updated_at = datetime.utcnow()
+        report.published_at = utc_now()
+        report.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(report)

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.esg import ESGRisk, ESGCategory, ESGRiskLevel
 from app.schemas.esg import ESGRiskCreate, ESGRiskUpdate, ESGRiskListResponse
+from app.core.datetime_utils import utc_now
 
 
 class RiskService:
@@ -107,7 +108,7 @@ class RiskService:
         if risk.likelihood and risk.impact:
             risk.risk_score = risk.likelihood * risk.impact
 
-        risk.updated_at = datetime.utcnow()
+        risk.updated_at = utc_now()
         await db.commit()
         await db.refresh(risk)
         return risk

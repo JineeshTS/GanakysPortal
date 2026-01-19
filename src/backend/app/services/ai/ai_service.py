@@ -4,6 +4,7 @@ AI integration with fallback chain
 """
 from typing import Dict, Any, List, Optional, AsyncGenerator
 from datetime import datetime
+from app.core.datetime_utils import utc_now
 from enum import Enum
 from dataclasses import dataclass
 import json
@@ -186,7 +187,7 @@ Format output in a clear, professional manner.""",
     ) -> AIResponse:
         """Call specific AI provider."""
         config = self.PROVIDERS[provider]
-        start_time = datetime.utcnow()
+        start_time = utc_now()
 
         # In production, use httpx or aiohttp for actual API calls
         # This is a simulation for demo purposes
@@ -194,7 +195,7 @@ Format output in a clear, professional manner.""",
         # Simulate response
         response_content = f"[AI Response from {provider.value}] This is a simulated response."
 
-        latency = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+        latency = int((utc_now() - start_time).total_seconds() * 1000)
 
         return AIResponse(
             content=response_content,

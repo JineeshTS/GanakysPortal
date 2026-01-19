@@ -5,8 +5,9 @@ Pydantic schemas for security architecture
 from datetime import datetime
 from typing import Optional, List, Any, Dict
 from uuid import UUID
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, field_validator
 
+from app.schemas.validators import validate_phone
 from app.models.security import (
     SecurityEventType, SecurityEventSeverity, MFAMethod,
     TokenType, IncidentStatus, IncidentSeverity, DeviceTrustLevel
@@ -18,27 +19,27 @@ from app.models.security import (
 class SecurityPolicyBase(BaseModel):
     """Base schema for security policy"""
     # Password policy
-    password_min_length: int = 8
+    password_min_length: int = Field(8, ge=8, le=128)
     password_require_uppercase: bool = True
     password_require_lowercase: bool = True
     password_require_numbers: bool = True
     password_require_special: bool = True
-    password_max_age_days: int = 90
-    password_history_count: int = 5
-    password_lockout_attempts: int = 5
-    password_lockout_duration_minutes: int = 30
+    password_max_age_days: int = Field(90, ge=0, le=365)
+    password_history_count: int = Field(5, ge=0, le=24)
+    password_lockout_attempts: int = Field(5, ge=1, le=100)
+    password_lockout_duration_minutes: int = Field(30, ge=1, le=10080)  # 1 min to 1 week
 
     # Session policy
-    session_timeout_minutes: int = 480
-    session_max_concurrent: int = 5
-    session_require_reauth_hours: int = 24
-    session_idle_timeout_minutes: int = 30
+    session_timeout_minutes: int = Field(480, ge=5, le=10080)  # 5 min to 1 week
+    session_max_concurrent: int = Field(5, ge=1, le=100)
+    session_require_reauth_hours: int = Field(24, ge=1, le=720)  # 1 hour to 30 days
+    session_idle_timeout_minutes: int = Field(30, ge=5, le=1440)  # 5 min to 1 day
 
     # MFA policy
     mfa_required: bool = False
     mfa_required_for_admins: bool = True
     mfa_methods_allowed: List[str] = ["totp", "email"]
-    mfa_remember_device_days: int = 30
+    mfa_remember_device_days: int = Field(30, ge=0, le=365)
 
     # IP restrictions
     ip_whitelist_enabled: bool = False
@@ -49,14 +50,14 @@ class SecurityPolicyBase(BaseModel):
     allowed_countries: List[str] = []
 
     # API security
-    api_rate_limit_per_minute: int = 60
-    api_rate_limit_per_hour: int = 1000
-    api_token_max_age_days: int = 365
+    api_rate_limit_per_minute: int = Field(60, ge=1, le=10000)
+    api_rate_limit_per_hour: int = Field(1000, ge=1, le=100000)
+    api_token_max_age_days: int = Field(365, ge=1, le=3650)  # 1 day to 10 years
     api_require_https: bool = True
 
     # Data security
-    data_retention_days: int = 2555
-    audit_log_retention_days: int = 730
+    data_retention_days: int = Field(2555, ge=1, le=36500)  # 1 day to 100 years
+    audit_log_retention_days: int = Field(730, ge=1, le=36500)
     encrypt_sensitive_data: bool = True
     mask_sensitive_fields: bool = True
 
@@ -82,27 +83,27 @@ class SecurityPolicyCreate(SecurityPolicyBase):
 class SecurityPolicyUpdate(BaseModel):
     """Schema for updating security policy"""
     # Password policy
-    password_min_length: Optional[int] = None
+    password_min_length: Optional[int] = Field(None, ge=8, le=128)
     password_require_uppercase: Optional[bool] = None
     password_require_lowercase: Optional[bool] = None
     password_require_numbers: Optional[bool] = None
     password_require_special: Optional[bool] = None
-    password_max_age_days: Optional[int] = None
-    password_history_count: Optional[int] = None
-    password_lockout_attempts: Optional[int] = None
-    password_lockout_duration_minutes: Optional[int] = None
+    password_max_age_days: Optional[int] = Field(None, ge=0, le=365)
+    password_history_count: Optional[int] = Field(None, ge=0, le=24)
+    password_lockout_attempts: Optional[int] = Field(None, ge=1, le=100)
+    password_lockout_duration_minutes: Optional[int] = Field(None, ge=1, le=10080)
 
     # Session policy
-    session_timeout_minutes: Optional[int] = None
-    session_max_concurrent: Optional[int] = None
-    session_require_reauth_hours: Optional[int] = None
-    session_idle_timeout_minutes: Optional[int] = None
+    session_timeout_minutes: Optional[int] = Field(None, ge=5, le=10080)
+    session_max_concurrent: Optional[int] = Field(None, ge=1, le=100)
+    session_require_reauth_hours: Optional[int] = Field(None, ge=1, le=720)
+    session_idle_timeout_minutes: Optional[int] = Field(None, ge=5, le=1440)
 
     # MFA policy
     mfa_required: Optional[bool] = None
     mfa_required_for_admins: Optional[bool] = None
     mfa_methods_allowed: Optional[List[str]] = None
-    mfa_remember_device_days: Optional[int] = None
+    mfa_remember_device_days: Optional[int] = Field(None, ge=0, le=365)
 
     # IP restrictions
     ip_whitelist_enabled: Optional[bool] = None
@@ -113,14 +114,14 @@ class SecurityPolicyUpdate(BaseModel):
     allowed_countries: Optional[List[str]] = None
 
     # API security
-    api_rate_limit_per_minute: Optional[int] = None
-    api_rate_limit_per_hour: Optional[int] = None
-    api_token_max_age_days: Optional[int] = None
+    api_rate_limit_per_minute: Optional[int] = Field(None, ge=1, le=10000)
+    api_rate_limit_per_hour: Optional[int] = Field(None, ge=1, le=100000)
+    api_token_max_age_days: Optional[int] = Field(None, ge=1, le=3650)
     api_require_https: Optional[bool] = None
 
     # Data security
-    data_retention_days: Optional[int] = None
-    audit_log_retention_days: Optional[int] = None
+    data_retention_days: Optional[int] = Field(None, ge=1, le=36500)
+    audit_log_retention_days: Optional[int] = Field(None, ge=1, le=36500)
     encrypt_sensitive_data: Optional[bool] = None
     mask_sensitive_fields: Optional[bool] = None
 
@@ -436,7 +437,12 @@ class VerifyTOTPRequest(BaseModel):
 
 class EnableSMSMFARequest(BaseModel):
     """Schema for enabling SMS MFA"""
-    phone_number: str
+    phone_number: str = Field(..., max_length=20)
+
+    @field_validator('phone_number')
+    @classmethod
+    def validate_phone_field(cls, v):
+        return validate_phone(v)
 
 
 class VerifyMFACodeRequest(BaseModel):

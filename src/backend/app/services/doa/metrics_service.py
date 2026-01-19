@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, case
 
+from app.core.datetime_utils import utc_now
 from app.models.doa import (
     ApprovalRequest, ApprovalAction, ApprovalMetrics,
     ApprovalStatus
@@ -27,7 +28,7 @@ class DoAMetricsService:
         """Get dashboard metrics for a user"""
         from app.schemas.doa import ApprovalDashboardMetrics
 
-        now = datetime.utcnow()
+        now = utc_now()
         today_start = datetime.combine(date.today(), datetime.min.time())
 
         # Get pending approvals for user

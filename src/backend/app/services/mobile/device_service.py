@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.schemas.mobile import (
     MobileDeviceCreate, MobileDeviceUpdate,
     MobileAppConfigCreate, MobileAppConfigUpdate,
@@ -47,9 +48,9 @@ class DeviceService:
             'platform': data.platform,
             'push_token': data.push_token,
             'is_active': True,
-            'registered_at': datetime.utcnow(),
-            'last_active_at': datetime.utcnow(),
-            'created_at': datetime.utcnow()
+            'registered_at': utc_now(),
+            'last_active_at': utc_now(),
+            'created_at': utc_now()
         }
         return device
 

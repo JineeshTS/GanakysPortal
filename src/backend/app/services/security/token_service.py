@@ -11,6 +11,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
+from app.core.datetime_utils import utc_now
 from app.models.security import AccessToken, TokenType
 from app.schemas.security import (
     AccessTokenCreate, AccessTokenResponse, AccessTokenCreatedResponse,
@@ -149,11 +150,11 @@ class AccessTokenService:
             return None
 
         # Check expiry
-        if access_token.expires_at and access_token.expires_at < datetime.utcnow():
+        if access_token.expires_at and access_token.expires_at < utc_now():
             return None
 
         # Update usage
-        access_token.last_used_at = datetime.utcnow()
+        access_token.last_used_at = utc_now()
         access_token.usage_count += 1
         await db.commit()
 
@@ -178,7 +179,7 @@ class AccessTokenService:
 
         if token:
             token.is_active = False
-            token.revoked_at = datetime.utcnow()
+            token.revoked_at = utc_now()
             token.revoked_by = revoked_by
             await db.commit()
 
@@ -197,7 +198,7 @@ class AccessTokenService:
         token = result.scalar_one_or_none()
 
         if token:
-            token.last_used_at = datetime.utcnow()
+            token.last_used_at = utc_now()
             token.last_used_ip = ip_address
             token.usage_count += 1
             await db.commit()

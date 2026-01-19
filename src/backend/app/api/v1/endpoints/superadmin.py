@@ -7,6 +7,7 @@ from typing import Optional, List, Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from app.core.datetime_utils import utc_now
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
@@ -59,6 +60,11 @@ from app.schemas.superadmin import (
     TenantSearchParams, TicketSearchParams, AuditLogSearchParams
 )
 
+# Create separate routers for public and protected endpoints
+# Public router for auth endpoints (login, etc.)
+public_router = APIRouter()
+
+# Protected router for all other endpoints (requires super admin auth)
 router = APIRouter()
 
 
@@ -109,7 +115,7 @@ async def get_current_super_admin(
         result = await db.execute(
             select(SuperAdmin).where(
                 SuperAdmin.id == UUID(admin_id),
-                SuperAdmin.is_active == True
+                SuperAdmin.is_active.is_(True)
             )
         )
         admin = result.scalar_one_or_none()
@@ -164,9 +170,10 @@ async def log_audit(
 
 @router.get("/dashboard", response_model=PlatformDashboardStats)
 async def get_dashboard_stats(
+    admin: SuperAdmin = Depends(get_current_super_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get platform dashboard statistics"""
+    """Get platform dashboard statistics. Requires super admin authentication."""
     # Get latest metrics
     result = await db.execute(
         select(PlatformMetricsDaily)
@@ -176,7 +183,7 @@ async def get_dashboard_stats(
     latest_metrics = result.scalar_one_or_none()
 
     # Get 30-day metrics for calculations
-    thirty_days_ago = datetime.utcnow().date() - timedelta(days=30)
+    thirty_days_ago = utc_now().date() - timedelta(days=30)
     result = await db.execute(
         select(PlatformMetricsDaily)
         .where(PlatformMetricsDaily.date >= thirty_days_ago)
@@ -236,9 +243,10 @@ async def get_dashboard_stats(
 async def get_daily_metrics(
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
+    admin: SuperAdmin = Depends(get_current_super_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get daily platform metrics for specified date range"""
+    """Get daily platform metrics for specified date range. Requires super admin auth."""
     query = select(PlatformMetricsDaily)
 
     if start_date:
@@ -263,9 +271,10 @@ async def list_tenants(
     status: Optional[str] = None,
     health_status: Optional[str] = None,
     search: Optional[str] = None,
+    admin: SuperAdmin = Depends(get_current_super_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """List all tenants with filtering and pagination"""
+    """List all tenants with filtering and pagination. Requires super admin auth."""
     query = select(TenantProfile).join(
         CompanyProfile, TenantProfile.company_id == CompanyProfile.id
     )
@@ -408,11 +417,11 @@ async def update_tenant(
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         if field == "status" and value != tenant.status:
-            tenant.status_changed_at = datetime.utcnow()
+            tenant.status_changed_at = utc_now()
             tenant.status_changed_by = current_admin.id
         setattr(tenant, field, value)
 
-    tenant.updated_at = datetime.utcnow()
+    tenant.updated_at = utc_now()
 
     # Audit log
     await log_audit(
@@ -449,7 +458,7 @@ async def suspend_tenant(
     old_status = tenant.status
     tenant.status = TenantStatus.suspended
     tenant.status_reason = reason
-    tenant.status_changed_at = datetime.utcnow()
+    tenant.status_changed_at = utc_now()
     tenant.status_changed_by = current_admin.id
 
     await log_audit(
@@ -485,7 +494,7 @@ async def activate_tenant(
     old_status = tenant.status
     tenant.status = TenantStatus.active
     tenant.status_reason = None
-    tenant.status_changed_at = datetime.utcnow()
+    tenant.status_changed_at = utc_now()
     tenant.status_changed_by = current_admin.id
 
     await log_audit(
@@ -538,7 +547,7 @@ async def update_platform_settings(
     for field, value in update_data.items():
         setattr(settings, field, value)
 
-    settings.updated_at = datetime.utcnow()
+    settings.updated_at = utc_now()
     settings.updated_by = current_admin.id
 
     await log_audit(
@@ -657,7 +666,7 @@ async def update_feature_flag(
     for field, value in update_data.items():
         setattr(flag, field, value)
 
-    flag.updated_at = datetime.utcnow()
+    flag.updated_at = utc_now()
 
     await log_audit(
         db, current_admin.id, "feature_flag.update", "feature_flags",
@@ -881,7 +890,7 @@ async def assign_ticket(
     old_assigned = ticket.assigned_to
     ticket.assigned_to = data.assigned_to
     ticket.status = TicketStatus.in_progress
-    ticket.updated_at = datetime.utcnow()
+    ticket.updated_at = utc_now()
 
     await log_audit(
         db, current_admin.id, "ticket.assign", "support",
@@ -915,8 +924,8 @@ async def resolve_ticket(
 
     ticket.status = TicketStatus.resolved
     ticket.resolution_summary = data.resolution_summary
-    ticket.resolved_at = datetime.utcnow()
-    ticket.updated_at = datetime.utcnow()
+    ticket.resolved_at = utc_now()
+    ticket.updated_at = utc_now()
 
     await log_audit(
         db, current_admin.id, "ticket.resolve", "support",
@@ -997,7 +1006,7 @@ async def add_ticket_response(
 
     # Update first response time if this is the first admin response
     if not ticket.first_response_at and not data.is_internal:
-        ticket.first_response_at = datetime.utcnow()
+        ticket.first_response_at = utc_now()
 
     # Create response
     response = TicketResponseModel(
@@ -1014,7 +1023,7 @@ async def add_ticket_response(
     if not data.is_internal and ticket.status == TicketStatus.open:
         ticket.status = TicketStatus.waiting_customer
 
-    ticket.updated_at = datetime.utcnow()
+    ticket.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(response)
@@ -1119,7 +1128,7 @@ async def update_announcement(
     for field, value in update_data.items():
         setattr(announcement, field, value)
 
-    announcement.updated_at = datetime.utcnow()
+    announcement.updated_at = utc_now()
 
     await log_audit(
         db, current_admin.id, "announcement.update", "announcements",

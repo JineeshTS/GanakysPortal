@@ -35,8 +35,10 @@ import {
   PieChart,
   Wallet,
   Banknote,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react'
+import { useAuth, useToast } from '@/hooks'
 
 // Indian State Codes for GST
 const indianStates = [
@@ -206,39 +208,152 @@ const recentTransactions = [
   }
 ]
 
+// API Response type
+interface FinanceDashboardData {
+  revenue: { current: number; previous: number; growth: number }
+  expenses: { current: number; previous: number; growth: number }
+  profit: { current: number; previous: number; growth: number }
+  cash_balance: { current: number; previous: number; growth: number }
+  receivables: { current: number; days_1_30: number; days_31_60: number; days_61_90: number; overdue: number; total: number }
+  payables: { current: number; days_1_30: number; days_31_60: number; days_61_90: number; overdue: number; total: number }
+  gst_liability: { cgst: number; sgst: number; igst: number; total: number; due_date: string }
+  tds_liability: { section_194c: number; section_194j: number; section_194i: number; total: number; due_date: string }
+  gst_returns: Array<{ type: string; period: string; status: string; due_date: string; filed_date: string | null }>
+  recent_transactions: Array<{ id: string; type: string; number: string; party: string; amount: number; date: string; status: string }>
+}
+
 export default function FinanceDashboardPage() {
   const [selectedFY, setSelectedFY] = React.useState('2025-26')
+  const [loading, setLoading] = React.useState(true)
+  const [data, setData] = React.useState<FinanceDashboardData | null>(null)
+  const [error, setError] = React.useState<string | null>(null)
+  const { fetchWithAuth, isAuthenticated } = useAuth()
+  const { showToast } = useToast()
+
+  // Fetch dashboard data from API
+  React.useEffect(() => {
+    const fetchData = async () => {
+      if (!isAuthenticated) {
+        setLoading(false)
+        return
+      }
+
+      setError(null)
+      try {
+        const response = await fetchWithAuth(`/api/v1/finance/dashboard?fy=${selectedFY}`, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          setData(result)
+        } else {
+          const errData = await response.json().catch(() => ({}))
+          const errMsg = errData.detail || `Failed to load data (${response.status})`
+          setError(errMsg)
+          showToast({ title: 'Error', description: errMsg, variant: 'destructive' })
+        }
+      } catch (error) {
+        const errMsg = 'Failed to fetch finance dashboard'
+        setError(errMsg)
+        showToast({ title: 'Error', description: errMsg, variant: 'destructive' })
+        console.error('Failed to fetch finance dashboard:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [selectedFY, isAuthenticated, fetchWithAuth, showToast])
+
+  // Use API data or fallback to mock
+  const currentData = data ? {
+    revenue: { current: data.revenue.current, previous: data.revenue.previous, growth: data.revenue.growth },
+    expenses: { current: data.expenses.current, previous: data.expenses.previous, growth: data.expenses.growth },
+    profit: { current: data.profit.current, previous: data.profit.previous, growth: data.profit.growth },
+    cashBalance: { current: data.cash_balance.current, previous: data.cash_balance.previous, growth: data.cash_balance.growth },
+    receivables: {
+      total: data.receivables.total,
+      current: data.receivables.current,
+      days30: data.receivables.days_1_30,
+      days60: data.receivables.days_31_60,
+      days90: data.receivables.days_61_90,
+      overdue: data.receivables.overdue
+    },
+    payables: {
+      total: data.payables.total,
+      current: data.payables.current,
+      days30: data.payables.days_1_30,
+      days60: data.payables.days_31_60,
+      days90: data.payables.days_61_90,
+      overdue: data.payables.overdue
+    },
+    gstLiability: {
+      cgst: data.gst_liability.cgst,
+      sgst: data.gst_liability.sgst,
+      igst: data.gst_liability.igst,
+      total: data.gst_liability.total,
+      dueDate: data.gst_liability.due_date
+    },
+    tdsLiability: {
+      section194C: data.tds_liability.section_194c,
+      section194J: data.tds_liability.section_194j,
+      section194I: data.tds_liability.section_194i,
+      total: data.tds_liability.total,
+      dueDate: data.tds_liability.due_date
+    }
+  } : dashboardData
+
+  const currentGstReturns = data?.gst_returns.map(r => ({
+    type: r.type,
+    period: r.period,
+    status: r.status,
+    dueDate: r.due_date,
+    filedDate: r.filed_date
+  })) || gstReturns
+
+  const currentTransactions = data?.recent_transactions.map(t => ({
+    id: t.id,
+    type: t.type,
+    number: t.number,
+    party: t.party || 'Unknown',
+    amount: t.amount,
+    date: t.date,
+    status: t.status
+  })) || recentTransactions
 
   const stats = [
     {
       title: 'Total Revenue',
-      value: formatCurrencySmart(dashboardData.revenue.current),
+      value: formatCurrencySmart(currentData.revenue.current),
       icon: TrendingUp,
       description: 'This financial year',
-      trend: { value: dashboardData.revenue.growth, label: 'vs last year' },
+      trend: { value: currentData.revenue.growth, label: 'vs last year' },
       valueClassName: 'text-green-600'
     },
     {
       title: 'Total Expenses',
-      value: formatCurrencySmart(dashboardData.expenses.current),
+      value: formatCurrencySmart(currentData.expenses.current),
       icon: TrendingDown,
       description: 'This financial year',
-      trend: { value: dashboardData.expenses.growth, label: 'vs last year', type: 'decrease' as const },
+      trend: { value: currentData.expenses.growth, label: 'vs last year', type: 'decrease' as const },
       valueClassName: 'text-red-600'
     },
     {
       title: 'Net Profit',
-      value: formatCurrencySmart(dashboardData.profit.current),
+      value: formatCurrencySmart(currentData.profit.current),
       icon: IndianRupee,
       description: 'This financial year',
-      trend: { value: dashboardData.profit.growth, label: 'vs last year' }
+      trend: { value: currentData.profit.growth, label: 'vs last year' }
     },
     {
       title: 'Cash Balance',
-      value: formatCurrencySmart(dashboardData.cashBalance.current),
+      value: formatCurrencySmart(currentData.cashBalance.current),
       icon: Wallet,
       description: 'As of today',
-      trend: { value: dashboardData.cashBalance.growth, label: 'vs last month' }
+      trend: { value: currentData.cashBalance.growth, label: 'vs last month' }
     }
   ]
 
@@ -284,9 +399,9 @@ export default function FinanceDashboardPage() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()} disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              {loading ? 'Loading...' : 'Refresh'}
             </Button>
           </div>
         }
@@ -314,51 +429,51 @@ export default function FinanceDashboardPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-2xl font-bold">
                 <span>Total Receivables</span>
-                <span className="text-blue-600">{formatCurrency(dashboardData.receivables.total)}</span>
+                <span className="text-blue-600">{formatCurrency(currentData.receivables.total)}</span>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Current (0-30 days)</span>
-                  <span className="font-medium">{formatCurrency(dashboardData.receivables.current)}</span>
+                  <span className="font-medium">{formatCurrency(currentData.receivables.current)}</span>
                 </div>
                 <div className="h-2 bg-green-100 rounded-full">
                   <div
                     className="h-2 bg-green-500 rounded-full"
-                    style={{ width: `${(dashboardData.receivables.current / dashboardData.receivables.total) * 100}%` }}
+                    style={{ width: `${(currentData.receivables.current / currentData.receivables.total) * 100}%` }}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">31-60 days</span>
-                  <span className="font-medium">{formatCurrency(dashboardData.receivables.days30)}</span>
+                  <span className="font-medium">{formatCurrency(currentData.receivables.days30)}</span>
                 </div>
                 <div className="h-2 bg-yellow-100 rounded-full">
                   <div
                     className="h-2 bg-yellow-500 rounded-full"
-                    style={{ width: `${(dashboardData.receivables.days30 / dashboardData.receivables.total) * 100}%` }}
+                    style={{ width: `${(currentData.receivables.days30 / currentData.receivables.total) * 100}%` }}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">61-90 days</span>
-                  <span className="font-medium">{formatCurrency(dashboardData.receivables.days60)}</span>
+                  <span className="font-medium">{formatCurrency(currentData.receivables.days60)}</span>
                 </div>
                 <div className="h-2 bg-orange-100 rounded-full">
                   <div
                     className="h-2 bg-orange-500 rounded-full"
-                    style={{ width: `${(dashboardData.receivables.days60 / dashboardData.receivables.total) * 100}%` }}
+                    style={{ width: `${(currentData.receivables.days60 / currentData.receivables.total) * 100}%` }}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-red-600">90+ days (Overdue)</span>
-                  <span className="font-medium text-red-600">{formatCurrency(dashboardData.receivables.days90 + dashboardData.receivables.overdue)}</span>
+                  <span className="font-medium text-red-600">{formatCurrency(currentData.receivables.days90 + currentData.receivables.overdue)}</span>
                 </div>
                 <div className="h-2 bg-red-100 rounded-full">
                   <div
                     className="h-2 bg-red-500 rounded-full"
-                    style={{ width: `${((dashboardData.receivables.days90 + dashboardData.receivables.overdue) / dashboardData.receivables.total) * 100}%` }}
+                    style={{ width: `${((currentData.receivables.days90 + currentData.receivables.overdue) / currentData.receivables.total) * 100}%` }}
                   />
                 </div>
               </div>
@@ -383,51 +498,51 @@ export default function FinanceDashboardPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-2xl font-bold">
                 <span>Total Payables</span>
-                <span className="text-red-600">{formatCurrency(dashboardData.payables.total)}</span>
+                <span className="text-red-600">{formatCurrency(currentData.payables.total)}</span>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Current (0-30 days)</span>
-                  <span className="font-medium">{formatCurrency(dashboardData.payables.current)}</span>
+                  <span className="font-medium">{formatCurrency(currentData.payables.current)}</span>
                 </div>
                 <div className="h-2 bg-green-100 rounded-full">
                   <div
                     className="h-2 bg-green-500 rounded-full"
-                    style={{ width: `${(dashboardData.payables.current / dashboardData.payables.total) * 100}%` }}
+                    style={{ width: `${(currentData.payables.current / currentData.payables.total) * 100}%` }}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">31-60 days</span>
-                  <span className="font-medium">{formatCurrency(dashboardData.payables.days30)}</span>
+                  <span className="font-medium">{formatCurrency(currentData.payables.days30)}</span>
                 </div>
                 <div className="h-2 bg-yellow-100 rounded-full">
                   <div
                     className="h-2 bg-yellow-500 rounded-full"
-                    style={{ width: `${(dashboardData.payables.days30 / dashboardData.payables.total) * 100}%` }}
+                    style={{ width: `${(currentData.payables.days30 / currentData.payables.total) * 100}%` }}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">61-90 days</span>
-                  <span className="font-medium">{formatCurrency(dashboardData.payables.days60)}</span>
+                  <span className="font-medium">{formatCurrency(currentData.payables.days60)}</span>
                 </div>
                 <div className="h-2 bg-orange-100 rounded-full">
                   <div
                     className="h-2 bg-orange-500 rounded-full"
-                    style={{ width: `${(dashboardData.payables.days60 / dashboardData.payables.total) * 100}%` }}
+                    style={{ width: `${(currentData.payables.days60 / currentData.payables.total) * 100}%` }}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-red-600">90+ days (Overdue)</span>
-                  <span className="font-medium text-red-600">{formatCurrency(dashboardData.payables.days90 + dashboardData.payables.overdue)}</span>
+                  <span className="font-medium text-red-600">{formatCurrency(currentData.payables.days90 + currentData.payables.overdue)}</span>
                 </div>
                 <div className="h-2 bg-red-100 rounded-full">
                   <div
                     className="h-2 bg-red-500 rounded-full"
-                    style={{ width: `${((dashboardData.payables.days90 + dashboardData.payables.overdue) / dashboardData.payables.total) * 100}%` }}
+                    style={{ width: `${((currentData.payables.days90 + currentData.payables.overdue) / currentData.payables.total) * 100}%` }}
                   />
                 </div>
               </div>
@@ -458,21 +573,21 @@ export default function FinanceDashboardPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-2xl font-bold">
                 <span>Total GST Payable</span>
-                <span className="text-primary">{formatCurrency(dashboardData.gstLiability.total)}</span>
+                <span className="text-primary">{formatCurrency(currentData.gstLiability.total)}</span>
               </div>
 
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">CGST</p>
-                  <p className="font-semibold">{formatCurrency(dashboardData.gstLiability.cgst)}</p>
+                  <p className="font-semibold">{formatCurrency(currentData.gstLiability.cgst)}</p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">SGST</p>
-                  <p className="font-semibold">{formatCurrency(dashboardData.gstLiability.sgst)}</p>
+                  <p className="font-semibold">{formatCurrency(currentData.gstLiability.sgst)}</p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground">IGST</p>
-                  <p className="font-semibold">{formatCurrency(dashboardData.gstLiability.igst)}</p>
+                  <p className="font-semibold">{formatCurrency(currentData.gstLiability.igst)}</p>
                 </div>
               </div>
 
@@ -481,7 +596,7 @@ export default function FinanceDashboardPage() {
                   <Clock className="h-4 w-4 text-yellow-600" />
                   <span className="text-sm">GSTR-3B Due Date</span>
                 </div>
-                <span className="font-medium text-yellow-700">{formatDate(dashboardData.gstLiability.dueDate)}</span>
+                <span className="font-medium text-yellow-700">{formatDate(currentData.gstLiability.dueDate)}</span>
               </div>
             </div>
           </CardContent>
@@ -507,21 +622,21 @@ export default function FinanceDashboardPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-2xl font-bold">
                 <span>Total TDS Payable</span>
-                <span className="text-primary">{formatCurrency(dashboardData.tdsLiability.total)}</span>
+                <span className="text-primary">{formatCurrency(currentData.tdsLiability.total)}</span>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                   <span className="text-sm">194C - Contractor</span>
-                  <span className="font-medium">{formatCurrency(dashboardData.tdsLiability.section194C)}</span>
+                  <span className="font-medium">{formatCurrency(currentData.tdsLiability.section194C)}</span>
                 </div>
                 <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                   <span className="text-sm">194J - Professional Fees</span>
-                  <span className="font-medium">{formatCurrency(dashboardData.tdsLiability.section194J)}</span>
+                  <span className="font-medium">{formatCurrency(currentData.tdsLiability.section194J)}</span>
                 </div>
                 <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
                   <span className="text-sm">194I - Rent</span>
-                  <span className="font-medium">{formatCurrency(dashboardData.tdsLiability.section194I)}</span>
+                  <span className="font-medium">{formatCurrency(currentData.tdsLiability.section194I)}</span>
                 </div>
               </div>
 
@@ -530,7 +645,7 @@ export default function FinanceDashboardPage() {
                   <AlertCircle className="h-4 w-4 text-red-600" />
                   <span className="text-sm">TDS Payment Due</span>
                 </div>
-                <span className="font-medium text-red-700">{formatDate(dashboardData.tdsLiability.dueDate)}</span>
+                <span className="font-medium text-red-700">{formatDate(currentData.tdsLiability.dueDate)}</span>
               </div>
             </div>
           </CardContent>
@@ -547,7 +662,7 @@ export default function FinanceDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {gstReturns.map((ret, index) => (
+              {currentGstReturns.map((ret, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
@@ -644,7 +759,7 @@ export default function FinanceDashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {recentTransactions.map((txn) => (
+            {currentTransactions.map((txn) => (
               <div
                 key={txn.id}
                 className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"

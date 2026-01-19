@@ -6,6 +6,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.compliance import CompliancePolicy, ComplianceCategory
 from app.schemas.compliance import CompliancePolicyCreate, CompliancePolicyUpdate
+from app.core.datetime_utils import utc_now
 
 class PolicyService:
     async def create(self, db: AsyncSession, obj_in: CompliancePolicyCreate, company_id: UUID, user_id: UUID) -> CompliancePolicy:
@@ -16,7 +17,7 @@ class PolicyService:
             effective_date=obj_in.effective_date, review_date=obj_in.review_date, expiry_date=obj_in.expiry_date,
             document_path=obj_in.document_path, content_summary=obj_in.content_summary, owner_id=user_id,
             department_id=obj_in.department_id, status="draft", is_mandatory=obj_in.is_mandatory or False,
-            related_compliances=obj_in.related_compliances, created_by=user_id, created_at=datetime.utcnow(),
+            related_compliances=obj_in.related_compliances, created_by=user_id, created_at=utc_now(),
         )
         db.add(db_obj)
         await db.commit()
@@ -46,7 +47,7 @@ class PolicyService:
     async def update(self, db: AsyncSession, db_obj: CompliancePolicy, obj_in: CompliancePolicyUpdate) -> CompliancePolicy:
         for field, value in obj_in.model_dump(exclude_unset=True).items():
             setattr(db_obj, field, value)
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

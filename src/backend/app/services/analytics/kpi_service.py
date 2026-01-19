@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.analytics import KPIDefinition, KPIValue
 from app.schemas.analytics import KPIDefinitionCreate, KPIDefinitionUpdate, KPIValueCreate
+from app.core.datetime_utils import utc_now
 
 
 class KPIService:
@@ -110,7 +111,7 @@ class KPIService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(kpi, field, value)
-        kpi.updated_at = datetime.utcnow()
+        kpi.updated_at = utc_now()
         await db.commit()
         await db.refresh(kpi)
         return kpi
@@ -121,7 +122,7 @@ class KPIService:
         kpi: KPIDefinition
     ) -> None:
         """Soft delete KPI."""
-        kpi.deleted_at = datetime.utcnow()
+        kpi.deleted_at = utc_now()
         await db.commit()
 
     # KPI Values
@@ -171,7 +172,7 @@ class KPIService:
             variance_percent=variance_percent,
             status=status,
             dimension_values=data.dimension_values,
-            calculated_at=datetime.utcnow()
+            calculated_at=utc_now()
         )
         db.add(kpi_value)
         await db.commit()

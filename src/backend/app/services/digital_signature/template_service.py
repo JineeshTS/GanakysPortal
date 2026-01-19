@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 
+from app.core.datetime_utils import utc_now
 from app.models.digital_signature import SignatureTemplate
 from app.schemas.digital_signature import (
     SignatureTemplateCreate, SignatureTemplateUpdate,
@@ -181,7 +182,7 @@ class SignatureTemplateService:
             setattr(template, field, value)
 
         template.version = (template.version or 1) + 1
-        template.updated_at = datetime.utcnow()
+        template.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(template)
@@ -202,7 +203,7 @@ class SignatureTemplateService:
         )
         template = result.scalar_one()
         template.is_active = False
-        template.updated_at = datetime.utcnow()
+        template.updated_at = utc_now()
         await db.commit()
 
     async def duplicate_template(

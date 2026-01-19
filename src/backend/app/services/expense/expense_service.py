@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.expense import (
     ExpenseClaim, ExpenseItem, ExpenseCategory,
     ExpenseStatus, ExpenseType
@@ -27,7 +28,7 @@ class ExpenseService:
     @staticmethod
     def generate_claim_number() -> str:
         """Generate expense claim number."""
-        timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        timestamp = utc_now().strftime('%Y%m%d%H%M%S')
         return f"EXP-{timestamp}"
 
     # Category Methods
@@ -107,7 +108,7 @@ class ExpenseService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(category, field, value)
-        category.updated_at = datetime.utcnow()
+        category.updated_at = utc_now()
         await db.commit()
         await db.refresh(category)
         return category
@@ -251,7 +252,7 @@ class ExpenseService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(claim, field, value)
-        claim.updated_at = datetime.utcnow()
+        claim.updated_at = utc_now()
         await db.commit()
         await db.refresh(claim)
         return claim
@@ -263,8 +264,8 @@ class ExpenseService:
     ) -> ExpenseClaim:
         """Submit expense claim for approval."""
         claim.status = ExpenseStatus.SUBMITTED
-        claim.submitted_at = datetime.utcnow()
-        claim.updated_at = datetime.utcnow()
+        claim.submitted_at = utc_now()
+        claim.updated_at = utc_now()
         await db.commit()
         await db.refresh(claim)
         return claim
@@ -296,7 +297,7 @@ class ExpenseService:
                         item.approved_amount = item.total_amount
                         item.status = "approved"
                     total_approved += item.approved_amount
-                    item.updated_at = datetime.utcnow()
+                    item.updated_at = utc_now()
 
                 claim.approved_amount = total_approved
             else:
@@ -309,9 +310,9 @@ class ExpenseService:
             claim.status = ExpenseStatus.REJECTED
             claim.rejection_reason = action.comments
 
-        claim.approved_at = datetime.utcnow()
+        claim.approved_at = utc_now()
         claim.approved_by = approver_id
-        claim.updated_at = datetime.utcnow()
+        claim.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(claim)
@@ -326,10 +327,10 @@ class ExpenseService:
     ) -> ExpenseClaim:
         """Mark expense claim as paid."""
         claim.status = ExpenseStatus.PAID
-        claim.paid_at = datetime.utcnow()
+        claim.paid_at = utc_now()
         claim.payment_reference = payment_reference
         claim.payment_mode = payment_mode
-        claim.updated_at = datetime.utcnow()
+        claim.updated_at = utc_now()
         await db.commit()
         await db.refresh(claim)
         return claim
@@ -351,5 +352,5 @@ class ExpenseService:
         claim: ExpenseClaim
     ) -> None:
         """Soft delete expense claim."""
-        claim.deleted_at = datetime.utcnow()
+        claim.deleted_at = utc_now()
         await db.commit()

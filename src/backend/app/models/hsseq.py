@@ -160,7 +160,7 @@ class HSEIncident(Base):
     description = Column(Text)
     immediate_cause = Column(Text)
     root_cause = Column(Text)
-    contributing_factors = Column(ARRAY(String), default=[])
+    contributing_factors = Column(ARRAY(String), default=list)
 
     # When/Where
     incident_date = Column(Date, nullable=False)
@@ -171,8 +171,8 @@ class HSEIncident(Base):
 
     # People involved
     reported_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
-    injured_persons = Column(JSONB, default=[])  # [{name, employee_id, injury_type, body_part}]
-    witnesses = Column(JSONB, default=[])  # [{name, contact, statement}]
+    injured_persons = Column(JSONB, default=list)  # [{name, employee_id, injury_type, body_part}]
+    witnesses = Column(JSONB, default=list)  # [{name, contact, statement}]
     contractor_involved = Column(Boolean, default=False)
     contractor_name = Column(String(200))
 
@@ -196,7 +196,7 @@ class HSEIncident(Base):
     investigation_start_date = Column(Date)
     investigation_end_date = Column(Date)
     investigation_findings = Column(Text)
-    evidence_collected = Column(JSONB, default=[])
+    evidence_collected = Column(JSONB, default=list)
 
     # Regulatory
     osha_recordable = Column(Boolean, default=False)
@@ -205,8 +205,8 @@ class HSEIncident(Base):
     authority_reference = Column(String(100))
 
     # Attachments
-    attachments = Column(ARRAY(String), default=[])
-    photos = Column(ARRAY(String), default=[])
+    attachments = Column(ARRAY(String), default=list)
+    photos = Column(ARRAY(String), default=list)
 
     # Audit
     created_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
@@ -235,7 +235,7 @@ class HazardIdentification(Base):
     location = Column(String(200))
     department = Column(String(100))
     activity = Column(String(200))
-    affected_persons = Column(ARRAY(String), default=[])  # Employees, Contractors, Visitors
+    affected_persons = Column(ARRAY(String), default=list)  # Employees, Contractors, Visitors
 
     # Risk Assessment
     likelihood = Column(Integer)  # 1-5
@@ -313,8 +313,8 @@ class CorrectiveAction(Base):
     currency = Column(String(3), default="INR")
 
     # Attachments
-    attachments = Column(ARRAY(String), default=[])
-    completion_evidence = Column(ARRAY(String), default=[])
+    attachments = Column(ARRAY(String), default=list)
+    completion_evidence = Column(ARRAY(String), default=list)
 
     # Audit
     created_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
@@ -355,8 +355,8 @@ class HSEAudit(Base):
 
     # Team
     lead_auditor_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
-    auditors = Column(ARRAY(PGUUID(as_uuid=True)), default=[])
-    auditees = Column(ARRAY(PGUUID(as_uuid=True)), default=[])
+    auditors = Column(ARRAY(PGUUID(as_uuid=True)), default=list)
+    auditees = Column(ARRAY(PGUUID(as_uuid=True)), default=list)
     external_auditor_name = Column(String(200))
     external_auditor_organization = Column(String(200))
 
@@ -376,7 +376,7 @@ class HSEAudit(Base):
     # Documents
     audit_plan_url = Column(String(500))
     audit_report_url = Column(String(500))
-    attachments = Column(ARRAY(String), default=[])
+    attachments = Column(ARRAY(String), default=list)
 
     # Audit
     created_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
@@ -421,14 +421,14 @@ class HSETraining(Base):
     max_participants = Column(Integer)
     registered_count = Column(Integer, default=0)
     attended_count = Column(Integer, default=0)
-    target_departments = Column(ARRAY(String), default=[])
-    target_job_roles = Column(ARRAY(String), default=[])
+    target_departments = Column(ARRAY(String), default=list)
+    target_job_roles = Column(ARRAY(String), default=list)
     mandatory = Column(Boolean, default=False)
 
     # Assessment
     assessment_required = Column(Boolean, default=False)
     passing_score = Column(Float)
-    assessment_questions = Column(JSONB, default=[])
+    assessment_questions = Column(JSONB, default=list)
 
     # Validity
     validity_period_months = Column(Integer)
@@ -439,8 +439,8 @@ class HSETraining(Base):
     is_completed = Column(Boolean, default=False)
 
     # Attachments
-    materials = Column(ARRAY(String), default=[])
-    attachments = Column(ARRAY(String), default=[])
+    materials = Column(ARRAY(String), default=list)
+    attachments = Column(ARRAY(String), default=list)
 
     # Audit
     created_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
@@ -518,14 +518,14 @@ class WorkPermit(Base):
     # Personnel
     requestor_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     supervisor_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
-    workers = Column(JSONB, default=[])  # [{name, employee_id, role}]
+    workers = Column(JSONB, default=list)  # [{name, employee_id, role}]
     contractor_name = Column(String(200))
-    contractor_workers = Column(JSONB, default=[])
+    contractor_workers = Column(JSONB, default=list)
 
     # Hazards and Controls
-    identified_hazards = Column(ARRAY(String), default=[])
+    identified_hazards = Column(ARRAY(String), default=list)
     control_measures = Column(Text)
-    ppe_required = Column(ARRAY(String), default=[])
+    ppe_required = Column(ARRAY(String), default=list)
     isolation_required = Column(Boolean, default=False)
     isolation_details = Column(Text)
 
@@ -553,9 +553,9 @@ class WorkPermit(Base):
     emergency_procedures = Column(Text)
 
     # Attachments
-    attachments = Column(ARRAY(String), default=[])
-    photos_before = Column(ARRAY(String), default=[])
-    photos_after = Column(ARRAY(String), default=[])
+    attachments = Column(ARRAY(String), default=list)
+    photos_before = Column(ARRAY(String), default=list)
+    photos_after = Column(ARRAY(String), default=list)
 
     # Audit
     created_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
@@ -591,7 +591,7 @@ class HSEInspection(Base):
     # Inspector
     inspector_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     inspector_name = Column(String(200))
-    accompanied_by = Column(ARRAY(String), default=[])
+    accompanied_by = Column(ARRAY(String), default=list)
 
     # Results
     total_items = Column(Integer, default=0)
@@ -601,9 +601,9 @@ class HSEInspection(Base):
     compliance_score = Column(Float)
 
     # Findings
-    findings = Column(JSONB, default=[])  # [{item, status, observation, photo, action_required}]
-    positive_observations = Column(JSONB, default=[])
-    areas_improvement = Column(JSONB, default=[])
+    findings = Column(JSONB, default=list)  # [{item, status, observation, photo, action_required}]
+    positive_observations = Column(JSONB, default=list)
+    areas_improvement = Column(JSONB, default=list)
 
     # Summary
     summary = Column(Text)
@@ -614,8 +614,8 @@ class HSEInspection(Base):
     status = Column(String(50), default="draft")  # draft, submitted, reviewed, closed
 
     # Attachments
-    photos = Column(ARRAY(String), default=[])
-    attachments = Column(ARRAY(String), default=[])
+    photos = Column(ARRAY(String), default=list)
+    attachments = Column(ARRAY(String), default=list)
 
     # Review
     reviewed_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"))
@@ -666,7 +666,7 @@ class SafetyObservation(Base):
     recognition_type = Column(String(100))
 
     # Attachments
-    photos = Column(ARRAY(String), default=[])
+    photos = Column(ARRAY(String), default=list)
 
     # Observer
     observer_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)

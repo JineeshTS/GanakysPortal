@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.csr import CSRVolunteer, VolunteerStatus
 from app.schemas.csr import CSRVolunteerCreate, CSRVolunteerUpdate
+from app.core.datetime_utils import utc_now
 
 
 class VolunteerService:
@@ -36,7 +37,7 @@ class VolunteerService:
             role=obj_in.role,
             team_name=obj_in.team_name,
             skills_contributed=obj_in.skills_contributed or [],
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -116,7 +117,7 @@ class VolunteerService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

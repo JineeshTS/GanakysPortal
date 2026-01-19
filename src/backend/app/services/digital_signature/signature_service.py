@@ -7,11 +7,14 @@ from typing import Optional, List
 from uuid import UUID
 import hashlib
 import secrets
+import logging
 
+import redis.asyncio as redis
 from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.datetime_utils import utc_now
 from app.models.digital_signature import (
     SignatureRequest, SignatureDocument, SignatureSigner, DocumentSignature,
     SignatureAuditLog, SignatureStatus, SignerStatus
@@ -21,6 +24,25 @@ from app.schemas.digital_signature import (
     DelegateSignatureRequest, DocumentSignatureResponse, SignerAccessResponse,
     DocumentResponse
 )
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+# OTP Configuration
+OTP_LENGTH = 6
+OTP_EXPIRY_SECONDS = 300  # 5 minutes
+OTP_MAX_ATTEMPTS = 3
+
+# Redis client for OTP storage
+_redis_client = None
+
+
+async def get_redis():
+    """Get Redis client for OTP storage."""
+    global _redis_client
+    if _redis_client is None:
+        _redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
+    return _redis_client
 
 
 class SignatureService:
@@ -43,7 +65,7 @@ class SignatureService:
             return None
 
         # Check token expiry
-        if signer.access_token_expires and signer.access_token_expires < datetime.utcnow():
+        if signer.access_token_expires and signer.access_token_expires < utc_now():
             return None
 
         # Check signer status
@@ -63,7 +85,7 @@ class SignatureService:
             return None
 
         # Check if request expired
-        if request.expires_at and request.expires_at < datetime.utcnow():
+        if request.expires_at and request.expires_at < utc_now():
             return None
 
         # Get documents
@@ -131,8 +153,8 @@ class SignatureService:
 
         if signer:
             signer.status = SignerStatus.viewed
-            signer.viewed_at = datetime.utcnow()
-            signer.updated_at = datetime.utcnow()
+            signer.viewed_at = utc_now()
+            signer.updated_at = utc_now()
 
             # Audit log
             request_result = await db.execute(
@@ -190,7 +212,7 @@ class SignatureService:
         documents = docs_result.scalars().all()
 
         signatures = []
-        now = datetime.utcnow()
+        now = utc_now()
 
         for document in documents:
             # Create signature for each document
@@ -304,7 +326,7 @@ class SignatureService:
             height=field_in.height,
             signature_data=field_in.value,
             signature_hash=signature_hash,
-            signed_at=datetime.utcnow(),
+            signed_at=utc_now(),
         )
         db.add(signature)
         await db.commit()
@@ -340,7 +362,7 @@ class SignatureService:
         if not request.allow_decline:
             raise ValueError("Declining is not allowed for this request")
 
-        now = datetime.utcnow()
+        now = utc_now()
 
         signer.status = SignerStatus.rejected
         signer.rejected_at = now
@@ -393,7 +415,7 @@ class SignatureService:
         if not request.allow_delegation:
             raise ValueError("Delegation is not allowed for this request")
 
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Update original signer
         signer.status = SignerStatus.delegated
@@ -407,7 +429,7 @@ class SignatureService:
 
         # Create new signer
         new_access_token = secrets.token_urlsafe(32)
-        token_expires = request.expires_at + timedelta(days=7) if request.expires_at else datetime.utcnow() + timedelta(days=37)
+        token_expires = request.expires_at + timedelta(days=7) if request.expires_at else utc_now() + timedelta(days=37)
 
         new_signer = SignatureSigner(
             request_id=request.id,
@@ -458,14 +480,33 @@ class SignatureService:
         )
         signer = result.scalar_one()
 
-        # Generate OTP
-        otp = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+        # Generate secure 6-digit OTP
+        otp = ''.join([str(secrets.randbelow(10)) for _ in range(OTP_LENGTH)])
 
-        # TODO: Store OTP securely and send via email/SMS
-        # For now, just log
+        # Store OTP in Redis with expiry
+        try:
+            r = await get_redis()
+            otp_key = f"signature_otp:{access_token}"
+            attempts_key = f"signature_otp_attempts:{access_token}"
+
+            # Store OTP with expiry
+            await r.setex(otp_key, OTP_EXPIRY_SECONDS, otp)
+            # Reset attempt counter
+            await r.setex(attempts_key, OTP_EXPIRY_SECONDS, "0")
+
+            logger.info(f"OTP generated for signer {signer.id}, expires in {OTP_EXPIRY_SECONDS}s")
+        except Exception as e:
+            logger.error(f"Failed to store OTP in Redis: {e}")
+            raise ValueError("Failed to generate OTP. Please try again.")
+
         signer.auth_method = "otp"
-        signer.updated_at = datetime.utcnow()
+        signer.updated_at = utc_now()
         await db.commit()
+
+        # TODO: Send OTP via email/SMS using notification service
+        # For now, log for development (remove in production)
+        if settings.ENVIRONMENT == "development":
+            logger.warning(f"DEV ONLY - OTP for testing: {otp}")
 
     async def verify_otp(
         self,
@@ -481,10 +522,49 @@ class SignatureService:
         )
         signer = result.scalar_one()
 
-        # TODO: Verify OTP from secure storage
-        # For now, always return True for demo
+        try:
+            r = await get_redis()
+            otp_key = f"signature_otp:{access_token}"
+            attempts_key = f"signature_otp_attempts:{access_token}"
+
+            # Check attempt count
+            attempts = await r.get(attempts_key)
+            if attempts and int(attempts) >= OTP_MAX_ATTEMPTS:
+                logger.warning(f"OTP max attempts exceeded for signer {signer.id}")
+                # Delete OTP to force regeneration
+                await r.delete(otp_key)
+                await r.delete(attempts_key)
+                raise ValueError("Maximum OTP attempts exceeded. Please request a new OTP.")
+
+            # Get stored OTP
+            stored_otp = await r.get(otp_key)
+            if not stored_otp:
+                logger.warning(f"OTP not found or expired for signer {signer.id}")
+                return False
+
+            # Increment attempt counter
+            await r.incr(attempts_key)
+
+            # Verify OTP (constant-time comparison to prevent timing attacks)
+            if not secrets.compare_digest(otp_code, stored_otp):
+                logger.warning(f"Invalid OTP attempt for signer {signer.id}")
+                return False
+
+            # OTP verified - delete it to prevent reuse
+            await r.delete(otp_key)
+            await r.delete(attempts_key)
+
+            logger.info(f"OTP verified successfully for signer {signer.id}")
+
+        except ValueError:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to verify OTP from Redis: {e}")
+            raise ValueError("OTP verification failed. Please try again.")
+
+        # Update signer status
         signer.otp_verified = True
-        signer.updated_at = datetime.utcnow()
+        signer.updated_at = utc_now()
         await db.commit()
 
         return True

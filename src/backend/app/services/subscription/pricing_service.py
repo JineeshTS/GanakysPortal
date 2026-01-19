@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_
 
+from app.core.datetime_utils import utc_now
 from app.models.subscription import (
     SubscriptionPlan, PricingTier, Subscription, Discount,
     BillingInterval, DiscountType, PlanType
@@ -232,7 +233,7 @@ class PricingService:
                 "discount_percent": None
             }
 
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Validation checks
         validations = [
@@ -426,7 +427,7 @@ class PricingService:
         )
 
         # Calculate proration
-        now = datetime.utcnow()
+        now = utc_now()
         period_start = subscription.current_period_start
         period_end = subscription.current_period_end
 

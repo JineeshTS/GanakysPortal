@@ -104,7 +104,7 @@ export default function PFPage() {
       <PageHeader
         title="Provident Fund ECR"
         description="Generate and download PF Electronic Challan cum Return"
-        icon={<FileText className="h-6 w-6" />}
+        icon={FileText}
         actions={
           <div className="flex gap-2">
             {isGenerated && (

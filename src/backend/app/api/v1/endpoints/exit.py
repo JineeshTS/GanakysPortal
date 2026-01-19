@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData
 from app.models.exit import ExitCase, ClearanceTask, FinalSettlement
@@ -522,7 +523,7 @@ async def approve_exit(
     case.last_working_day = data.approved_lwd
     case.status = "clearance_pending"
     case.approved_by = UUID(current_user.user_id)
-    case.approved_date = datetime.utcnow()
+    case.approved_date = utc_now()
     if data.notes:
         case.notes = data.notes
 
@@ -757,14 +758,34 @@ async def calculate_fnf(
     if not case:
         raise HTTPException(status_code=404, detail="Exit case not found")
 
-    # Get employee salary info (simplified - would normally come from payroll)
+    # Get employee info
     emp_result = await db.execute(
         select(Employee).where(Employee.id == case.employee_id)
     )
     employee = emp_result.scalar_one_or_none()
 
-    # Calculate basic salary dues (simplified)
-    basic_salary_dues = Decimal("50000")  # Placeholder
+    # Get employee salary from EmployeeSalary table
+    from app.models.payroll import EmployeeSalary
+    salary_result = await db.execute(
+        select(EmployeeSalary)
+        .where(
+            EmployeeSalary.employee_id == case.employee_id,
+            EmployeeSalary.effective_to.is_(None)  # Current active salary
+        )
+        .order_by(EmployeeSalary.effective_from.desc())
+        .limit(1)
+    )
+    employee_salary = salary_result.scalar_one_or_none()
+
+    # Calculate basic salary dues from actual salary structure
+    if employee_salary:
+        basic_salary_dues = employee_salary.basic
+    else:
+        # Fallback: raise error if no salary found
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No salary structure found for employee. Please set up salary first."
+        )
 
     # Leave encashment
     leave_encashment = Decimal(data.leave_encashment_days or 0) * (basic_salary_dues / 30)

@@ -11,6 +11,7 @@ from sqlalchemy import select, func, update
 
 from app.models.security import SecurityAlert, SecurityEventSeverity
 from app.schemas.security import SecurityAlertResponse, SecurityAlertListResponse
+from app.core.datetime_utils import utc_now
 
 
 class SecurityAlertService:
@@ -126,11 +127,11 @@ class SecurityAlertService:
 
         if alert:
             alert.is_read = True
-            alert.read_at = datetime.utcnow()
+            alert.read_at = utc_now()
             alert.read_by = read_by
             if action_taken:
                 alert.action_taken = action_taken
-                alert.action_taken_at = datetime.utcnow()
+                alert.action_taken_at = utc_now()
                 alert.action_taken_by = read_by
             await db.commit()
 
@@ -149,7 +150,7 @@ class SecurityAlertService:
             )
             .values(
                 is_read=True,
-                read_at=datetime.utcnow(),
+                read_at=utc_now(),
                 read_by=read_by
             )
         )
@@ -179,5 +180,5 @@ class SecurityAlertService:
         # TODO: Implement email/SMS notifications
         # For now, just mark as sent
         alert.email_sent = True
-        alert.email_sent_at = datetime.utcnow()
+        alert.email_sent_at = utc_now()
         await db.commit()

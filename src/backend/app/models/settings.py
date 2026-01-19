@@ -130,7 +130,7 @@ class PTSettings(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, unique=True)
     state = Column(String(5), default="KA")
-    slabs = Column(JSON, default=[])  # [{from: 0, to: 15000, amount: 0}, ...]
+    slabs = Column(JSON, default=list)  # [{from: 0, to: 15000, amount: 0}, ...]
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -174,7 +174,7 @@ class WeekOffSetting(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, unique=True)
-    week_offs = Column(JSON, default=[])  # [{day: 0, isOff: true, isAlternate: false, alternateWeeks: []}, ...]
+    week_offs = Column(JSON, default=list)  # [{day: 0, isOff: true, isAlternate: false, alternateWeeks: []}, ...]
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -254,7 +254,7 @@ class GeoFenceLocation(Base):
     longitude = Column(Float, nullable=False)
     radius_meters = Column(Integer, default=100)
     is_active = Column(Boolean, default=True)
-    applicable_branches = Column(ARRAY(UUID(as_uuid=True)), default=[])
+    applicable_branches = Column(ARRAY(UUID(as_uuid=True)), default=list)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -275,7 +275,7 @@ class EmailTemplate(Base):
     category = Column(String(20), nullable=False)  # onboarding, payroll, leave, attendance, system
     subject = Column(String(255), nullable=False)
     body = Column(Text, nullable=False)
-    variables = Column(ARRAY(String), default=[])
+    variables = Column(ARRAY(String), default=list)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -293,7 +293,7 @@ class Role(Base):
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
-    permissions = Column(ARRAY(String), default=[])
+    permissions = Column(ARRAY(String), default=list)
     is_system = Column(Boolean, default=False)  # System roles cannot be deleted
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)

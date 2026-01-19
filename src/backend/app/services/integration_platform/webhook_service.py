@@ -10,6 +10,7 @@ import hmac
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.integration import (
     WebhookSubscription, WebhookDelivery, WebhookStatus
 )
@@ -120,7 +121,7 @@ class WebhookService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(subscription, field, value)
-        subscription.updated_at = datetime.utcnow()
+        subscription.updated_at = utc_now()
         await db.commit()
         await db.refresh(subscription)
         return subscription
@@ -131,7 +132,7 @@ class WebhookService:
         subscription: WebhookSubscription
     ) -> None:
         """Soft delete subscription."""
-        subscription.deleted_at = datetime.utcnow()
+        subscription.deleted_at = utc_now()
         await db.commit()
 
     @staticmethod
@@ -223,7 +224,7 @@ class WebhookService:
         delivery.status = "delivered"
         delivery.response_status = response_status
         delivery.response_body = response_body
-        delivery.delivered_at = datetime.utcnow()
+        delivery.delivered_at = utc_now()
         delivery.attempt_count += 1
 
         # Reset subscription failure count
@@ -235,7 +236,7 @@ class WebhookService:
         subscription = result.scalar_one_or_none()
         if subscription:
             subscription.failure_count = 0
-            subscription.last_triggered_at = datetime.utcnow()
+            subscription.last_triggered_at = utc_now()
 
         await db.commit()
         await db.refresh(delivery)
@@ -272,7 +273,7 @@ class WebhookService:
             retry_delay = WebhookService.RETRY_DELAYS[
                 min(delivery.attempt_count - 1, len(WebhookService.RETRY_DELAYS) - 1)
             ]
-            delivery.next_retry_at = datetime.utcnow() + timedelta(seconds=retry_delay)
+            delivery.next_retry_at = utc_now() + timedelta(seconds=retry_delay)
 
         await db.commit()
         await db.refresh(delivery)
@@ -287,7 +288,7 @@ class WebhookService:
             select(WebhookDelivery).where(
                 and_(
                     WebhookDelivery.status == "retry",
-                    WebhookDelivery.next_retry_at <= datetime.utcnow()
+                    WebhookDelivery.next_retry_at <= utc_now()
                 )
             ).limit(100)
         )

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
 from app.models.doa import DoADelegation, ApprovalAuditLog, DelegationType
+from app.core.datetime_utils import utc_now
 
 
 class DelegationService:
@@ -70,7 +71,7 @@ class DelegationService:
         from app.schemas.doa import DelegationResponse
 
         # Generate delegation number
-        year = datetime.utcnow().year
+        year = utc_now().year
         count_result = await db.execute(
             select(func.count(DoADelegation.id))
             .where(DoADelegation.created_at >= datetime(year, 1, 1))
@@ -162,7 +163,7 @@ class DelegationService:
             query = query.where(DoADelegation.delegate_id == user_id)
 
         # Only get active delegations within date range
-        now = datetime.utcnow()
+        now = utc_now()
         query = query.where(
             DoADelegation.start_date <= now,
             or_(
@@ -198,7 +199,7 @@ class DelegationService:
         for key, value in update_data.items():
             setattr(delegation, key, value)
 
-        delegation.updated_at = datetime.utcnow()
+        delegation.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(delegation)
@@ -226,9 +227,9 @@ class DelegationService:
 
         delegation.is_active = False
         delegation.revoked_by = revoked_by
-        delegation.revoked_at = datetime.utcnow()
+        delegation.revoked_at = utc_now()
         delegation.revocation_reason = reason
-        delegation.updated_at = datetime.utcnow()
+        delegation.updated_at = utc_now()
 
         # Audit log
         audit = ApprovalAuditLog(
@@ -257,7 +258,7 @@ class DelegationService:
         amount: Optional[float] = None
     ) -> Optional[DoADelegation]:
         """Check if user has an active delegation for authority"""
-        now = datetime.utcnow()
+        now = utc_now()
 
         query = select(DoADelegation).where(
             DoADelegation.company_id == company_id,
@@ -310,6 +311,6 @@ class DelegationService:
         delegation = result.scalar_one()
 
         delegation.total_approved_amount += amount
-        delegation.updated_at = datetime.utcnow()
+        delegation.updated_at = utc_now()
 
         await db.commit()

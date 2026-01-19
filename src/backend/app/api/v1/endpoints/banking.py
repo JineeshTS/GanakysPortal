@@ -5,7 +5,7 @@ Bank accounts, transactions, reconciliation, and payments
 from decimal import Decimal
 from typing import List, Optional, Annotated
 from datetime import date
-from uuid import UUID
+from uuid import UUID, uuid4
 import io
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status, Response
@@ -44,6 +44,10 @@ from app.services.banking_service import (
     generate_salary_file, generate_vendor_payment_file,
     create_payment_batch, track_payment_status
 )
+from app.services.banking_db_service import (
+    BankingDBService, BankingDBServiceError, BankAccountNotFoundError,
+    TransactionNotFoundError, PaymentBatchNotFoundError, ReconciliationNotFoundError
+)
 
 router = APIRouter(prefix="/banking", tags=["banking"])
 
@@ -70,14 +74,25 @@ async def list_bank_accounts(
     - Primary account flag
     - Search (account name, bank name, account number)
     """
-    # TODO: Implement database query with filters
+    company_id = UUID(current_user.company_id)
+    service = BankingDBService(db, company_id)
+
+    items, total = await service.list_accounts(
+        account_type=account_type.value if account_type else None,
+        is_active=is_active,
+        is_primary=is_primary,
+        search=search,
+        page=page,
+        page_size=page_size
+    )
+
     return BankAccountListResponse(
-        data=[],
+        data=items,
         meta={
             "page": page,
             "page_size": page_size,
-            "total": 0,
-            "total_pages": 0
+            "total": total,
+            "total_pages": (total + page_size - 1) // page_size
         }
     )
 
@@ -112,12 +127,30 @@ async def add_bank_account(
             detail=f"Invalid IFSC code: {account_data.ifsc_code}"
         )
 
-    # TODO: Create bank account in database
-    # For now, return placeholder
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Bank account creation not yet implemented - database integration pending"
-    )
+    company_id = UUID(current_user.company_id)
+    service = BankingDBService(db, company_id)
+
+    try:
+        result = await service.create_account(
+            account_name=account_data.account_name,
+            account_number=account_data.account_number,
+            bank_name=account_data.bank_name,
+            ifsc_code=account_data.ifsc_code,
+            account_type=account_data.account_type.value if account_data.account_type else "current",
+            branch_name=account_data.branch_name,
+            micr_code=account_data.micr_code,
+            swift_code=account_data.swift_code,
+            branch_address=account_data.branch_address,
+            opening_balance=account_data.opening_balance or Decimal("0"),
+            opening_balance_date=account_data.opening_balance_date,
+            overdraft_limit=account_data.overdraft_limit or Decimal("0"),
+            is_primary=account_data.is_primary or False,
+            notes=account_data.notes,
+            created_by=UUID(current_user.user_id)
+        )
+        return result
+    except BankingDBServiceError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/accounts/{account_id}", response_model=BankAccountResponse)
@@ -127,11 +160,13 @@ async def get_bank_account(
     db: AsyncSession = Depends(get_db)
 ):
     """Get bank account details by ID."""
-    # TODO: Fetch from database
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Bank account not found"
-    )
+    company_id = UUID(current_user.company_id)
+    service = BankingDBService(db, company_id)
+
+    try:
+        return await service.get_account(account_id)
+    except BankAccountNotFoundError:
+        raise HTTPException(status_code=404, detail="Bank account not found")
 
 
 @router.put("/accounts/{account_id}", response_model=BankAccountResponse)
@@ -156,11 +191,24 @@ async def update_bank_account(
             detail="Finance role required"
         )
 
-    # TODO: Update in database
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Bank account not found"
-    )
+    company_id = UUID(current_user.company_id)
+    service = BankingDBService(db, company_id)
+
+    try:
+        return await service.update_account(
+            account_id=account_id,
+            account_name=account_data.account_name,
+            branch_name=account_data.branch_name,
+            branch_address=account_data.branch_address,
+            overdraft_limit=account_data.overdraft_limit,
+            is_primary=account_data.is_primary,
+            is_active=account_data.is_active,
+            notes=account_data.notes
+        )
+    except BankAccountNotFoundError:
+        raise HTTPException(status_code=404, detail="Bank account not found")
+    except BankingDBServiceError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/accounts/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -183,11 +231,16 @@ async def deactivate_bank_account(
             detail="Admin role required to deactivate bank accounts"
         )
 
-    # TODO: Soft delete in database
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Bank account not found"
-    )
+    company_id = UUID(current_user.company_id)
+    service = BankingDBService(db, company_id)
+
+    try:
+        await service.deactivate_account(account_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except BankAccountNotFoundError:
+        raise HTTPException(status_code=404, detail="Bank account not found")
+    except BankingDBServiceError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ============= Bank Transaction Endpoints =============
@@ -217,17 +270,32 @@ async def list_transactions(
     - Amount range
     - Search in description/reference
     """
-    # TODO: Fetch from database
-    return BankTransactionListResponse(
-        data=[],
-        meta={
-            "page": page,
-            "page_size": page_size,
-            "total": 0,
-            "total_pages": 0,
-            "account_id": str(account_id)
-        }
-    )
+    company_id = UUID(current_user.company_id)
+    service = BankingDBService(db, company_id)
+
+    try:
+        items, total = await service.list_transactions(
+            account_id=account_id,
+            start_date=from_date,
+            end_date=to_date,
+            transaction_type=transaction_type,
+            is_reconciled=is_reconciled,
+            page=page,
+            page_size=page_size
+        )
+
+        return BankTransactionListResponse(
+            data=items,
+            meta={
+                "page": page,
+                "page_size": page_size,
+                "total": total,
+                "total_pages": (total + page_size - 1) // page_size,
+                "account_id": str(account_id)
+            }
+        )
+    except BankAccountNotFoundError:
+        raise HTTPException(status_code=404, detail="Bank account not found")
 
 
 @router.post("/accounts/{account_id}/transactions", response_model=BankTransactionResponse)
@@ -251,11 +319,25 @@ async def create_transaction(
             detail="Finance role required"
         )
 
-    # TODO: Create transaction in database
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Transaction creation not yet implemented"
-    )
+    company_id = UUID(current_user.company_id)
+    service = BankingDBService(db, company_id)
+
+    try:
+        return await service.create_transaction(
+            account_id=account_id,
+            transaction_date=transaction_data.transaction_date,
+            transaction_type=transaction_data.transaction_type.value if transaction_data.transaction_type else "other",
+            debit_amount=transaction_data.debit_amount or Decimal("0"),
+            credit_amount=transaction_data.credit_amount or Decimal("0"),
+            description=transaction_data.description,
+            reference_number=transaction_data.reference_number,
+            party_name=transaction_data.party_name,
+            created_by=UUID(current_user.user_id)
+        )
+    except BankAccountNotFoundError:
+        raise HTTPException(status_code=404, detail="Bank account not found")
+    except BankingDBServiceError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ============= Bank Statement Import Endpoints =============
@@ -316,7 +398,7 @@ async def upload_bank_statement(
 
         # TODO: Save to database and return import result
         return {
-            "id": "00000000-0000-0000-0000-000000000000",
+            "id": str(uuid4()),
             "bank_account_id": str(account_id),
             "file_name": file.filename,
             "file_format": file_format,
@@ -399,11 +481,17 @@ async def get_reconciliation_status(
     - Deposits in transit
     - Reconciliation difference
     """
-    # TODO: Fetch from database
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="No reconciliation found for this account"
-    )
+    company_id = UUID(current_user.company_id)
+    service = BankingDBService(db, company_id)
+
+    recon = await service.get_reconciliation(account_id, period)
+    if not recon:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No reconciliation found for this account"
+        )
+
+    return recon
 
 
 @router.post("/accounts/{account_id}/reconciliation", response_model=ReconciliationResponse)
@@ -427,11 +515,24 @@ async def create_reconciliation(
             detail="Finance role required"
         )
 
-    # TODO: Create reconciliation in database
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Reconciliation creation not yet implemented"
-    )
+    company_id = UUID(current_user.company_id)
+    user_id = UUID(current_user.user_id)
+    service = BankingDBService(db, company_id)
+
+    try:
+        return await service.create_reconciliation(
+            account_id=account_id,
+            statement_date=reconciliation_data.statement_date,
+            statement_opening_balance=reconciliation_data.statement_opening_balance,
+            statement_closing_balance=reconciliation_data.statement_closing_balance,
+            from_date=reconciliation_data.from_date,
+            to_date=reconciliation_data.to_date,
+            created_by=user_id
+        )
+    except BankAccountNotFoundError:
+        raise HTTPException(status_code=404, detail="Bank account not found")
+    except BankingDBServiceError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/accounts/{account_id}/reconcile", response_model=AutoReconcileResponse)
@@ -521,13 +622,25 @@ async def list_payment_batches(
     - Status
     - Date range
     """
+    company_id = UUID(current_user.company_id)
+    service = BankingDBService(db, company_id)
+
+    items, total = await service.list_payment_batches(
+        batch_type=batch_type.value if batch_type else None,
+        status=status.value if status else None,
+        from_date=from_date,
+        to_date=to_date,
+        page=page,
+        page_size=page_size
+    )
+
     return PaymentBatchListResponse(
-        data=[],
+        data=items,
         meta={
             "page": page,
             "page_size": page_size,
-            "total": 0,
-            "total_pages": 0
+            "total": total,
+            "total_pages": (total + page_size - 1) // page_size if total > 0 else 0
         }
     )
 
@@ -664,11 +777,16 @@ async def get_payment_batch(
     db: AsyncSession = Depends(get_db)
 ):
     """Get payment batch details including all instructions."""
-    # TODO: Fetch from database
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Payment batch not found"
-    )
+    company_id = UUID(current_user.company_id)
+    service = BankingDBService(db, company_id)
+
+    try:
+        return await service.get_payment_batch(batch_id)
+    except PaymentBatchNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Payment batch not found"
+        )
 
 
 @router.put("/payments/{batch_id}", response_model=PaymentBatchResponse)
@@ -713,8 +831,17 @@ async def submit_payment_batch(
             detail="Finance role required"
         )
 
-    # TODO: Update status in database
-    return {"message": "Payment batch submitted for approval", "batch_id": str(batch_id)}
+    company_id = UUID(current_user.company_id)
+    user_id = UUID(current_user.user_id)
+    service = BankingDBService(db, company_id)
+
+    try:
+        await service.update_payment_batch_status(batch_id, "pending_approval", user_id)
+        return {"message": "Payment batch submitted for approval", "batch_id": str(batch_id)}
+    except PaymentBatchNotFoundError:
+        raise HTTPException(status_code=404, detail="Payment batch not found")
+    except BankingDBServiceError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/payments/{batch_id}/approve")
@@ -735,8 +862,17 @@ async def approve_payment_batch(
             detail="Finance Manager or Admin role required for approval"
         )
 
-    # TODO: Update status in database
-    return {"message": "Payment batch approved", "batch_id": str(batch_id)}
+    company_id = UUID(current_user.company_id)
+    user_id = UUID(current_user.user_id)
+    service = BankingDBService(db, company_id)
+
+    try:
+        await service.update_payment_batch_status(batch_id, "approved", user_id)
+        return {"message": "Payment batch approved", "batch_id": str(batch_id)}
+    except PaymentBatchNotFoundError:
+        raise HTTPException(status_code=404, detail="Payment batch not found")
+    except BankingDBServiceError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/payments/{batch_id}/reject")
@@ -757,8 +893,17 @@ async def reject_payment_batch(
             detail="Finance Manager or Admin role required"
         )
 
-    # TODO: Update status in database
-    return {"message": "Payment batch rejected", "batch_id": str(batch_id), "reason": reason}
+    company_id = UUID(current_user.company_id)
+    user_id = UUID(current_user.user_id)
+    service = BankingDBService(db, company_id)
+
+    try:
+        await service.update_payment_batch_status(batch_id, "cancelled", user_id)
+        return {"message": "Payment batch rejected", "batch_id": str(batch_id), "reason": reason}
+    except PaymentBatchNotFoundError:
+        raise HTTPException(status_code=404, detail="Payment batch not found")
+    except BankingDBServiceError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/payments/{batch_id}/download")
@@ -787,7 +932,7 @@ async def download_payment_file(
 
     sample_employees = [
         SalaryPaymentEmployee(
-            employee_id=UUID("00000000-0000-0000-0000-000000000001"),
+            employee_id=uuid4(),
             employee_code="EMP001",
             employee_name="Rajesh Kumar",
             account_number="1234567890",
@@ -797,7 +942,7 @@ async def download_payment_file(
             email="rajesh@example.com"
         ),
         SalaryPaymentEmployee(
-            employee_id=UUID("00000000-0000-0000-0000-000000000002"),
+            employee_id=uuid4(),
             employee_code="EMP002",
             employee_name="Priya Sharma",
             account_number="0987654321",

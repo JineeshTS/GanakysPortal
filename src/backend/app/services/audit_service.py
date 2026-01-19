@@ -4,6 +4,7 @@ Comprehensive audit trail for compliance and security
 """
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
+from app.core.datetime_utils import utc_now
 from dataclasses import dataclass, field
 from enum import Enum
 import json
@@ -190,7 +191,7 @@ class AuditService:
 
         entry = AuditLogEntry(
             id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             action=action,
             severity=severity,
             user_id=user_id,
@@ -342,7 +343,7 @@ class AuditService:
         days: int = 30,
     ) -> Dict[str, Any]:
         """Get user activity summary."""
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = utc_now() - timedelta(days=days)
         logs = await self.search(user_id=user_id, start_date=start_date)
 
         action_counts = {}
@@ -409,7 +410,7 @@ class AuditService:
 
     async def cleanup_old_logs(self) -> int:
         """Remove logs older than retention period."""
-        cutoff = datetime.utcnow() - timedelta(days=self.RETENTION_DAYS)
+        cutoff = utc_now() - timedelta(days=self.RETENTION_DAYS)
         original_count = len(self._logs)
         self._logs = [log for log in self._logs if log.timestamp > cutoff]
         return original_count - len(self._logs)

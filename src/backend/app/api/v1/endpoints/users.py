@@ -8,11 +8,12 @@ from uuid import UUID
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from sqlalchemy.orm import selectinload
 
+from app.core.datetime_utils import utc_now
 from app.core.config import settings
 from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData, get_password_hash, log_audit, send_email
@@ -73,8 +74,7 @@ class UserResponse(BaseModel):
     last_login: Optional[str]
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserListResponse(BaseModel):
@@ -165,7 +165,7 @@ def format_user_response(user: User) -> UserResponse:
         is_verified=user.is_verified or False,
         expires_at=user.expires_at.isoformat() if user.expires_at else None,
         last_login=user.last_login.isoformat() if user.last_login else None,
-        created_at=user.created_at.isoformat() if user.created_at else datetime.utcnow().isoformat()
+        created_at=user.created_at.isoformat() if user.created_at else utc_now().isoformat()
     )
 
 
@@ -325,7 +325,7 @@ async def create_user(
         is_verified=False,
         created_by=UUID(current_user.user_id),
         invited_by=UUID(current_user.user_id),
-        invited_at=datetime.utcnow()
+        invited_at=utc_now()
     )
 
     db.add(new_user)
@@ -515,7 +515,7 @@ async def update_user(
     if user_data.expires_at is not None:
         user.expires_at = user_data.expires_at
 
-    user.updated_at = datetime.utcnow()
+    user.updated_at = utc_now()
     user.updated_by = UUID(current_user.user_id)
     await db.commit()
     await db.refresh(user)
@@ -572,7 +572,7 @@ async def delete_user(
         )
 
     user.is_active = False
-    user.updated_at = datetime.utcnow()
+    user.updated_at = utc_now()
     user.updated_by = UUID(current_user.user_id)
     await db.commit()
 
@@ -614,7 +614,7 @@ async def invite_user(
         select(UserInvitation).where(
             UserInvitation.email == invite_data.email,
             UserInvitation.accepted_at.is_(None),
-            UserInvitation.expires_at > datetime.utcnow()
+            UserInvitation.expires_at > utc_now()
         )
     )
     if existing_invite.scalar_one_or_none():
@@ -635,7 +635,7 @@ async def invite_user(
 
     # Create invitation
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(days=invite_data.expires_in_days or 7)
+    expires_at = utc_now() + timedelta(days=invite_data.expires_in_days or 7)
 
     invitation = UserInvitation(
         email=invite_data.email,
@@ -707,7 +707,7 @@ async def list_modules(
     category: Optional[str] = None
 ):
     """List all active modules."""
-    query = select(Module).where(Module.is_active == True)
+    query = select(Module).where(Module.is_active.is_(True))
 
     if category:
         query = query.where(Module.category == category)
@@ -740,7 +740,7 @@ async def list_permission_templates(
     """List all permission templates."""
     require_admin_or_hr(current_user)
 
-    query = select(PermissionTemplate).where(PermissionTemplate.is_active == True)
+    query = select(PermissionTemplate).where(PermissionTemplate.is_active.is_(True))
 
     if category:
         try:
@@ -825,9 +825,10 @@ async def update_user_permissions(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    # Delete existing permissions
+    # Delete existing permissions - FIXED: was using select() instead of delete()
+    from sqlalchemy import delete
     await db.execute(
-        select(UserModulePermission).where(UserModulePermission.user_id == user_id)
+        delete(UserModulePermission).where(UserModulePermission.user_id == user_id)
     )
 
     # Add new permissions
@@ -878,7 +879,7 @@ async def apply_permission_template(
         return
 
     # Get all modules
-    modules_result = await db.execute(select(Module).where(Module.is_active == True))
+    modules_result = await db.execute(select(Module).where(Module.is_active.is_(True)))
     modules = {m.code: m.id for m in modules_result.scalars().all()}
 
     # Apply permissions from template

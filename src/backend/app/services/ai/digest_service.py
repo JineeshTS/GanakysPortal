@@ -6,6 +6,7 @@ Generate intelligent daily summaries and learn from feedback
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, date, timedelta
+from app.core.datetime_utils import utc_now
 from enum import Enum
 
 
@@ -147,7 +148,7 @@ class DigestService:
             ai_insights=ai_insights,
             key_metrics=key_metrics,
             alerts=alerts,
-            generated_at=datetime.utcnow()
+            generated_at=utc_now()
         )
 
     async def generate_weekly_summary(
@@ -189,13 +190,13 @@ class DigestService:
         if "corrections" in feedback:
             for correction in feedback["corrections"]:
                 self._corrections.append(CorrectionRecord(
-                    id=str(datetime.utcnow().timestamp()),
+                    id=str(utc_now().timestamp()),
                     user_id=user_id,
                     original_output=correction.get("original", ""),
                     corrected_output=correction.get("corrected", ""),
                     context={"digest_id": digest_id},
                     feature="digest",
-                    timestamp=datetime.utcnow()
+                    timestamp=utc_now()
                 ))
 
     def learn_from_corrections(self) -> Dict[str, Any]:

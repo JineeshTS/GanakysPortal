@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.csr import CSRProject, CSRProjectStatus
 from app.schemas.csr import CSRProjectCreate, CSRProjectUpdate, CSRCategory
+from app.core.datetime_utils import utc_now
 
 
 class ProjectService:
@@ -55,7 +56,7 @@ class ProjectService:
             board_approval_required=obj_in.board_approval_required or False,
             proposed_by=user_id,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -147,7 +148,7 @@ class ProjectService:
         if 'latest_update' in update_data:
             db_obj.update_date = date.today()
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -167,7 +168,7 @@ class ProjectService:
         else:
             db_obj.status = CSRProjectStatus.cancelled
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

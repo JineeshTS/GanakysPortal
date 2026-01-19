@@ -104,7 +104,7 @@ export default function MyProfilePage() {
         <PageHeader
           title="My Profile"
           description="View and manage your personal information"
-          icon={<UserCircle className="h-6 w-6" />}
+          icon={UserCircle}
         />
         <Card>
           <CardContent className="pt-6">
@@ -131,7 +131,7 @@ export default function MyProfilePage() {
         <PageHeader
           title="My Profile"
           description="View and manage your personal information"
-          icon={<UserCircle className="h-6 w-6" />}
+          icon={UserCircle}
         />
         <Card>
           <CardContent className="pt-6">
@@ -153,7 +153,7 @@ export default function MyProfilePage() {
         <PageHeader
           title="My Profile"
           description="View and manage your personal information"
-          icon={<UserCircle className="h-6 w-6" />}
+          icon={UserCircle}
         />
         <Card>
           <CardContent className="pt-6">
@@ -177,7 +177,7 @@ export default function MyProfilePage() {
       <PageHeader
         title="My Profile"
         description="View and manage your personal information"
-        icon={<UserCircle className="h-6 w-6" />}
+        icon={UserCircle}
         actions={
           <Button>
             <Edit className="h-4 w-4 mr-2" />

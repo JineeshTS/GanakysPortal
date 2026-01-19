@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.expense import ExpensePolicy, PerDiemRate, MileageRate
 from app.schemas.expense import (
     ExpensePolicyCreate, ExpensePolicyUpdate,
@@ -96,7 +97,7 @@ class PolicyService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(policy, field, value)
-        policy.updated_at = datetime.utcnow()
+        policy.updated_at = utc_now()
         await db.commit()
         await db.refresh(policy)
         return policy
@@ -156,7 +157,7 @@ class PolicyService:
         policy: ExpensePolicy
     ) -> None:
         """Soft delete policy."""
-        policy.deleted_at = datetime.utcnow()
+        policy.deleted_at = utc_now()
         await db.commit()
 
     # Per Diem Rate Methods

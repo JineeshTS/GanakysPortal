@@ -6,6 +6,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.compliance import ComplianceTraining, ComplianceCategory
 from app.schemas.compliance import ComplianceTrainingCreate, ComplianceTrainingUpdate
+from app.core.datetime_utils import utc_now
 
 class TrainingService:
     async def create(self, db: AsyncSession, obj_in: ComplianceTrainingCreate, company_id: UUID, user_id: UUID) -> ComplianceTraining:
@@ -18,7 +19,7 @@ class TrainingService:
             target_audience=obj_in.target_audience, max_participants=obj_in.max_participants,
             actual_participants=0, has_assessment=obj_in.has_assessment or False,
             passing_score=obj_in.passing_score, status="planned", is_mandatory=obj_in.is_mandatory or False,
-            created_by=user_id, created_at=datetime.utcnow(),
+            created_by=user_id, created_at=utc_now(),
         )
         db.add(db_obj)
         await db.commit()
@@ -48,7 +49,7 @@ class TrainingService:
     async def update(self, db: AsyncSession, db_obj: ComplianceTraining, obj_in: ComplianceTrainingUpdate) -> ComplianceTraining:
         for field, value in obj_in.model_dump(exclude_unset=True).items():
             setattr(db_obj, field, value)
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

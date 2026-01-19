@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, update
 
+from app.core.datetime_utils import utc_now
 from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData
 from app.models.company import (
@@ -347,7 +348,7 @@ async def accept_recommendation(
             item.status = "applied"
             item.applied_entity_id = dept.id
             item.applied_entity_type = "department"
-            item.applied_at = datetime.utcnow()
+            item.applied_at = utc_now()
             departments_created += 1
 
     # Process designations
@@ -392,13 +393,13 @@ async def accept_recommendation(
             item.status = "applied"
             item.applied_entity_id = desig.id
             item.applied_entity_type = "designation"
-            item.applied_at = datetime.utcnow()
+            item.applied_at = utc_now()
             designations_created += 1
 
     # Update recommendation status
     rec.status = "accepted"
     rec.reviewed_by = user_id
-    rec.reviewed_at = datetime.utcnow()
+    rec.reviewed_at = utc_now()
     rec.user_feedback = request.user_feedback
 
     await db.commit()
@@ -437,7 +438,7 @@ async def reject_recommendation(
 
     rec.status = "rejected"
     rec.reviewed_by = user_id
-    rec.reviewed_at = datetime.utcnow()
+    rec.reviewed_at = utc_now()
     rec.user_feedback = request.rejection_reason
 
     # Reject all items
@@ -497,7 +498,7 @@ async def customize_recommendation(
         )
 
     rec.reviewed_by = user_id
-    rec.reviewed_at = datetime.utcnow()
+    rec.reviewed_at = utc_now()
     rec.status = "merged"  # Partially accepted
 
     await db.commit()
@@ -605,7 +606,7 @@ async def accept_item(
         item.applied_entity_type = "designation"
 
     item.status = "applied"
-    item.applied_at = datetime.utcnow()
+    item.applied_at = utc_now()
 
     await db.commit()
 
@@ -711,9 +712,9 @@ async def get_dashboard_summary(
     dept_result = await db.execute(
         select(
             func.count(Department.id),
-            func.count(Department.id).filter(Department.ai_generated == True)
+            func.count(Department.id).filter(Department.ai_generated.is_(True))
         )
-        .where(and_(Department.company_id == company_id, Department.is_active == True))
+        .where(and_(Department.company_id == company_id, Department.is_active.is_(True)))
     )
     dept_counts = dept_result.first()
 
@@ -721,9 +722,9 @@ async def get_dashboard_summary(
     desig_result = await db.execute(
         select(
             func.count(Designation.id),
-            func.count(Designation.id).filter(Designation.ai_generated == True)
+            func.count(Designation.id).filter(Designation.ai_generated.is_(True))
         )
-        .where(and_(Designation.company_id == company_id, Designation.is_active == True))
+        .where(and_(Designation.company_id == company_id, Designation.is_active.is_(True)))
     )
     desig_counts = desig_result.first()
 

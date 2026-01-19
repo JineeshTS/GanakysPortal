@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.fixed_assets import (
     FixedAsset, AssetCategory, AssetTransfer,
     AssetStatus, DepreciationMethod, DisposalMethod
@@ -26,13 +27,13 @@ class AssetService:
     @staticmethod
     def generate_asset_code(prefix: str = "AST") -> str:
         """Generate asset code."""
-        timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        timestamp = utc_now().strftime('%Y%m%d%H%M%S')
         return f"{prefix}-{timestamp}"
 
     @staticmethod
     def generate_transfer_number() -> str:
         """Generate transfer number."""
-        timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        timestamp = utc_now().strftime('%Y%m%d%H%M%S')
         return f"TRF-{timestamp}"
 
     # Category Methods
@@ -111,7 +112,7 @@ class AssetService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(category, field, value)
-        category.updated_at = datetime.utcnow()
+        category.updated_at = utc_now()
         await db.commit()
         await db.refresh(category)
         return category
@@ -194,6 +195,8 @@ class AssetService:
         category_id: Optional[UUID] = None,
         status: Optional[AssetStatus] = None,
         department_id: Optional[UUID] = None,
+        location_id: Optional[UUID] = None,
+        custodian_id: Optional[UUID] = None,
         search: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
@@ -212,6 +215,8 @@ class AssetService:
             query = query.where(FixedAsset.status == status)
         if department_id:
             query = query.where(FixedAsset.department_id == department_id)
+        if custodian_id:
+            query = query.where(FixedAsset.custodian_id == custodian_id)
         if search:
             query = query.where(
                 FixedAsset.name.ilike(f"%{search}%") |
@@ -237,7 +242,7 @@ class AssetService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(asset, field, value)
-        asset.updated_at = datetime.utcnow()
+        asset.updated_at = utc_now()
         await db.commit()
         await db.refresh(asset)
         return asset
@@ -249,7 +254,7 @@ class AssetService:
     ) -> FixedAsset:
         """Activate an asset."""
         asset.status = AssetStatus.ACTIVE
-        asset.updated_at = datetime.utcnow()
+        asset.updated_at = utc_now()
         await db.commit()
         await db.refresh(asset)
         return asset
@@ -266,7 +271,7 @@ class AssetService:
         asset.disposal_method = data.disposal_method
         asset.disposal_amount = data.disposal_amount
         asset.disposal_notes = data.notes
-        asset.updated_at = datetime.utcnow()
+        asset.updated_at = utc_now()
         await db.commit()
         await db.refresh(asset)
         return asset
@@ -277,7 +282,7 @@ class AssetService:
         asset: FixedAsset
     ) -> None:
         """Soft delete asset."""
-        asset.deleted_at = datetime.utcnow()
+        asset.deleted_at = utc_now()
         await db.commit()
 
     # Transfer Methods
@@ -325,8 +330,8 @@ class AssetService:
         """Approve and complete asset transfer."""
         transfer.status = "completed"
         transfer.approved_by = user_id
-        transfer.approved_at = datetime.utcnow()
-        transfer.updated_at = datetime.utcnow()
+        transfer.approved_at = utc_now()
+        transfer.updated_at = utc_now()
 
         # Update asset location
         result = await db.execute(
@@ -338,7 +343,7 @@ class AssetService:
             asset.department_id = transfer.to_department_id
             asset.custodian_id = transfer.to_custodian_id
             asset.status = AssetStatus.TRANSFERRED
-            asset.updated_at = datetime.utcnow()
+            asset.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(transfer)

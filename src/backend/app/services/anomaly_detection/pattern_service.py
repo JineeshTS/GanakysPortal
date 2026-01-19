@@ -10,6 +10,7 @@ from sqlalchemy import select, and_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.anomaly_detection import AnomalyPattern
+from app.core.datetime_utils import utc_now
 
 
 class PatternService:
@@ -158,7 +159,7 @@ class PatternService:
 
             if existing_pattern:
                 # Update existing pattern
-                existing_pattern.last_validated_at = datetime.utcnow()
+                existing_pattern.last_validated_at = utc_now()
                 patterns_learned += 1
             # In production, would create new pattern if detected
             # patterns_learned += 1
@@ -185,7 +186,7 @@ class PatternService:
         if not pattern:
             return None
 
-        pattern.last_validated_at = datetime.utcnow()
+        pattern.last_validated_at = utc_now()
         pattern.validation_score = validation_score
 
         # Deactivate pattern if validation score is too low

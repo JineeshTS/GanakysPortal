@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hsseq import HazardIdentification, HazardRiskLevel
 from app.schemas.hsseq import HazardIdentificationCreate, HazardIdentificationUpdate, HSECategory
+from app.core.datetime_utils import utc_now
 
 
 class HazardService:
@@ -65,7 +66,7 @@ class HazardService:
             review_frequency_days=obj_in.review_frequency_days or 365,
             identified_by=user_id,
             identified_date=date.today(),
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -178,7 +179,7 @@ class HazardService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

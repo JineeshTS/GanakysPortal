@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ecommerce import ShoppingCart, CartItem
 from app.schemas.ecommerce import CartItemCreate, CartItemUpdate
+from app.core.datetime_utils import utc_now
 
 
 class CartService:
@@ -42,7 +43,7 @@ class CartService:
 
         if cart:
             # Check if cart expired
-            if cart.expires_at and cart.expires_at < datetime.utcnow():
+            if cart.expires_at and cart.expires_at < utc_now():
                 # Clear expired cart
                 await CartService.clear_cart(db, cart)
 
@@ -59,7 +60,7 @@ class CartService:
             discount_total=Decimal('0'),
             grand_total=Decimal('0'),
             currency="INR",
-            expires_at=datetime.utcnow() + timedelta(hours=CartService.CART_EXPIRY_HOURS)
+            expires_at=utc_now() + timedelta(hours=CartService.CART_EXPIRY_HOURS)
         )
         db.add(cart)
         await db.commit()
@@ -106,7 +107,7 @@ class CartService:
             # Update quantity
             existing.quantity += data.quantity
             existing.line_total = (existing.unit_price * existing.quantity) - existing.discount_amount + existing.tax_amount
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = utc_now()
             item = existing
         else:
             # Create new item
@@ -162,7 +163,7 @@ class CartService:
 
         if item.quantity > 0:
             item.line_total = (item.unit_price * item.quantity) - item.discount_amount + item.tax_amount
-            item.updated_at = datetime.utcnow()
+            item.updated_at = utc_now()
 
         await CartService._recalculate_totals(db, cart)
         await db.commit()
@@ -216,7 +217,7 @@ class CartService:
         cart.tax_total = Decimal('0')
         cart.discount_total = Decimal('0')
         cart.grand_total = Decimal('0')
-        cart.updated_at = datetime.utcnow()
+        cart.updated_at = utc_now()
 
         await db.commit()
 
@@ -239,7 +240,7 @@ class CartService:
         cart.tax_total = tax_total
         cart.discount_total = discount_total
         cart.grand_total = subtotal + tax_total - discount_total
-        cart.updated_at = datetime.utcnow()
+        cart.updated_at = utc_now()
 
     @staticmethod
     async def get_cart_items(
@@ -268,7 +269,7 @@ class CartService:
         # Move items to customer cart
         for item in guest_items:
             item.cart_id = customer_cart.id
-            item.updated_at = datetime.utcnow()
+            item.updated_at = utc_now()
 
         # Delete guest cart
         await db.delete(guest_cart)

@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.currency import Currency, CompanyCurrency
 from app.schemas.currency import (
     CurrencyCreate, CurrencyUpdate,
@@ -104,7 +105,7 @@ class CurrencyService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(currency, field, value)
-        currency.updated_at = datetime.utcnow()
+        currency.updated_at = utc_now()
         await db.commit()
         await db.refresh(currency)
         return currency
@@ -197,7 +198,7 @@ class CurrencyService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(company_currency, field, value)
-        company_currency.updated_at = datetime.utcnow()
+        company_currency.updated_at = utc_now()
         await db.commit()
         await db.refresh(company_currency)
         return company_currency

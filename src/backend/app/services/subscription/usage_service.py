@@ -9,6 +9,7 @@ from datetime import datetime, date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, update
 
+from app.core.datetime_utils import utc_now
 from app.models.subscription import (
     Subscription, SubscriptionPlan, UsageMeter,
     SubscriptionStatus, UsageType
@@ -59,7 +60,7 @@ class UsageService:
             }
 
         # Get current meter
-        now = datetime.utcnow()
+        now = utc_now()
         meter = await self._get_or_create_meter(
             subscription.id, company_id, usage_type, now
         )
@@ -87,7 +88,7 @@ class UsageService:
             # Check alert threshold
             percent_used = (meter.quantity_used / limit) * 100
             if percent_used >= meter.alert_threshold_percent and not meter.alert_sent_at:
-                meter.alert_sent_at = datetime.utcnow()
+                meter.alert_sent_at = utc_now()
                 # TODO: Trigger alert notification
 
         await self.db.commit()
@@ -155,7 +156,7 @@ class UsageService:
             }
 
         # For soft limits (API calls, AI queries, storage)
-        now = datetime.utcnow()
+        now = utc_now()
         meter = await self._get_or_create_meter(
             subscription.id, company_id, usage_type, now
         )
@@ -209,7 +210,7 @@ class UsageService:
             }
 
         plan = await self.db.get(SubscriptionPlan, subscription.plan_id)
-        now = datetime.utcnow()
+        now = utc_now()
 
         summary = {
             "subscription_id": str(subscription.id),
@@ -354,7 +355,7 @@ class UsageService:
         Called by scheduler at month start.
         Returns count of meters reset.
         """
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Find active subscriptions with ended periods
         query = select(Subscription).where(

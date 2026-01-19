@@ -70,6 +70,15 @@ class Gender(str, PyEnum):
     ALL = "all"
 
 
+class EncashmentStatus(str, PyEnum):
+    """Leave encashment status."""
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    PAID = "paid"
+    CANCELLED = "cancelled"
+
+
 class LeaveType(Base):
     """
     Leave type master configuration.
@@ -100,7 +109,10 @@ class LeaveType(Base):
     document_required_after_days = Column(Integer, nullable=True)  # Doc needed after X days
 
     # Applicability
-    applicable_gender = Column(String(10), default="all")  # Changed from Enum for DB compatibility
+    applicable_gender = Column(
+        Enum(Gender, name='gender_enum', native_enum=False),
+        default=Gender.ALL
+    )
     min_service_days = Column(Integer, default=0)  # Min service required
     probation_applicable = Column(Boolean, default=True)  # Applicable during probation
 
@@ -136,7 +148,10 @@ class LeavePolicy(Base):
 
     # Accrual settings
     is_accrual_based = Column(Boolean, default=False)
-    accrual_frequency = Column(String(20), nullable=True)  # Changed from Enum for DB compatibility
+    accrual_frequency = Column(
+        Enum(AccrualFrequency, name='accrual_frequency_enum', native_enum=False),
+        nullable=True
+    )
     accrual_amount = Column(Numeric(5, 2), nullable=True)  # Days per accrual period
     accrual_start_from = Column(String(20), default="joining")  # joining, confirmation
 
@@ -165,7 +180,10 @@ class LeavePolicy(Base):
     prorate_on_separation = Column(Boolean, default=True)
 
     # Applicability
-    applicable_gender = Column(String(10), default="all")  # Changed from Enum for DB compatibility
+    applicable_gender = Column(
+        Enum(Gender, name='gender_enum', native_enum=False),
+        default=Gender.ALL
+    )
     min_service_months = Column(Integer, default=0)
     probation_applicable = Column(Boolean, default=True)
     applicable_employment_types = Column(JSONB, default=["full_time"])  # full_time, part_time, etc.
@@ -284,8 +302,14 @@ class LeaveRequest(Base):
     # Leave period
     from_date = Column(Date, nullable=False)
     to_date = Column(Date, nullable=False)
-    from_day_type = Column(String(20), default="full")  # Changed from Enum for DB compatibility
-    to_day_type = Column(String(20), default="full")  # Changed from Enum for DB compatibility
+    from_day_type = Column(
+        Enum(DayType, name='day_type_enum', native_enum=False),
+        default=DayType.FULL
+    )
+    to_day_type = Column(
+        Enum(DayType, name='day_type_enum', native_enum=False),
+        default=DayType.FULL
+    )
 
     # Days calculation
     total_days = Column(Numeric(5, 2), nullable=False)  # Actual leave days
@@ -301,10 +325,14 @@ class LeaveRequest(Base):
     contact_address = Column(Text, nullable=True)
 
     # Supporting documents
-    document_paths = Column(JSONB, default=[])  # List of document URLs
+    document_paths = Column(JSONB, default=list)  # List of document URLs
 
     # Status
-    status = Column(String(20), default="draft", index=True)  # Changed from Enum for DB compatibility
+    status = Column(
+        Enum(LeaveStatus, name='leave_status_enum', native_enum=False),
+        default=LeaveStatus.DRAFT,
+        index=True
+    )
 
     # Approval workflow
     approver_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True)
@@ -452,7 +480,10 @@ class LeaveEncashment(Base):
     total_amount = Column(Numeric(12, 2), nullable=False)
 
     # Status
-    status = Column(String(20), default="pending")  # Changed from Enum for DB compatibility
+    status = Column(
+        Enum(EncashmentStatus, name='encashment_status_enum', native_enum=False),
+        default=EncashmentStatus.PENDING
+    )
 
     # Approval
     approver_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True)

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.csr import CSRPolicy
 from app.schemas.csr import CSRPolicyCreate, CSRPolicyUpdate
+from app.core.datetime_utils import utc_now
 
 
 class PolicyService:
@@ -40,7 +41,7 @@ class PolicyService:
             geographic_focus=obj_in.geographic_focus or [],
             is_active=True,
             created_by=user_id,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         db.add(db_obj)
@@ -76,7 +77,7 @@ class PolicyService:
         for field, value in update_data.items():
             setattr(db_obj, field, value)
 
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

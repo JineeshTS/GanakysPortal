@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.compliance import ComplianceMaster, ComplianceTask, ComplianceCategory, ComplianceStatus, ComplianceFrequency
 from app.schemas.compliance import ComplianceMasterCreate, ComplianceMasterUpdate
+from app.core.datetime_utils import utc_now
 
 
 class ComplianceService:
@@ -28,7 +29,7 @@ class ComplianceService:
             forms_required=obj_in.forms_required, submission_mode=obj_in.submission_mode,
             submission_portal=obj_in.submission_portal, default_owner_role=obj_in.default_owner_role,
             departments=obj_in.departments, compliance_steps=obj_in.compliance_steps,
-            reference_links=obj_in.reference_links, is_active=True, created_by=user_id, created_at=datetime.utcnow(),
+            reference_links=obj_in.reference_links, is_active=True, created_by=user_id, created_at=utc_now(),
         )
         db.add(db_obj)
         await db.commit()
@@ -63,7 +64,7 @@ class ComplianceService:
     async def update(self, db: AsyncSession, db_obj: ComplianceMaster, obj_in: ComplianceMasterUpdate) -> ComplianceMaster:
         for field, value in obj_in.model_dump(exclude_unset=True).items():
             setattr(db_obj, field, value)
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -86,7 +87,7 @@ class ComplianceService:
                     task_code=f"{compliance.compliance_code}-{financial_year}-{task_count:03d}",
                     period=self._get_period_name(compliance.frequency, current),
                     financial_year=financial_year, status=ComplianceStatus.pending,
-                    due_date=due, created_by=user_id, created_at=datetime.utcnow(),
+                    due_date=due, created_by=user_id, created_at=utc_now(),
                 )
                 db.add(task)
                 tasks.append(task)

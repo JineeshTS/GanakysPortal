@@ -4,6 +4,7 @@ from typing import Optional, List, Tuple
 from uuid import UUID, uuid4
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.datetime_utils import utc_now
 from app.models.manufacturing import (
     ProductionOrder, ProductionOrderStatus, ProductionOrderPriority,
     WorkOrder, WorkOrderStatus, ProductionRouting, RoutingOperation
@@ -146,7 +147,7 @@ class ProductionOrderService:
         if not order or order.status != ProductionOrderStatus.RELEASED:
             return None
         order.status = ProductionOrderStatus.IN_PROGRESS
-        order.actual_start_date = datetime.utcnow()
+        order.actual_start_date = utc_now()
         await db.commit()
         await db.refresh(order)
         return order
@@ -158,7 +159,7 @@ class ProductionOrderService:
         if not order or order.status != ProductionOrderStatus.IN_PROGRESS:
             return None
         order.status = ProductionOrderStatus.COMPLETED
-        order.actual_end_date = datetime.utcnow()
+        order.actual_end_date = utc_now()
         await db.commit()
         await db.refresh(order)
         return order

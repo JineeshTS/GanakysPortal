@@ -10,14 +10,14 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ganaportal_user
-      POSTGRES_PASSWORD: GanaPortal2026!
+      POSTGRES_PASSWORD: R2PgyCXcUCYspJg46Btanfttu3HZ0Yw5
       POSTGRES_DB: ganaportal
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ganaportal_user -d ganaportal"]
       interval: 10s
@@ -35,7 +35,7 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "6379:6379"
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -54,7 +54,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://ganaportal_user:GanaPortal2026!@db:5432/ganaportal
+      - DATABASE_URL=postgresql+asyncpg://ganaportal_user:R2PgyCXcUCYspJg46Btanfttu3HZ0Yw5@db:5432/ganaportal
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT=development
       - DEBUG=true
@@ -62,7 +62,7 @@ services:
       - ./backend:/app
       - backend_data:/var/data/ganaportal
     ports:
-      - "8000:8000"
+      - "8002:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -84,7 +84,7 @@ services:
     container_name: ganaportal-frontend
     restart: unless-stopped
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NEXT_PUBLIC_API_URL=https://portal.ganakys.com/api/v1
       - NODE_ENV=development
     volumes:
       - ./frontend:/app
@@ -108,7 +108,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://ganaportal_user:GanaPortal2026!@db:5432/ganaportal
+      - DATABASE_URL=postgresql+asyncpg://ganaportal_user:R2PgyCXcUCYspJg46Btanfttu3HZ0Yw5@db:5432/ganaportal
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/3
       - CELERY_RESULT_BACKEND=redis://redis:6379/4

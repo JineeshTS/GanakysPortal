@@ -202,11 +202,11 @@ class WorkflowInstance(Base, TimestampMixin, SoftDeleteMixin):
     entity_id: Mapped[Optional[UUID]] = mapped_column(PGUUID(as_uuid=True))
 
     # Variables (workflow data)
-    variables: Mapped[dict] = mapped_column(JSON, default={})
+    variables: Mapped[dict] = mapped_column(JSON, default=dict)
 
     # Progress
-    current_node_ids: Mapped[List[str]] = mapped_column(ARRAY(String), default=[])
-    completed_nodes: Mapped[List[str]] = mapped_column(ARRAY(String), default=[])
+    current_node_ids: Mapped[List[str]] = mapped_column(ARRAY(String), default=list)
+    completed_nodes: Mapped[List[str]] = mapped_column(ARRAY(String), default=list)
 
     # Timestamps
     started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

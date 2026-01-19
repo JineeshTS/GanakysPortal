@@ -535,22 +535,81 @@ async def get_customer_transactions(
             detail="Customer not found"
         )
 
-    # Placeholder - would integrate with invoice/payment models
+    from sqlalchemy import select, func, desc, union_all, literal
+    from app.models.invoice import Invoice
+    from app.models.payment import Payment, PaymentType
+
+    # Query invoices for this customer
+    invoice_query = select(Invoice).where(
+        Invoice.company_id == company_id,
+        Invoice.customer_id == customer_id
+    ).order_by(desc(Invoice.invoice_date))
+
+    invoice_result = await db.execute(invoice_query)
+    invoices = invoice_result.scalars().all()
+
+    # Query payments received from this customer
+    payment_query = select(Payment).where(
+        Payment.company_id == company_id,
+        Payment.party_id == customer_id,
+        Payment.payment_type == PaymentType.RECEIVED
+    ).order_by(desc(Payment.payment_date))
+
+    payment_result = await db.execute(payment_query)
+    payments = payment_result.scalars().all()
+
+    # Build transactions list (combined and sorted)
+    transactions = []
+    for inv in invoices:
+        transactions.append({
+            "type": "invoice",
+            "id": str(inv.id),
+            "number": inv.invoice_number,
+            "date": inv.invoice_date.isoformat() if inv.invoice_date else None,
+            "amount": float(inv.grand_total) if hasattr(inv, 'grand_total') and inv.grand_total else float(inv.subtotal or 0) + float(inv.total_tax or 0),
+            "status": inv.status.value if hasattr(inv.status, 'value') else str(inv.status) if inv.status else "draft",
+            "due_date": inv.due_date.isoformat() if inv.due_date else None
+        })
+
+    for pmt in payments:
+        transactions.append({
+            "type": "payment",
+            "id": str(pmt.id),
+            "number": pmt.payment_number,
+            "date": pmt.payment_date.isoformat() if pmt.payment_date else None,
+            "amount": float(pmt.amount or 0),
+            "status": pmt.status.value if hasattr(pmt.status, 'value') else str(pmt.status) if pmt.status else "completed",
+            "payment_mode": pmt.payment_mode.value if hasattr(pmt.payment_mode, 'value') else str(pmt.payment_mode) if pmt.payment_mode else None
+        })
+
+    # Sort by date descending
+    transactions.sort(key=lambda x: x["date"] or "", reverse=True)
+
+    # Calculate totals
+    total_invoice_amount = sum(float(inv.subtotal or 0) + float(inv.total_tax or 0) for inv in invoices)
+    total_payment_amount = sum(float(pmt.amount or 0) for pmt in payments)
+
+    # Apply pagination
+    total = len(transactions)
+    start = (page - 1) * limit
+    end = start + limit
+    paginated_transactions = transactions[start:end]
+
     return {
-        "customer_id": customer_id,
-        "transactions": [],
+        "customer_id": str(customer_id),
+        "transactions": paginated_transactions,
         "summary": {
-            "total_invoices": 0,
-            "total_invoice_amount": "0.00",
-            "total_payments": 0,
-            "total_payment_amount": "0.00",
-            "outstanding_amount": str(customer.outstanding_receivable),
+            "total_invoices": len(invoices),
+            "total_invoice_amount": f"{total_invoice_amount:.2f}",
+            "total_payments": len(payments),
+            "total_payment_amount": f"{total_payment_amount:.2f}",
+            "outstanding_amount": str(customer.outstanding_receivable) if customer.outstanding_receivable else "0.00",
             "currency": "INR"
         },
         "meta": {
             "page": page,
             "limit": limit,
-            "total": 0
+            "total": total
         }
     }
 

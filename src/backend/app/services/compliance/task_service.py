@@ -6,6 +6,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.compliance import ComplianceTask, ComplianceStatus
 from app.schemas.compliance import ComplianceTaskCreate, ComplianceTaskUpdate
+from app.core.datetime_utils import utc_now
 
 class TaskService:
     async def create(self, db: AsyncSession, obj_in: ComplianceTaskCreate, company_id: UUID, user_id: UUID) -> ComplianceTask:
@@ -15,7 +16,7 @@ class TaskService:
             task_code=task_code, period=obj_in.period, financial_year=obj_in.financial_year,
             status=ComplianceStatus.pending, due_date=obj_in.due_date, assigned_to=obj_in.assigned_to,
             department_id=obj_in.department_id, reviewer_id=obj_in.reviewer_id,
-            created_by=user_id, created_at=datetime.utcnow(),
+            created_by=user_id, created_at=utc_now(),
         )
         db.add(db_obj)
         await db.commit()
@@ -58,7 +59,7 @@ class TaskService:
             setattr(db_obj, field, value)
         if db_obj.status == ComplianceStatus.pending and db_obj.due_date < date.today():
             db_obj.status = ComplianceStatus.overdue
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
@@ -67,7 +68,7 @@ class TaskService:
         db_obj.status = ComplianceStatus.completed
         db_obj.completion_date = date.today()
         db_obj.submitted_by = user_id
-        db_obj.updated_at = datetime.utcnow()
+        db_obj.updated_at = utc_now()
         await db.commit()
         await db.refresh(db_obj)
         return db_obj

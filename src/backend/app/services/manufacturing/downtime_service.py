@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.manufacturing import WorkCenterDowntime
 from app.schemas.manufacturing import DowntimeCreate
+from app.core.datetime_utils import utc_now
 
 
 class DowntimeService:
@@ -37,7 +38,7 @@ class DowntimeService:
         downtime = result.scalar_one_or_none()
         if not downtime or downtime.end_time:
             return None
-        downtime.end_time = datetime.utcnow()
+        downtime.end_time = utc_now()
         duration = (downtime.end_time - downtime.start_time).total_seconds() / 60
         downtime.duration_minutes = duration
         await db.commit()

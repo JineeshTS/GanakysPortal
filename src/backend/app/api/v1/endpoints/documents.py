@@ -376,6 +376,10 @@ async def list_document_shares(
 ):
     """List all shares for a document."""
     service = DocumentService(db)
+    # Verify document belongs to user's company before listing shares
+    document = await service.get_document(document_id, current_user.company_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
     shares = await service.list_shares(document_id)
     return shares
 
@@ -408,7 +412,21 @@ async def access_shared_document(
         if download and share.can_download:
             # Return file content
             from pathlib import Path
+            import os
+            from app.core.config import settings
+
+            # Validate file path to prevent path traversal
             file_path = Path(document.file_path)
+            storage_root = Path(getattr(settings, 'STORAGE_PATH', '/var/ganaportal/storage')).resolve()
+
+            # Resolve to absolute path and check it's within storage directory
+            try:
+                resolved_path = file_path.resolve()
+                if not str(resolved_path).startswith(str(storage_root)):
+                    raise HTTPException(status_code=403, detail="Access denied")
+            except (OSError, ValueError):
+                raise HTTPException(status_code=400, detail="Invalid file path")
+
             if not file_path.exists():
                 raise HTTPException(status_code=404, detail="File not found")
 

@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.expense import ExpenseAdvance, AdvanceStatus
 from app.schemas.expense import (
     ExpenseAdvanceCreate, ExpenseAdvanceUpdate,
@@ -22,7 +23,7 @@ class AdvanceService:
     @staticmethod
     def generate_advance_number() -> str:
         """Generate advance number."""
-        timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        timestamp = utc_now().strftime('%Y%m%d%H%M%S')
         return f"ADV-{timestamp}"
 
     @staticmethod
@@ -49,7 +50,7 @@ class AdvanceService:
             expected_expense_date=data.expected_expense_date,
             settlement_deadline=data.settlement_deadline,
             notes=data.notes,
-            requested_at=datetime.utcnow()
+            requested_at=utc_now()
         )
         db.add(advance)
         await db.commit()
@@ -115,7 +116,7 @@ class AdvanceService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(advance, field, value)
-        advance.updated_at = datetime.utcnow()
+        advance.updated_at = utc_now()
         await db.commit()
         await db.refresh(advance)
         return advance
@@ -135,9 +136,9 @@ class AdvanceService:
             advance.status = AdvanceStatus.REJECTED
             advance.rejection_reason = action.comments
 
-        advance.approved_at = datetime.utcnow()
+        advance.approved_at = utc_now()
         advance.approved_by = approver_id
-        advance.updated_at = datetime.utcnow()
+        advance.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(advance)
@@ -154,10 +155,10 @@ class AdvanceService:
         advance.status = AdvanceStatus.DISBURSED
         advance.disbursed_amount = advance.approved_amount
         advance.balance_amount = advance.approved_amount
-        advance.disbursed_at = datetime.utcnow()
+        advance.disbursed_at = utc_now()
         advance.disbursement_mode = disbursement_mode
         advance.payment_reference = payment_reference
-        advance.updated_at = datetime.utcnow()
+        advance.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(advance)
@@ -178,7 +179,7 @@ class AdvanceService:
         else:
             advance.status = AdvanceStatus.PARTIALLY_SETTLED
 
-        advance.updated_at = datetime.utcnow()
+        advance.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(advance)
@@ -233,5 +234,5 @@ class AdvanceService:
         advance: ExpenseAdvance
     ) -> None:
         """Soft delete advance."""
-        advance.deleted_at = datetime.utcnow()
+        advance.deleted_at = utc_now()
         await db.commit()

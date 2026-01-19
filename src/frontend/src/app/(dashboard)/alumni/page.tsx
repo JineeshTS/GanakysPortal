@@ -208,7 +208,7 @@ export default function AlumniPage() {
         <PageHeader
           title="Alumni Portal"
           description="Access your employment history, documents, and payslips"
-          icon={<GraduationCap className="h-6 w-6" />}
+          icon={GraduationCap}
         />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
@@ -234,7 +234,7 @@ export default function AlumniPage() {
         <PageHeader
           title="Alumni Portal"
           description="Access your employment history, documents, and payslips"
-          icon={<GraduationCap className="h-6 w-6" />}
+          icon={GraduationCap}
         />
         <Card>
           <CardContent className="pt-6 text-center py-12">
@@ -258,7 +258,7 @@ export default function AlumniPage() {
       <PageHeader
         title="Alumni Portal"
         description="Access your employment history, documents, and payslips"
-        icon={<GraduationCap className="h-6 w-6" />}
+        icon={GraduationCap}
         actions={
           <Button variant="outline" onClick={fetchData}>
             <RefreshCw className="h-4 w-4 mr-2" />

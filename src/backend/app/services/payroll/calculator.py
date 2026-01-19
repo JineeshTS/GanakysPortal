@@ -196,7 +196,18 @@ class PayrollCalculator:
 
         Returns:
             PayslipData with complete payslip information
+
+        Raises:
+            ValueError: If working_days is 0 or negative
         """
+        # Validate inputs
+        if working_days <= 0:
+            raise ValueError(f"working_days must be positive, got {working_days}")
+        if days_worked < 0:
+            raise ValueError(f"days_worked cannot be negative, got {days_worked}")
+        if days_worked > working_days:
+            days_worked = working_days  # Cap at working days
+
         # Calculate LOP days
         lop_days = max(0, working_days - days_worked)
 

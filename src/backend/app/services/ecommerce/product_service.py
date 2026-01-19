@@ -10,6 +10,7 @@ import re
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.ecommerce import Product, ProductCategory, ProductVariant, ProductStatus
 from app.schemas.ecommerce import (
     ProductCreate, ProductUpdate,
@@ -109,7 +110,7 @@ class ProductService:
             update_data['slug'] = ProductService.generate_slug(update_data['name'])
         for field, value in update_data.items():
             setattr(category, field, value)
-        category.updated_at = datetime.utcnow()
+        category.updated_at = utc_now()
         await db.commit()
         await db.refresh(category)
         return category
@@ -221,7 +222,7 @@ class ProductService:
             update_data['slug'] = ProductService.generate_slug(update_data['name'])
         for field, value in update_data.items():
             setattr(product, field, value)
-        product.updated_at = datetime.utcnow()
+        product.updated_at = utc_now()
         await db.commit()
         await db.refresh(product)
         return product
@@ -232,7 +233,7 @@ class ProductService:
         product: Product
     ) -> None:
         """Soft delete product."""
-        product.deleted_at = datetime.utcnow()
+        product.deleted_at = utc_now()
         await db.commit()
 
     @staticmethod
@@ -303,7 +304,7 @@ class ProductService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(variant, field, value)
-        variant.updated_at = datetime.utcnow()
+        variant.updated_at = utc_now()
         await db.commit()
         await db.refresh(variant)
         return variant
@@ -320,9 +321,9 @@ class ProductService:
             variant = await ProductService.get_variant(db, variant_id)
             if variant:
                 variant.stock_qty += quantity_change
-                variant.updated_at = datetime.utcnow()
+                variant.updated_at = utc_now()
         else:
             product.stock_qty += quantity_change
-            product.updated_at = datetime.utcnow()
+            product.updated_at = utc_now()
 
         await db.commit()

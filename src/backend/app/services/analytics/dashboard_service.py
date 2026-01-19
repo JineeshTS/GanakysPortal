@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.analytics import Dashboard, DashboardWidget, DashboardType, WidgetType
 from app.schemas.analytics import (
     DashboardCreate, DashboardUpdate,
@@ -99,7 +100,7 @@ class DashboardService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(dashboard, field, value)
-        dashboard.updated_at = datetime.utcnow()
+        dashboard.updated_at = utc_now()
         await db.commit()
         await db.refresh(dashboard)
         return dashboard
@@ -110,7 +111,7 @@ class DashboardService:
         dashboard: Dashboard
     ) -> None:
         """Soft delete dashboard."""
-        dashboard.deleted_at = datetime.utcnow()
+        dashboard.deleted_at = utc_now()
         await db.commit()
 
     # Widget Methods
@@ -167,7 +168,7 @@ class DashboardService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(widget, field, value)
-        widget.updated_at = datetime.utcnow()
+        widget.updated_at = utc_now()
         await db.commit()
         await db.refresh(widget)
         return widget
@@ -203,7 +204,7 @@ class DashboardService:
                 widget.position_y = pos.get('y', widget.position_y)
                 widget.width = pos.get('width', widget.width)
                 widget.height = pos.get('height', widget.height)
-                widget.updated_at = datetime.utcnow()
+                widget.updated_at = utc_now()
 
         await db.commit()
 

@@ -15,6 +15,12 @@ from sqlalchemy.orm import relationship
 
 from app.db.session import Base
 
+# Import EncryptedStringType for sensitive data
+try:
+    from app.core.encryption import EncryptedStringType
+except ImportError:
+    EncryptedStringType = None
+
 
 # ============================================================================
 # Enums
@@ -98,10 +104,10 @@ class SuperAdmin(Base):
 
     role = Column(Enum(SuperAdminRole), nullable=False, default=SuperAdminRole.support)
 
-    # MFA
+    # MFA - secrets encrypted at rest
     mfa_enabled = Column(Boolean, default=True)
-    mfa_secret = Column(String(255), nullable=True)
-    mfa_backup_codes = Column(ARRAY(String(20)), nullable=True)
+    mfa_secret = Column(EncryptedStringType() if EncryptedStringType else String(500), nullable=True)
+    mfa_backup_codes = Column(ARRAY(String(20)), nullable=True)  # Hashed, not encrypted
 
     # Status
     is_active = Column(Boolean, default=True)

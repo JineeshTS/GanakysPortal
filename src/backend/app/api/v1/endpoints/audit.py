@@ -4,10 +4,33 @@ API endpoints for audit log access and compliance reporting
 """
 from typing import Optional, List
 from datetime import datetime, date
+from uuid import UUID
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
-router = APIRouter(prefix="/audit", tags=["Audit"])
+from app.api.deps import get_current_user, get_db
+from app.models.user import User
+from app.core.datetime_utils import utc_now
+from app.services.audit_db_service import (
+    AuditDBService, AuditDBServiceError, AuditLogNotFoundError
+)
+
+
+async def require_auth(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Require authenticated user for endpoint access."""
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return current_user
+
+
+router = APIRouter(prefix="/audit", tags=["Audit"], dependencies=[Depends(require_auth)])
 
 
 # =============================================================================
@@ -61,6 +84,8 @@ class ComplianceReportResponse(BaseModel):
 
 @router.get("/logs", response_model=AuditSearchResponse)
 async def search_audit_logs(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
     action: Optional[str] = Query(None, description="Filter by action type"),
     entity_type: Optional[str] = Query(None, description="Filter by entity type"),
     entity_id: Optional[str] = Query(None, description="Filter by entity ID"),
@@ -76,59 +101,71 @@ async def search_audit_logs(
 
     Requires admin or super_admin role.
     """
-    # Sample response
+    # Role check
+    if current_user.role not in ["admin", "super_admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    service = AuditDBService(db)
+    items, total = await service.search_logs(
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        user_id=user_id,
+        severity=severity,
+        start_date=start_date,
+        end_date=end_date,
+        page=page,
+        page_size=page_size
+    )
+
+    # Convert to response model format
+    results = [
+        AuditLogResponse(
+            id=item["id"],
+            timestamp=datetime.fromisoformat(item["timestamp"]) if item["timestamp"] else utc_now(),
+            action=item["action"],
+            severity=item["severity"],
+            user_email=item.get("user_email"),
+            entity_type=item["entity_type"],
+            entity_id=item.get("entity_id"),
+            description=item["description"],
+            ip_address=item.get("ip_address")
+        )
+        for item in items
+    ]
+
     return AuditSearchResponse(
-        total=150,
+        total=total,
         page=page,
         page_size=page_size,
-        results=[
-            AuditLogResponse(
-                id="audit-001",
-                timestamp=datetime.utcnow(),
-                action="login",
-                severity="info",
-                user_email="admin@ganakys.com",
-                entity_type="authentication",
-                entity_id=None,
-                description="User logged in successfully",
-                ip_address="192.168.1.100"
-            ),
-            AuditLogResponse(
-                id="audit-002",
-                timestamp=datetime.utcnow(),
-                action="update",
-                severity="info",
-                user_email="hr@ganakys.com",
-                entity_type="employee",
-                entity_id="emp-001",
-                description="Updated employee salary",
-                ip_address="192.168.1.101"
-            ),
-        ]
+        results=results
     )
 
 
 @router.get("/logs/{log_id}")
-async def get_audit_log(log_id: str):
+async def get_audit_log(
+    log_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """Get single audit log entry with full details."""
-    return {
-        "id": log_id,
-        "timestamp": datetime.utcnow().isoformat(),
-        "action": "update",
-        "severity": "info",
-        "user_id": "user-001",
-        "user_email": "admin@ganakys.com",
-        "company_id": "comp-001",
-        "entity_type": "employee",
-        "entity_id": "emp-001",
-        "description": "Updated employee salary",
-        "old_values": {"salary": 50000},
-        "new_values": {"salary": 55000},
-        "ip_address": "192.168.1.100",
-        "user_agent": "Mozilla/5.0...",
-        "checksum": "a1b2c3d4e5f6",
-        "verified": True
-    }
+    if current_user.role not in ["admin", "super_admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    service = AuditDBService(db)
+    try:
+        log_uuid = UUID(log_id)
+        return await service.get_log(log_uuid)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid log ID format")
+    except AuditLogNotFoundError:
+        raise HTTPException(status_code=404, detail="Audit log not found")
 
 
 @router.get("/logs/{log_id}/verify")
@@ -138,7 +175,7 @@ async def verify_audit_log_integrity(log_id: str):
         "log_id": log_id,
         "is_valid": True,
         "checksum_match": True,
-        "verified_at": datetime.utcnow().isoformat()
+        "verified_at": utc_now().isoformat()
     }
 
 
@@ -149,21 +186,30 @@ async def verify_audit_log_integrity(log_id: str):
 @router.get("/users/{user_id}/activity", response_model=UserActivityResponse)
 async def get_user_activity(
     user_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
     days: int = Query(30, ge=1, le=365, description="Period in days"),
 ):
     """Get user activity summary."""
-    return UserActivityResponse(
-        user_id=user_id,
-        period_days=days,
-        total_actions=127,
-        action_breakdown={
-            "login": 30,
-            "read": 65,
-            "update": 25,
-            "create": 7
-        },
-        last_activity=datetime.utcnow().isoformat()
-    )
+    if current_user.role not in ["admin", "super_admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    service = AuditDBService(db)
+    try:
+        user_uuid = UUID(user_id)
+        result = await service.get_user_activity(user_uuid, days)
+        return UserActivityResponse(
+            user_id=result["user_id"],
+            period_days=result["period_days"],
+            total_actions=result["total_actions"],
+            action_breakdown=result["action_breakdown"],
+            last_activity=result["last_activity"]
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user ID format")
 
 
 @router.get("/users/{user_id}/sessions")
@@ -214,7 +260,7 @@ async def download_compliance_report(report_id: str):
         "report_id": report_id,
         "status": "ready",
         "download_url": f"/files/reports/{report_id}.pdf",
-        "expires_at": (datetime.utcnow()).isoformat()
+        "expires_at": (utc_now()).isoformat()
     }
 
 
@@ -230,7 +276,7 @@ async def get_security_events(
         "events": [
             {
                 "id": "sec-001",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
                 "event_type": "login_failed",
                 "severity": "warning",
                 "details": "Multiple failed login attempts",
@@ -239,7 +285,7 @@ async def get_security_events(
             },
             {
                 "id": "sec-002",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
                 "event_type": "permission_change",
                 "severity": "critical",
                 "details": "User role elevated to admin",
@@ -255,42 +301,35 @@ async def get_security_events(
 # =============================================================================
 
 @router.get("/stats/overview")
-async def get_audit_stats(days: int = Query(30, ge=1, le=365)):
+async def get_audit_stats(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    days: int = Query(30, ge=1, le=365)
+):
     """Get audit statistics overview."""
+    if current_user.role not in ["admin", "super_admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    from datetime import timedelta
+    end_date = date.today()
+    start_date = end_date - timedelta(days=days)
+
+    service = AuditDBService(db)
+    stats = await service.get_stats(start_date=start_date, end_date=end_date)
+
     return {
         "period_days": days,
-        "total_events": 5420,
+        "total_events": stats["total_logs"],
         "by_severity": {
-            "info": 5100,
-            "warning": 280,
-            "critical": 40
+            "info": stats["info_events"],
+            "warning": stats["warning_events"],
+            "critical": stats["critical_events"]
         },
-        "by_action_type": {
-            "login": 850,
-            "read": 2500,
-            "update": 1200,
-            "create": 600,
-            "delete": 150,
-            "export": 120
-        },
-        "by_entity_type": {
-            "employee": 1800,
-            "payroll": 900,
-            "leave": 700,
-            "invoice": 600,
-            "document": 500,
-            "other": 920
-        },
-        "top_users": [
-            {"user_email": "hr@ganakys.com", "actions": 1200},
-            {"user_email": "admin@ganakys.com", "actions": 850},
-            {"user_email": "finance@ganakys.com", "actions": 650}
-        ],
-        "trends": {
-            "daily_average": 180,
-            "peak_day": "2026-01-05",
-            "peak_count": 320
-        }
+        "by_action_type": stats["action_breakdown"],
+        "by_entity_type": stats["entity_breakdown"]
     }
 
 

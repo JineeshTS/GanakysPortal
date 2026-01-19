@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ecommerce import OnlineOrder, OnlineOrderItem, OrderStatus, PaymentStatus
 from app.schemas.ecommerce import OnlineOrderCreate, OnlineOrderUpdate
+from app.core.datetime_utils import utc_now
 
 
 class OrderService:
@@ -19,7 +20,7 @@ class OrderService:
     @staticmethod
     def generate_order_number() -> str:
         """Generate unique order number."""
-        timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        timestamp = utc_now().strftime('%Y%m%d%H%M%S')
         return f"ORD-{timestamp}"
 
     @staticmethod
@@ -143,7 +144,7 @@ class OrderService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(order, field, value)
-        order.updated_at = datetime.utcnow()
+        order.updated_at = utc_now()
         await db.commit()
         await db.refresh(order)
         return order
@@ -155,7 +156,7 @@ class OrderService:
     ) -> OnlineOrder:
         """Confirm an order."""
         order.status = OrderStatus.CONFIRMED
-        order.updated_at = datetime.utcnow()
+        order.updated_at = utc_now()
         await db.commit()
         await db.refresh(order)
         return order
@@ -167,7 +168,7 @@ class OrderService:
     ) -> OnlineOrder:
         """Mark order as processing."""
         order.status = OrderStatus.PROCESSING
-        order.updated_at = datetime.utcnow()
+        order.updated_at = utc_now()
         await db.commit()
         await db.refresh(order)
         return order
@@ -181,8 +182,8 @@ class OrderService:
         """Mark order as shipped."""
         order.status = OrderStatus.SHIPPED
         order.tracking_number = tracking_number
-        order.shipped_at = datetime.utcnow()
-        order.updated_at = datetime.utcnow()
+        order.shipped_at = utc_now()
+        order.updated_at = utc_now()
         await db.commit()
         await db.refresh(order)
         return order
@@ -194,8 +195,8 @@ class OrderService:
     ) -> OnlineOrder:
         """Mark order as delivered."""
         order.status = OrderStatus.DELIVERED
-        order.delivered_at = datetime.utcnow()
-        order.updated_at = datetime.utcnow()
+        order.delivered_at = utc_now()
+        order.updated_at = utc_now()
         await db.commit()
         await db.refresh(order)
         return order
@@ -208,9 +209,9 @@ class OrderService:
     ) -> OnlineOrder:
         """Cancel an order."""
         order.status = OrderStatus.CANCELLED
-        order.cancelled_at = datetime.utcnow()
+        order.cancelled_at = utc_now()
         order.cancellation_reason = reason
-        order.updated_at = datetime.utcnow()
+        order.updated_at = utc_now()
         await db.commit()
         await db.refresh(order)
         return order
@@ -223,7 +224,7 @@ class OrderService:
     ) -> OnlineOrder:
         """Update payment status."""
         order.payment_status = payment_status
-        order.updated_at = datetime.utcnow()
+        order.updated_at = utc_now()
         await db.commit()
         await db.refresh(order)
         return order

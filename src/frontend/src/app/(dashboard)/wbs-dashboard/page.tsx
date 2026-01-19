@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
+import { useAuth } from '@/hooks/use-auth'
 import { StatCard } from '@/components/layout/stat-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -132,7 +133,7 @@ function PhaseCard({ phase }: { phase: WBSPhase }) {
         <div className="space-y-2">
           <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium">{phase.progress_percent.toFixed(0)}%</span>
+            <span className="font-medium">{Number(phase.progress_percent).toFixed(0)}%</span>
           </div>
           <Progress value={Number(phase.progress_percent)} className="h-2" />
           {phase.task_count !== undefined && (
@@ -190,22 +191,23 @@ export default function WBSDashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [dashboard, setDashboard] = useState<WBSDashboardSummary | null>(null)
   const [phases, setPhases] = useState<WBSPhase[]>([])
+  const { fetchWithAuth } = useAuth()
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
-      // Fetch dashboard summary
-      const dashboardRes = await fetch(`${apiUrl}/wbs/dashboard`)
+      // Fetch dashboard summary with auth
+      const dashboardRes = await fetchWithAuth(`${apiUrl}/wbs/dashboard`)
       if (dashboardRes.ok) {
         const dashboardData = await dashboardRes.json()
         setDashboard(dashboardData)
       }
 
-      // Fetch phases
-      const phasesRes = await fetch(`${apiUrl}/wbs/phases`)
+      // Fetch phases with auth
+      const phasesRes = await fetchWithAuth(`${apiUrl}/wbs/phases`)
       if (phasesRes.ok) {
         const phasesData = await phasesRes.json()
         setPhases(phasesData)
@@ -229,11 +231,11 @@ export default function WBSDashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [fetchWithAuth])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
   // Calculate stats
   const totalTasks = dashboard?.total_tasks || 0
@@ -288,38 +290,37 @@ export default function WBSDashboardPage() {
             <StatCard
               title="Total Phases"
               value={dashboard?.total_phases || 12}
-              icon={<Layers className="h-4 w-4" />}
+              icon={Layers}
               description="Project phases"
             />
             <StatCard
               title="Total Modules"
               value={dashboard?.total_modules || 21}
-              icon={<FolderKanban className="h-4 w-4" />}
+              icon={FolderKanban}
               description="Feature modules"
             />
             <StatCard
               title="Total Tasks"
               value={totalTasks}
-              icon={<ListTodo className="h-4 w-4" />}
+              icon={ListTodo}
               description={`${completedTasks} completed`}
             />
             <StatCard
               title="In Progress"
               value={inProgressTasks}
-              icon={<PlayCircle className="h-4 w-4" />}
+              icon={PlayCircle}
               description="Active tasks"
             />
             <StatCard
               title="Blocked"
               value={blockedTasks}
-              icon={<AlertCircle className="h-4 w-4" />}
+              icon={AlertCircle}
               description="Need attention"
-              trend={blockedTasks > 0 ? 'up' : undefined}
             />
             <StatCard
               title="Overall Progress"
-              value={`${dashboard?.overall_progress?.toFixed(0) || 0}%`}
-              icon={<TrendingUp className="h-4 w-4" />}
+              value={`${Number(dashboard?.overall_progress || 0).toFixed(0)}%`}
+              icon={TrendingUp}
               description="Completion rate"
             />
           </div>
@@ -503,6 +504,12 @@ export default function WBSDashboardPage() {
                   <Button variant="outline" className="w-full justify-start">
                     <Shield className="h-4 w-4 mr-2" />
                     Quality Gates
+                  </Button>
+                </Link>
+                <Link href="/wbs-dashboard/issues">
+                  <Button variant="outline" className="w-full justify-start">
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Issues
                   </Button>
                 </Link>
               </div>

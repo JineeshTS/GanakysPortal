@@ -11,6 +11,12 @@ import structlog
 from app.core.config import settings
 from app.api.v1.router import api_router
 from app.db.session import engine
+from app.core.security import (
+    SecurityHeadersMiddleware,
+    SQLInjectionMiddleware,
+    XSSProtectionMiddleware,
+    RateLimitMiddleware,
+)
 
 
 # Configure structured logging
@@ -66,17 +72,43 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Middleware
+# CORS Middleware - Restricted to necessary methods and headers
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+        "X-CSRF-Token",
+    ],
+    expose_headers=["X-Total-Count", "X-Page", "X-Per-Page"],
+    max_age=600,  # Cache preflight requests for 10 minutes
 )
 
 # GZip Middleware for compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Security Middleware - Defense in depth
+# Note: These are ADDITIONAL protections, not replacements for:
+# - Parameterized queries (for SQL injection)
+# - Output encoding (for XSS)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(SQLInjectionMiddleware)
+app.add_middleware(XSSProtectionMiddleware)
+
+# Rate Limiting - Protect against DoS and abuse
+# Uses Redis for distributed deployments, falls back to in-memory for single instance
+app.add_middleware(
+    RateLimitMiddleware,
+    max_requests=100,  # requests per window
+    window=60,  # seconds
+    redis_url=getattr(settings, 'REDIS_URL', None)
+)
 
 
 # Health check endpoint

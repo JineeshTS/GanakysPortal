@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy import select, func, and_, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import utc_now
 from app.models.anomaly_detection import (
     AnomalyDetection, AnomalyRule, AnomalyModel, AnomalyAlert,
     AnomalyCategory, AnomalySeverity, AnomalyStatus, ModelStatus
@@ -26,7 +27,7 @@ class DashboardService:
         days: int = 30
     ) -> AnomalyDashboardMetrics:
         """Get comprehensive dashboard metrics"""
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = utc_now() - timedelta(days=days)
 
         # Base condition for detections
         base_condition = and_(
@@ -87,7 +88,7 @@ class DashboardService:
         # Detection trend (last 7 days)
         detection_trend = []
         for i in range(7):
-            day_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=6-i)
+            day_start = utc_now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=6-i)
             day_end = day_start + timedelta(days=1)
 
             day_query = select(func.count()).select_from(AnomalyDetection).where(

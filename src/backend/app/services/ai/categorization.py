@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
+from app.core.datetime_utils import utc_now
 
 
 class TransactionCategory(str, Enum):
@@ -201,7 +202,7 @@ class TransactionCategorizationService:
             "original": original_category,
             "corrected": corrected_category,
             "user_id": user_id,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": utc_now().isoformat()
         })
 
         # Update vendor mapping if vendor is present

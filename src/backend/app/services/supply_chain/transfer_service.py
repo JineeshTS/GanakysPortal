@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.supply_chain import StockTransfer, StockTransferItem, TransferStatus
 from app.schemas.supply_chain import StockTransferCreate, StockTransferUpdate
+from app.core.datetime_utils import utc_now
 
 
 class TransferService:
@@ -18,7 +19,7 @@ class TransferService:
     @staticmethod
     def generate_transfer_number() -> str:
         """Generate stock transfer number."""
-        timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        timestamp = utc_now().strftime('%Y%m%d%H%M%S')
         return f"ST-{timestamp}"
 
     @staticmethod
@@ -114,7 +115,7 @@ class TransferService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(transfer, field, value)
-        transfer.updated_at = datetime.utcnow()
+        transfer.updated_at = utc_now()
         await db.commit()
         await db.refresh(transfer)
         return transfer
@@ -126,7 +127,7 @@ class TransferService:
     ) -> StockTransfer:
         """Submit transfer for approval."""
         transfer.status = TransferStatus.PENDING
-        transfer.updated_at = datetime.utcnow()
+        transfer.updated_at = utc_now()
         await db.commit()
         await db.refresh(transfer)
         return transfer
@@ -139,9 +140,9 @@ class TransferService:
     ) -> StockTransfer:
         """Mark transfer as shipped."""
         transfer.status = TransferStatus.IN_TRANSIT
-        transfer.shipped_date = datetime.utcnow()
+        transfer.shipped_date = utc_now()
         transfer.shipped_by = shipped_by
-        transfer.updated_at = datetime.utcnow()
+        transfer.updated_at = utc_now()
         await db.commit()
         await db.refresh(transfer)
         return transfer
@@ -154,9 +155,9 @@ class TransferService:
     ) -> StockTransfer:
         """Mark transfer as received."""
         transfer.status = TransferStatus.RECEIVED
-        transfer.received_date = datetime.utcnow()
+        transfer.received_date = utc_now()
         transfer.received_by = received_by
-        transfer.updated_at = datetime.utcnow()
+        transfer.updated_at = utc_now()
         await db.commit()
         await db.refresh(transfer)
         return transfer
@@ -168,7 +169,7 @@ class TransferService:
     ) -> StockTransfer:
         """Cancel a transfer."""
         transfer.status = TransferStatus.CANCELLED
-        transfer.updated_at = datetime.utcnow()
+        transfer.updated_at = utc_now()
         await db.commit()
         await db.refresh(transfer)
         return transfer

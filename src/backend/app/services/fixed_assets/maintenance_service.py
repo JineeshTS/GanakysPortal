@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.fixed_assets import AssetMaintenance, FixedAsset
 from app.schemas.fixed_assets import AssetMaintenanceCreate, AssetMaintenanceUpdate
+from app.core.datetime_utils import utc_now
 
 
 class MaintenanceService:
@@ -128,7 +129,7 @@ class MaintenanceService:
 
         for field, value in update_data.items():
             setattr(maintenance, field, value)
-        maintenance.updated_at = datetime.utcnow()
+        maintenance.updated_at = utc_now()
         await db.commit()
         await db.refresh(maintenance)
         return maintenance
@@ -140,7 +141,7 @@ class MaintenanceService:
     ) -> AssetMaintenance:
         """Start maintenance work."""
         maintenance.status = "in_progress"
-        maintenance.updated_at = datetime.utcnow()
+        maintenance.updated_at = utc_now()
 
         # Update asset status
         result = await db.execute(
@@ -150,7 +151,7 @@ class MaintenanceService:
         if asset:
             from app.models.fixed_assets import AssetStatus
             asset.status = AssetStatus.UNDER_MAINTENANCE
-            asset.updated_at = datetime.utcnow()
+            asset.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(maintenance)
@@ -165,7 +166,7 @@ class MaintenanceService:
         """Complete maintenance work."""
         maintenance.status = "completed"
         maintenance.completed_date = completed_date or date.today()
-        maintenance.updated_at = datetime.utcnow()
+        maintenance.updated_at = utc_now()
 
         # Update asset status back to active
         result = await db.execute(
@@ -175,7 +176,7 @@ class MaintenanceService:
         if asset:
             from app.models.fixed_assets import AssetStatus
             asset.status = AssetStatus.ACTIVE
-            asset.updated_at = datetime.utcnow()
+            asset.updated_at = utc_now()
 
             # If maintenance was capitalized, update asset cost
             if maintenance.is_capitalized and maintenance.capitalized_amount > 0:

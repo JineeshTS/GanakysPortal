@@ -10,6 +10,7 @@ from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, text
 
+from app.core.datetime_utils import utc_now
 from app.models.superadmin import (
     TenantProfile, PlatformMetricsDaily, SuperAdminAuditLog,
     SupportTicket, TenantStatus
@@ -45,7 +46,7 @@ class MetricsService:
         total_users = user_count_result.scalar() or 0
 
         # Active users (logged in last 30 days)
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = utc_now() - timedelta(days=30)
         active_users_result = await db.execute(
             select(func.count(User.id)).where(User.last_login >= thirty_days_ago)
         )
@@ -210,7 +211,7 @@ class MetricsService:
         )
         metrics.tickets_resolved = tickets_resolved.scalar() or 0
 
-        metrics.updated_at = datetime.utcnow()
+        metrics.updated_at = utc_now()
 
         await db.commit()
         await db.refresh(metrics)

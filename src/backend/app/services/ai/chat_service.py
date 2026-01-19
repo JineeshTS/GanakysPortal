@@ -5,6 +5,7 @@ AI-powered conversational interface with session context
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from app.core.datetime_utils import utc_now
 from enum import Enum
 import uuid
 
@@ -110,7 +111,7 @@ class ChatService:
             id=str(uuid.uuid4()),
             role=MessageRole.SYSTEM,
             content=system_message,
-            timestamp=datetime.utcnow()
+            timestamp=utc_now()
         ))
 
         self._sessions[session.id] = session
@@ -138,7 +139,7 @@ class ChatService:
             raise ValueError(f"Session not found: {session_id}")
 
         # Check session timeout
-        if datetime.utcnow() - session.last_activity > self.SESSION_TIMEOUT:
+        if utc_now() - session.last_activity > self.SESSION_TIMEOUT:
             session.is_active = False
             raise ValueError("Session expired")
 
@@ -147,7 +148,7 @@ class ChatService:
             id=str(uuid.uuid4()),
             role=MessageRole.USER,
             content=content,
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             metadata={"attachments": attachments} if attachments else {}
         )
         session.messages.append(user_message)
@@ -176,14 +177,14 @@ class ChatService:
             id=str(uuid.uuid4()),
             role=MessageRole.ASSISTANT,
             content=response.content,
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             metadata={
                 "provider": response.provider.value,
                 "tokens": response.input_tokens + response.output_tokens
             }
         )
         session.messages.append(assistant_message)
-        session.last_activity = datetime.utcnow()
+        session.last_activity = utc_now()
 
         return assistant_message
 
@@ -219,7 +220,7 @@ class ChatService:
 
     def cleanup_expired_sessions(self) -> int:
         """Clean up expired sessions. Returns count of cleaned sessions."""
-        now = datetime.utcnow()
+        now = utc_now()
         expired = [
             sid for sid, session in self._sessions.items()
             if now - session.last_activity > self.SESSION_TIMEOUT

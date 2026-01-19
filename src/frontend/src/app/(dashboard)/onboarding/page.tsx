@@ -394,7 +394,7 @@ export default function OnboardingPage() {
         <PageHeader
           title="Employee Onboarding"
           description="Manage new hire onboarding process and tasks"
-          icon={<UserPlus className="h-6 w-6" />}
+          icon={UserPlus}
         />
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {[1, 2, 3, 4, 5].map(i => (
@@ -419,7 +419,7 @@ export default function OnboardingPage() {
       <PageHeader
         title="Employee Onboarding"
         description="Manage new hire onboarding process and tasks"
-        icon={<UserPlus className="h-6 w-6" />}
+        icon={UserPlus}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={fetchData}>

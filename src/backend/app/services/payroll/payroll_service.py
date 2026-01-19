@@ -13,6 +13,7 @@ from app.services.payroll.pf import PFCalculator
 from app.services.payroll.esi import ESICalculator
 from app.services.payroll.pt import PTCalculator
 from app.services.payroll.tds import TDSCalculator
+from app.core.datetime_utils import utc_now
 
 
 @dataclass
@@ -150,7 +151,7 @@ class PayrollService:
             total_employer_contributions=total_employer,
             payslips=payslips,
             errors=errors,
-            processed_at=datetime.utcnow()
+            processed_at=utc_now()
         )
 
     @classmethod

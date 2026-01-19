@@ -7,6 +7,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.manufacturing import BillOfMaterials, BOMLine, BOMStatus, BOMType
 from app.schemas.manufacturing import BOMCreate, BOMUpdate
+from app.core.datetime_utils import utc_now
 
 
 class BOMService:
@@ -119,7 +120,7 @@ class BOMService:
             return None
         bom.status = BOMStatus.ACTIVE
         bom.approved_by = user_id
-        bom.approved_date = datetime.utcnow()
+        bom.approved_date = utc_now()
         await db.commit()
         await db.refresh(bom)
         return bom

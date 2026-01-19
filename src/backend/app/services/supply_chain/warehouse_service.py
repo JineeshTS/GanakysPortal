@@ -9,6 +9,7 @@ from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.datetime_utils import utc_now
 from app.models.supply_chain import Warehouse, BinLocation, WarehouseStock
 from app.schemas.supply_chain import (
     WarehouseCreate, WarehouseUpdate,
@@ -98,7 +99,7 @@ class WarehouseService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(warehouse, field, value)
-        warehouse.updated_at = datetime.utcnow()
+        warehouse.updated_at = utc_now()
         await db.commit()
         await db.refresh(warehouse)
         return warehouse
@@ -109,7 +110,7 @@ class WarehouseService:
         warehouse: Warehouse
     ) -> None:
         """Soft delete warehouse."""
-        warehouse.deleted_at = datetime.utcnow()
+        warehouse.deleted_at = utc_now()
         await db.commit()
 
     # Bin Location Methods
@@ -186,7 +187,7 @@ class WarehouseService:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(bin_location, field, value)
-        bin_location.updated_at = datetime.utcnow()
+        bin_location.updated_at = utc_now()
         await db.commit()
         await db.refresh(bin_location)
         return bin_location
@@ -233,8 +234,8 @@ class WarehouseService:
             update_data = data.model_dump(exclude={'warehouse_id', 'product_id', 'variant_id', 'bin_location_id'})
             for field, value in update_data.items():
                 setattr(existing, field, value)
-            existing.last_stock_date = datetime.utcnow()
-            existing.updated_at = datetime.utcnow()
+            existing.last_stock_date = utc_now()
+            existing.updated_at = utc_now()
             await db.commit()
             await db.refresh(existing)
             return existing
@@ -243,7 +244,7 @@ class WarehouseService:
             stock = WarehouseStock(
                 id=uuid4(),
                 company_id=company_id,
-                last_stock_date=datetime.utcnow(),
+                last_stock_date=utc_now(),
                 **data.model_dump()
             )
             db.add(stock)
