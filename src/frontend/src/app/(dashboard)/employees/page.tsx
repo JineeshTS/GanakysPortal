@@ -313,9 +313,82 @@ export default function EmployeesPage() {
     downloadFile(csvContent, 'employees.csv', 'text/csv')
   }
 
-  const exportToPDF = () => {
-    // In production, this would use a library like jspdf or call an API
-    alert('PDF export functionality would be implemented here')
+  const exportToPDF = async () => {
+    try {
+      // Create PDF content using browser's print functionality
+      // This creates a print-friendly version of the employee list
+      const printWindow = window.open('', '_blank')
+      if (!printWindow) {
+        alert('Please allow popups to export PDF')
+        return
+      }
+
+      const employeeRows = filteredEmployees.map(emp => `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${emp.employee_code}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${emp.full_name}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${emp.work_email}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${emp.mobile || '-'}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${departments[emp.department_id] || '-'}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${designations[emp.designation_id] || '-'}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${emp.date_of_joining || '-'}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${emp.employment_status}</td>
+        </tr>
+      `).join('')
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Employee List Export</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { color: #333; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background-color: #f4f4f4; padding: 10px; text-align: left; border-bottom: 2px solid #ddd; }
+            td { padding: 8px; border-bottom: 1px solid #ddd; }
+            .meta { color: #666; font-size: 12px; margin-bottom: 20px; }
+            @media print {
+              body { margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Employee List</h1>
+          <p class="meta">Generated on ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} | Total: ${filteredEmployees.length} employees</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Employee Code</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Mobile</th>
+                <th>Department</th>
+                <th>Designation</th>
+                <th>Joining Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${employeeRows}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print()
+              window.onafterprint = function() {
+                window.close()
+              }
+            }
+          </script>
+        </body>
+        </html>
+      `)
+      printWindow.document.close()
+    } catch (error) {
+      console.error('Failed to export PDF:', error)
+      alert('Failed to export PDF. Please try again.')
+    }
   }
 
   const generateCSV = (data: Employee[]) => {

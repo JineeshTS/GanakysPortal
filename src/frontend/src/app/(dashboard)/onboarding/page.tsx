@@ -386,6 +386,58 @@ export default function OnboardingPage() {
     }
   }
 
+  // State for task editing
+  const [editTaskDialogOpen, setEditTaskDialogOpen] = useState(false)
+  const [taskToEdit, setTaskToEdit] = useState<OnboardingTask | null>(null)
+
+  const handleEditTask = (task: OnboardingTask) => {
+    setTaskToEdit(task)
+    setEditTaskDialogOpen(true)
+  }
+
+  const handleUpdateTask = async () => {
+    if (!taskToEdit) return
+    try {
+      await completeTask(`/onboarding/tasks/${taskToEdit.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: taskToEdit.title,
+          description: taskToEdit.description,
+          due_date: taskToEdit.due_date,
+          priority: taskToEdit.priority,
+          notes: taskToEdit.notes
+        })
+      })
+      showToast('success', 'Task updated')
+      setEditTaskDialogOpen(false)
+      setTaskToEdit(null)
+      fetchData()
+    } catch (error) {
+      showToast('error', 'Failed to update task')
+    }
+  }
+
+  // Handle session actions (for MoreVertical menu)
+  const [sessionActionsOpen, setSessionActionsOpen] = useState(false)
+
+  const handleViewSessionDetails = () => {
+    if (selectedSession) {
+      // Scroll to session details or expand the panel
+      setSessionActionsOpen(false)
+    }
+  }
+
+  const handleResendWelcomeEmail = async () => {
+    if (!selectedSession) return
+    try {
+      await completeTask(`/onboarding/sessions/${selectedSession.id}/resend-welcome`, {})
+      showToast('success', 'Welcome email sent')
+      setSessionActionsOpen(false)
+    } catch (error) {
+      showToast('error', 'Failed to send welcome email')
+    }
+  }
+
   const isLoading = isLoadingStats || isLoadingSessions
 
   if (isLoading) {
@@ -733,9 +785,45 @@ export default function OnboardingPage() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>Onboarding Details</CardTitle>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                      <Dialog open={sessionActionsOpen} onOpenChange={setSessionActionsOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-sm">
+                          <DialogHeader>
+                            <DialogTitle>Session Actions</DialogTitle>
+                            <DialogDescription>
+                              Actions for {selectedSession.employee?.full_name}'s onboarding
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="flex flex-col gap-2 py-4">
+                            <Button variant="outline" onClick={handleResendWelcomeEmail}>
+                              <Mail className="h-4 w-4 mr-2" />
+                              Resend Welcome Email
+                            </Button>
+                            <Button variant="outline" onClick={() => {
+                              setSessionActionsOpen(false)
+                              // Scroll to tasks section
+                            }}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              View All Tasks
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => {
+                                setSessionActionsOpen(false)
+                                handleDeleteSessionClick(selectedSession)
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Cancel Onboarding
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -894,7 +982,12 @@ export default function OnboardingPage() {
                           </td>
                           <td className="p-4 text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="icon">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditTask(task)}
+                                title="Edit task"
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
                               {task.status !== 'completed' && (

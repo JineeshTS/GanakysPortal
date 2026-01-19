@@ -855,7 +855,11 @@ async def list_challans(
             query = query.where(StatutoryChallan.return_type == return_type_enum)
             count_query = count_query.where(StatutoryChallan.return_type == return_type_enum)
         except ValueError:
-            pass
+            valid_types = [s.value for s in StatutoryReturnType]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid return_type '{return_type}'. Must be one of: {valid_types}"
+            )
 
     if from_date:
         query = query.where(StatutoryChallan.payment_date >= from_date)

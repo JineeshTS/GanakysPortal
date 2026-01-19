@@ -85,6 +85,8 @@ export default function TimesheetPage() {
 
   const { data: timesheetData, isLoading, error, get: getTimesheet } = useApi<TimesheetResponse>();
   const { data: projectsData, get: getProjects } = useApi<ProjectsResponse>();
+  const { post: saveTimesheet, isLoading: isSaving } = useApi<TimesheetResponse>();
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   // Fetch timesheet data when week changes
   useEffect(() => {
@@ -163,6 +165,28 @@ export default function TimesheetPage() {
     return entries.reduce((sum, entry) => sum + entry.total, 0);
   };
 
+  const saveDraft = async () => {
+    const weekStart = getWeekDates()[0].toISOString().split('T')[0];
+    const weekEnd = getWeekDates()[6].toISOString().split('T')[0];
+
+    try {
+      await saveTimesheet('/timesheet', {
+        week_start: weekStart,
+        week_end: weekEnd,
+        status: 'draft',
+        entries: entries.filter(e => e.projectId > 0), // Only save valid entries
+        total_hours: getWeeklyTotal(),
+        billable_hours: getWeeklyTotal() // For now, assume all hours are billable
+      });
+      setSaveMessage('Draft saved successfully');
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (err) {
+      console.error('Failed to save draft:', err);
+      setSaveMessage('Failed to save draft');
+      setTimeout(() => setSaveMessage(null), 3000);
+    }
+  };
+
   const dailyTotals = getDailyTotals();
   const weeklyTotal = getWeeklyTotal();
 
@@ -174,14 +198,19 @@ export default function TimesheetPage() {
         icon={Clock}
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => {}}>
+            <Button variant="outline" onClick={saveDraft} disabled={isSaving || status !== "draft"}>
               <Save className="h-4 w-4 mr-2" />
-              Save Draft
+              {isSaving ? 'Saving...' : 'Save Draft'}
             </Button>
             <Button onClick={() => setStatus("submitted")} disabled={status !== "draft"}>
               <Send className="h-4 w-4 mr-2" />
               Submit for Approval
             </Button>
+            {saveMessage && (
+              <span className={`text-sm self-center ${saveMessage.includes('Failed') ? 'text-red-600' : 'text-green-600'}`}>
+                {saveMessage}
+              </span>
+            )}
           </div>
         }
       />

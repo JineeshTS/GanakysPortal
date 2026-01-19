@@ -260,7 +260,11 @@ async def list_projects(
             status_enum = ProjectStatus(status)
             query = query.where(Project.status == status_enum)
         except ValueError:
-            pass
+            valid_statuses = [s.value for s in ProjectStatus]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid status '{status}'. Must be one of: {valid_statuses}"
+            )
 
     if customer_id:
         query = query.where(Project.customer_id == customer_id)

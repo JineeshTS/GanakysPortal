@@ -909,11 +909,58 @@ async def list_report_templates(
     db: AsyncSession = Depends(get_db)
 ):
     """List all available report templates."""
+    from sqlalchemy import select, func, or_
+    from app.models.reports import ReportTemplate, ReportType, ReportCategory
+
     company_id = current_user.company_id
-    # Demo response - would query database in production
+
+    # Build query - include company templates and optionally system templates
+    if include_system:
+        query = select(ReportTemplate).where(
+            or_(
+                ReportTemplate.company_id == company_id,
+                ReportTemplate.is_system == True
+            ),
+            ReportTemplate.is_active == True
+        )
+    else:
+        query = select(ReportTemplate).where(
+            ReportTemplate.company_id == company_id,
+            ReportTemplate.is_active == True
+        )
+
+    if report_type:
+        query = query.where(ReportTemplate.report_type == ReportType(report_type.value))
+    if category:
+        query = query.where(ReportTemplate.category == ReportCategory(category.value))
+
+    # Count total
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+
+    # Apply pagination
+    query = query.order_by(ReportTemplate.name)
+    query = query.offset((page - 1) * page_size).limit(page_size)
+
+    result = await db.execute(query)
+    templates = result.scalars().all()
+
     return {
-        "items": [],
-        "total": 0,
+        "items": [
+            {
+                "id": str(t.id),
+                "name": t.name,
+                "description": t.description,
+                "report_type": t.report_type.value if t.report_type else None,
+                "category": t.category.value if t.category else None,
+                "is_system": t.is_system,
+                "output_format": t.output_format,
+                "created_at": t.created_at.isoformat() if t.created_at else None
+            }
+            for t in templates
+        ],
+        "total": total,
         "page": page,
         "page_size": page_size,
         "company_id": str(company_id)
@@ -927,11 +974,42 @@ async def create_report_template(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new report template."""
+    from app.models.reports import ReportTemplate, ReportType, ReportCategory
+    import uuid
+
     company_id = current_user.company_id
+
+    new_template = ReportTemplate(
+        id=uuid.uuid4(),
+        company_id=company_id,
+        name=template.name,
+        description=template.description,
+        report_type=ReportType(template.report_type.value) if template.report_type else None,
+        category=ReportCategory(template.category.value) if template.category else None,
+        config=template.config or {},
+        columns=template.columns or [],
+        filters=template.filters or {},
+        sorting=template.sorting or [],
+        grouping=template.grouping or [],
+        output_format=template.output_format or "excel",
+        include_headers=template.include_headers if hasattr(template, 'include_headers') else True,
+        include_summary=template.include_summary if hasattr(template, 'include_summary') else True,
+        is_system=False,
+        is_active=True,
+        created_by=current_user.id
+    )
+
+    db.add(new_template)
+    await db.commit()
+    await db.refresh(new_template)
+
     return {
-        "id": "demo-template-id",
+        "id": str(new_template.id),
         "message": "Template created successfully",
-        "template": template.model_dump(),
+        "template": {
+            "name": new_template.name,
+            "report_type": new_template.report_type.value if new_template.report_type else None
+        },
         "company_id": str(company_id)
     }
 
@@ -943,9 +1021,36 @@ async def get_report_template(
     db: AsyncSession = Depends(get_db)
 ):
     """Get report template by ID."""
+    from sqlalchemy import select, or_
+    from app.models.reports import ReportTemplate
+
+    result = await db.execute(
+        select(ReportTemplate).where(
+            ReportTemplate.id == template_id,
+            or_(
+                ReportTemplate.company_id == current_user.company_id,
+                ReportTemplate.is_system == True
+            )
+        )
+    )
+    template = result.scalar_one_or_none()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+
     return {
-        "id": str(template_id),
-        "company_id": str(current_user.company_id)
+        "id": str(template.id),
+        "name": template.name,
+        "description": template.description,
+        "report_type": template.report_type.value if template.report_type else None,
+        "category": template.category.value if template.category else None,
+        "config": template.config,
+        "columns": template.columns,
+        "filters": template.filters,
+        "sorting": template.sorting,
+        "grouping": template.grouping,
+        "output_format": template.output_format,
+        "is_system": template.is_system,
+        "company_id": str(template.company_id)
     }
 
 
@@ -957,6 +1062,31 @@ async def update_report_template(
     db: AsyncSession = Depends(get_db)
 ):
     """Update an existing report template."""
+    from sqlalchemy import select, update
+    from app.models.reports import ReportTemplate
+
+    # Verify template exists, belongs to company, and is not a system template
+    result = await db.execute(
+        select(ReportTemplate).where(
+            ReportTemplate.id == template_id,
+            ReportTemplate.company_id == current_user.company_id,
+            ReportTemplate.is_system == False
+        )
+    )
+    existing = result.scalar_one_or_none()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Template not found or cannot be modified")
+
+    update_data = template.model_dump(exclude_unset=True)
+    update_data["updated_by"] = current_user.id
+
+    await db.execute(
+        update(ReportTemplate)
+        .where(ReportTemplate.id == template_id)
+        .values(**update_data)
+    )
+    await db.commit()
+
     return {
         "id": str(template_id),
         "message": "Template updated successfully"
@@ -970,6 +1100,29 @@ async def delete_report_template(
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a report template."""
+    from sqlalchemy import select, update
+    from app.models.reports import ReportTemplate
+
+    # Verify template exists, belongs to company, and is not a system template
+    result = await db.execute(
+        select(ReportTemplate).where(
+            ReportTemplate.id == template_id,
+            ReportTemplate.company_id == current_user.company_id,
+            ReportTemplate.is_system == False
+        )
+    )
+    existing = result.scalar_one_or_none()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Template not found or cannot be deleted")
+
+    # Soft delete by setting is_active to False
+    await db.execute(
+        update(ReportTemplate)
+        .where(ReportTemplate.id == template_id)
+        .values(is_active=False, updated_by=current_user.id)
+    )
+    await db.commit()
+
     return {
         "id": str(template_id),
         "message": "Template deleted successfully"
@@ -985,10 +1138,48 @@ async def list_report_schedules(
     db: AsyncSession = Depends(get_db)
 ):
     """List all report schedules."""
+    from sqlalchemy import select, func
+    from app.models.reports import ReportSchedule
+
     company_id = current_user.company_id
+
+    query = select(ReportSchedule).where(
+        ReportSchedule.company_id == company_id
+    )
+
+    if is_active is not None:
+        query = query.where(ReportSchedule.is_active == is_active)
+
+    # Count total
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+
+    # Apply pagination
+    query = query.order_by(ReportSchedule.name)
+    query = query.offset((page - 1) * page_size).limit(page_size)
+
+    result = await db.execute(query)
+    schedules = result.scalars().all()
+
     return {
-        "items": [],
-        "total": 0,
+        "items": [
+            {
+                "id": str(s.id),
+                "name": s.name,
+                "description": s.description,
+                "template_id": str(s.template_id),
+                "frequency": s.frequency.value if s.frequency else None,
+                "is_active": s.is_active,
+                "next_run": s.next_run.isoformat() if s.next_run else None,
+                "last_run": s.last_run.isoformat() if s.last_run else None,
+                "last_status": s.last_status.value if s.last_status else None,
+                "run_count": s.run_count,
+                "created_at": s.created_at.isoformat() if s.created_at else None
+            }
+            for s in schedules
+        ],
+        "total": total,
         "page": page,
         "page_size": page_size,
         "company_id": str(company_id)
@@ -1002,11 +1193,66 @@ async def create_report_schedule(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new report schedule."""
+    from sqlalchemy import select
+    from app.models.reports import ReportSchedule, ReportTemplate, ScheduleFrequency
+    from datetime import datetime, timedelta
+    import uuid
+
     company_id = current_user.company_id
+
+    # Verify template exists and belongs to company
+    template_result = await db.execute(
+        select(ReportTemplate).where(
+            ReportTemplate.id == schedule.template_id,
+            ReportTemplate.company_id == company_id,
+            ReportTemplate.is_active == True
+        )
+    )
+    template = template_result.scalar_one_or_none()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    # Calculate next run time
+    next_run = datetime.utcnow()
+    if schedule.run_time:
+        try:
+            hour, minute = map(int, schedule.run_time.split(':'))
+            next_run = next_run.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            if next_run <= datetime.utcnow():
+                next_run += timedelta(days=1)
+        except:
+            pass
+
+    new_schedule = ReportSchedule(
+        id=uuid.uuid4(),
+        company_id=company_id,
+        template_id=schedule.template_id,
+        name=schedule.name,
+        description=schedule.description,
+        frequency=ScheduleFrequency(schedule.frequency.value) if schedule.frequency else ScheduleFrequency.monthly,
+        day_of_week=schedule.day_of_week,
+        day_of_month=schedule.day_of_month,
+        run_time=schedule.run_time or "06:00",
+        recipients=schedule.recipients or [],
+        cc_recipients=schedule.cc_recipients or [],
+        parameters=schedule.parameters or {},
+        is_active=True,
+        next_run=next_run,
+        created_by=current_user.id
+    )
+
+    db.add(new_schedule)
+    await db.commit()
+    await db.refresh(new_schedule)
+
     return {
-        "id": "demo-schedule-id",
+        "id": str(new_schedule.id),
         "message": "Schedule created successfully",
-        "schedule": schedule.model_dump(),
+        "schedule": {
+            "name": new_schedule.name,
+            "frequency": new_schedule.frequency.value if new_schedule.frequency else None,
+            "next_run": new_schedule.next_run.isoformat() if new_schedule.next_run else None
+        },
         "company_id": str(company_id)
     }
 
@@ -1015,21 +1261,79 @@ async def create_report_schedule(
 async def update_report_schedule(
     schedule_id: UUID,
     schedule: ReportScheduleUpdate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Update an existing report schedule."""
+    from sqlalchemy import select, update
+    from app.models.reports import ReportSchedule
+
+    # Verify schedule exists and belongs to user's company
+    result = await db.execute(
+        select(ReportSchedule).where(
+            ReportSchedule.id == schedule_id,
+            ReportSchedule.company_id == current_user.company_id
+        )
+    )
+    existing = result.scalar_one_or_none()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    # Update the schedule
+    update_data = schedule.model_dump(exclude_unset=True)
+    update_data["updated_by"] = current_user.id
+
+    await db.execute(
+        update(ReportSchedule)
+        .where(ReportSchedule.id == schedule_id)
+        .values(**update_data)
+    )
+    await db.commit()
+
+    # Fetch updated schedule
+    result = await db.execute(
+        select(ReportSchedule).where(ReportSchedule.id == schedule_id)
+    )
+    updated_schedule = result.scalar_one()
+
     return {
-        "id": str(schedule_id),
-        "message": "Schedule updated successfully"
+        "id": str(updated_schedule.id),
+        "message": "Schedule updated successfully",
+        "schedule": {
+            "name": updated_schedule.name,
+            "frequency": updated_schedule.frequency.value if updated_schedule.frequency else None,
+            "is_active": updated_schedule.is_active
+        }
     }
 
 
 @router.delete("/schedules/{schedule_id}", summary="Delete report schedule")
 async def delete_report_schedule(
     schedule_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a report schedule."""
+    from sqlalchemy import select, delete
+    from app.models.reports import ReportSchedule
+
+    # Verify schedule exists and belongs to user's company
+    result = await db.execute(
+        select(ReportSchedule).where(
+            ReportSchedule.id == schedule_id,
+            ReportSchedule.company_id == current_user.company_id
+        )
+    )
+    existing = result.scalar_one_or_none()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    # Delete the schedule
+    await db.execute(
+        delete(ReportSchedule).where(ReportSchedule.id == schedule_id)
+    )
+    await db.commit()
+
     return {
         "id": str(schedule_id),
         "message": "Schedule deleted successfully"
@@ -1040,19 +1344,54 @@ async def delete_report_schedule(
 async def run_schedule_now(
     schedule_id: UUID,
     background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Trigger immediate execution of a scheduled report."""
+    from sqlalchemy import select
+    from app.models.reports import ReportSchedule, ReportExecution, ExecutionStatus
+    from datetime import datetime
+    import uuid
+
+    # Verify schedule exists and belongs to user's company
+    result = await db.execute(
+        select(ReportSchedule).where(
+            ReportSchedule.id == schedule_id,
+            ReportSchedule.company_id == current_user.company_id
+        )
+    )
+    schedule = result.scalar_one_or_none()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    # Create execution record
+    execution_id = uuid.uuid4()
+    execution = ReportExecution(
+        id=execution_id,
+        company_id=current_user.company_id,
+        template_id=schedule.template_id,
+        schedule_id=schedule_id,
+        status=ExecutionStatus.pending,
+        triggered_by="user",
+        triggered_by_user=current_user.id,
+        parameters=schedule.parameters or {}
+    )
+    db.add(execution)
+    await db.commit()
+
+    # TODO: Add background task to actually generate the report
+    # background_tasks.add_task(generate_report, execution_id)
+
     return {
         "schedule_id": str(schedule_id),
         "message": "Report generation started",
-        "execution_id": "demo-execution-id"
+        "execution_id": str(execution_id)
     }
 
 
 @router.get("/executions", summary="List report executions")
 async def list_report_executions(
-    company_id: UUID = Query(..., description="Company ID"),
+    current_user: User = Depends(get_current_user),
     template_id: Optional[UUID] = Query(default=None, description="Filter by template"),
     status: Optional[ExecutionStatusEnum] = Query(default=None, description="Filter by status"),
     from_date: Optional[date] = Query(default=None, description="From date"),
@@ -1062,9 +1401,53 @@ async def list_report_executions(
     db: AsyncSession = Depends(get_db)
 ):
     """List report execution history."""
+    from sqlalchemy import select, func
+    from app.models.reports import ReportExecution, ExecutionStatus
+    from datetime import datetime
+
+    company_id = current_user.company_id
+
+    # Build query
+    query = select(ReportExecution).where(
+        ReportExecution.company_id == company_id
+    )
+
+    if template_id:
+        query = query.where(ReportExecution.template_id == template_id)
+    if status:
+        query = query.where(ReportExecution.status == ExecutionStatus(status.value))
+    if from_date:
+        query = query.where(ReportExecution.created_at >= datetime.combine(from_date, datetime.min.time()))
+    if to_date:
+        query = query.where(ReportExecution.created_at <= datetime.combine(to_date, datetime.max.time()))
+
+    # Count total
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+
+    # Apply pagination
+    query = query.order_by(ReportExecution.created_at.desc())
+    query = query.offset((page - 1) * page_size).limit(page_size)
+
+    result = await db.execute(query)
+    executions = result.scalars().all()
+
     return {
-        "items": [],
-        "total": 0,
+        "items": [
+            {
+                "id": str(e.id),
+                "template_id": str(e.template_id),
+                "status": e.status.value if e.status else None,
+                "started_at": e.started_at.isoformat() if e.started_at else None,
+                "completed_at": e.completed_at.isoformat() if e.completed_at else None,
+                "file_name": e.file_name,
+                "triggered_by": e.triggered_by,
+                "created_at": e.created_at.isoformat() if e.created_at else None
+            }
+            for e in executions
+        ],
+        "total": total,
         "page": page,
         "page_size": page_size
     }
@@ -1073,27 +1456,84 @@ async def list_report_executions(
 @router.get("/executions/{execution_id}", summary="Get report execution details")
 async def get_report_execution(
     execution_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get details of a specific report execution."""
+    from sqlalchemy import select
+    from app.models.reports import ReportExecution
+
+    result = await db.execute(
+        select(ReportExecution).where(
+            ReportExecution.id == execution_id,
+            ReportExecution.company_id == current_user.company_id
+        )
+    )
+    execution = result.scalar_one_or_none()
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+
     return {
-        "id": str(execution_id),
-        "status": "completed",
-        "note": "Demo endpoint"
+        "id": str(execution.id),
+        "template_id": str(execution.template_id),
+        "schedule_id": str(execution.schedule_id) if execution.schedule_id else None,
+        "status": execution.status.value if execution.status else None,
+        "started_at": execution.started_at.isoformat() if execution.started_at else None,
+        "completed_at": execution.completed_at.isoformat() if execution.completed_at else None,
+        "file_name": execution.file_name,
+        "file_size": execution.file_size,
+        "file_format": execution.file_format,
+        "row_count": execution.row_count,
+        "execution_time_ms": execution.execution_time_ms,
+        "triggered_by": execution.triggered_by,
+        "error_message": execution.error_message,
+        "created_at": execution.created_at.isoformat() if execution.created_at else None
     }
 
 
 @router.get("/executions/{execution_id}/download", summary="Download generated report")
 async def download_report(
     execution_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Download the generated report file."""
-    return {
-        "execution_id": str(execution_id),
-        "message": "Download URL would be generated here",
-        "note": "Demo endpoint - would return file download in production"
+    from sqlalchemy import select
+    from app.models.reports import ReportExecution, ExecutionStatus
+    import os
+
+    result = await db.execute(
+        select(ReportExecution).where(
+            ReportExecution.id == execution_id,
+            ReportExecution.company_id == current_user.company_id
+        )
+    )
+    execution = result.scalar_one_or_none()
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+
+    if execution.status != ExecutionStatus.completed:
+        raise HTTPException(status_code=400, detail=f"Report not ready. Status: {execution.status.value if execution.status else 'unknown'}")
+
+    if not execution.file_path or not os.path.exists(execution.file_path):
+        raise HTTPException(status_code=404, detail="Report file not found")
+
+    # Determine media type based on file format
+    media_types = {
+        "pdf": "application/pdf",
+        "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "csv": "text/csv",
+        "json": "application/json"
     }
+    media_type = media_types.get(execution.file_format, "application/octet-stream")
+
+    return StreamingResponse(
+        open(execution.file_path, "rb"),
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f"attachment; filename={execution.file_name or 'report'}"
+        }
+    )
 
 
 # =====================
@@ -1102,7 +1542,7 @@ async def download_report(
 
 @router.get("/saved", summary="List saved reports")
 async def list_saved_reports(
-    company_id: UUID = Query(..., description="Company ID"),
+    current_user: User = Depends(get_current_user),
     report_type: Optional[ReportTypeEnum] = Query(default=None, description="Filter by type"),
     favorites_only: bool = Query(default=False, description="Only show favorites"),
     page: int = Query(default=1, ge=1),
@@ -1110,9 +1550,54 @@ async def list_saved_reports(
     db: AsyncSession = Depends(get_db)
 ):
     """List user's saved reports."""
+    from sqlalchemy import select, func, or_
+    from app.models.reports import SavedReport, ReportType
+
+    company_id = current_user.company_id
+
+    # Build query - include both user's private reports and public reports
+    query = select(SavedReport).where(
+        SavedReport.company_id == company_id,
+        or_(
+            SavedReport.created_by == current_user.id,
+            SavedReport.is_public == True
+        )
+    )
+
+    if report_type:
+        query = query.where(SavedReport.report_type == ReportType(report_type.value))
+    if favorites_only:
+        query = query.where(SavedReport.is_favorite == True)
+
+    # Count total
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+
+    # Apply pagination
+    query = query.order_by(SavedReport.last_used_at.desc().nullslast(), SavedReport.created_at.desc())
+    query = query.offset((page - 1) * page_size).limit(page_size)
+
+    result = await db.execute(query)
+    reports = result.scalars().all()
+
     return {
-        "items": [],
-        "total": 0,
+        "items": [
+            {
+                "id": str(r.id),
+                "name": r.name,
+                "description": r.description,
+                "report_type": r.report_type.value if r.report_type else None,
+                "category": r.category.value if r.category else None,
+                "is_public": r.is_public,
+                "is_favorite": r.is_favorite,
+                "use_count": r.use_count,
+                "last_used_at": r.last_used_at.isoformat() if r.last_used_at else None,
+                "created_at": r.created_at.isoformat() if r.created_at else None
+            }
+            for r in reports
+        ],
+        "total": total,
         "page": page,
         "page_size": page_size
     }
@@ -1121,23 +1606,70 @@ async def list_saved_reports(
 @router.post("/saved", summary="Save report configuration")
 async def save_report(
     report: SavedReportCreate,
-    company_id: UUID = Query(..., description="Company ID"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Save a report configuration for quick access."""
+    from app.models.reports import SavedReport, ReportType, ReportCategory
+    import uuid
+
+    saved_report = SavedReport(
+        id=uuid.uuid4(),
+        company_id=current_user.company_id,
+        name=report.name,
+        description=report.description,
+        report_type=ReportType(report.report_type.value) if report.report_type else None,
+        category=ReportCategory(report.category.value) if report.category else None,
+        parameters=report.parameters or {},
+        columns=report.columns or [],
+        filters=report.filters or {},
+        sorting=report.sorting or [],
+        grouping=report.grouping or [],
+        is_public=report.is_public if hasattr(report, 'is_public') else False,
+        created_by=current_user.id
+    )
+
+    db.add(saved_report)
+    await db.commit()
+    await db.refresh(saved_report)
+
     return {
-        "id": "demo-saved-report-id",
+        "id": str(saved_report.id),
         "message": "Report saved successfully",
-        "report": report.model_dump()
+        "report": {
+            "name": saved_report.name,
+            "report_type": saved_report.report_type.value if saved_report.report_type else None
+        }
     }
 
 
 @router.delete("/saved/{report_id}", summary="Delete saved report")
 async def delete_saved_report(
     report_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a saved report."""
+    from sqlalchemy import select, delete
+    from app.models.reports import SavedReport
+
+    # Verify report exists and user has permission
+    result = await db.execute(
+        select(SavedReport).where(
+            SavedReport.id == report_id,
+            SavedReport.company_id == current_user.company_id,
+            SavedReport.created_by == current_user.id
+        )
+    )
+    existing = result.scalar_one_or_none()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Saved report not found or access denied")
+
+    await db.execute(
+        delete(SavedReport).where(SavedReport.id == report_id)
+    )
+    await db.commit()
+
     return {
         "id": str(report_id),
         "message": "Saved report deleted successfully"
@@ -1147,14 +1679,49 @@ async def delete_saved_report(
 @router.post("/saved/{report_id}/run", summary="Run saved report")
 async def run_saved_report(
     report_id: UUID,
+    current_user: User = Depends(get_current_user),
     output_format: OutputFormatEnum = Query(default=OutputFormatEnum.json, description="Output format"),
     db: AsyncSession = Depends(get_db)
 ):
     """Execute a saved report with its stored configuration."""
+    from sqlalchemy import select, update
+    from app.models.reports import SavedReport
+    from datetime import datetime
+
+    # Verify report exists and user has access
+    result = await db.execute(
+        select(SavedReport).where(
+            SavedReport.id == report_id,
+            SavedReport.company_id == current_user.company_id
+        )
+    )
+    saved_report = result.scalar_one_or_none()
+    if not saved_report:
+        raise HTTPException(status_code=404, detail="Saved report not found")
+
+    # Update usage stats
+    await db.execute(
+        update(SavedReport)
+        .where(SavedReport.id == report_id)
+        .values(
+            use_count=SavedReport.use_count + 1,
+            last_used_at=datetime.utcnow()
+        )
+    )
+    await db.commit()
+
+    # Return report configuration for execution
     return {
         "report_id": str(report_id),
-        "message": "Report execution started",
-        "note": "Demo endpoint"
+        "message": "Report ready for execution",
+        "config": {
+            "name": saved_report.name,
+            "report_type": saved_report.report_type.value if saved_report.report_type else None,
+            "parameters": saved_report.parameters,
+            "columns": saved_report.columns,
+            "filters": saved_report.filters,
+            "output_format": output_format.value
+        }
     }
 
 

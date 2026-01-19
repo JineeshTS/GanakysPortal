@@ -233,6 +233,17 @@ export default function InvoicesPage() {
     }
   }
 
+  // Copy invoice to create a duplicate
+  const handleCopyInvoice = async (invoice: Invoice, e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      // Navigate to new invoice page with prefilled data from the copied invoice
+      router.push(`/dashboard/invoices/new?copy_from=${invoice.id}`)
+    } catch (error) {
+      console.error('Failed to copy invoice:', error)
+    }
+  }
+
   // Update local invoices when API data changes
   React.useEffect(() => {
     if (invoiceData?.data) {
@@ -470,7 +481,12 @@ export default function InvoicesPage() {
               </Button>
             </>
           )}
-          <Button variant="ghost" size="icon">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => handleCopyInvoice(row, e)}
+            title="Duplicate Invoice"
+          >
             <Copy className="h-4 w-4" />
           </Button>
         </div>

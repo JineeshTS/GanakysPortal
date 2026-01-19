@@ -197,6 +197,12 @@ export default function BankingPage() {
   const [accountToDelete, setAccountToDelete] = React.useState<BankAccount | null>(null)
   const [isDeleting, setIsDeleting] = React.useState(false)
 
+  // Import and Reconcile state
+  const [importDialogOpen, setImportDialogOpen] = React.useState(false)
+  const [reconcileDialogOpen, setReconcileDialogOpen] = React.useState(false)
+  const [addAccountDialogOpen, setAddAccountDialogOpen] = React.useState(false)
+  const [isReconciling, setIsReconciling] = React.useState(false)
+
   const { data: accountsData, isLoading: accountsLoading, error: accountsError, get: getAccounts } = useApi<BankAccountsResponse>()
   const { data: transactionsData, isLoading: transactionsLoading, get: getTransactions } = useApi<TransactionsResponse>()
   const deleteApi = useApi()
@@ -237,6 +243,43 @@ export default function BankingPage() {
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  // Handle import statement dialog
+  const handleImportStatement = () => {
+    if (!selectedAccount) {
+      alert('Please select a bank account first')
+      return
+    }
+    setImportDialogOpen(true)
+  }
+
+  // Handle reconciliation
+  const handleReconcile = async () => {
+    if (!selectedAccount) {
+      alert('Please select a bank account first')
+      return
+    }
+    setIsReconciling(true)
+    try {
+      // Call the reconciliation API
+      await deleteApi.post(`/banking/accounts/${selectedAccount.id}/reconcile`, {
+        from_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        to_date: new Date().toISOString().split('T')[0]
+      })
+      // Refresh transactions after reconciliation
+      getTransactions(`/banking/accounts/${selectedAccount.id}/transactions`)
+      setReconcileDialogOpen(false)
+    } catch (error) {
+      console.error('Failed to reconcile:', error)
+    } finally {
+      setIsReconciling(false)
+    }
+  }
+
+  // Handle add bank account
+  const handleAddAccount = () => {
+    setAddAccountDialogOpen(true)
   }
 
   // Fetch bank accounts on mount
@@ -364,17 +407,19 @@ export default function BankingPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleImportStatement}>
               <Upload className="h-4 w-4 mr-2" />
               Import Statement
             </Button>
-            <Button variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reconcile
+            <Button variant="outline" size="sm" onClick={handleReconcile} disabled={isReconciling || !selectedAccount}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isReconciling ? 'animate-spin' : ''}`} />
+              {isReconciling ? 'Reconciling...' : 'Reconcile'}
             </Button>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Bank Account
+            <Button asChild>
+              <Link href="/banking/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Bank Account
+              </Link>
             </Button>
           </div>
         }
