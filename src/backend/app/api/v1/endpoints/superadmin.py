@@ -339,7 +339,8 @@ async def list_tenants(
 @router.get("/tenants/{tenant_id}", response_model=TenantDetailResponse)
 async def get_tenant(
     tenant_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """Get detailed tenant information"""
     result = await db.execute(
@@ -517,7 +518,8 @@ async def activate_tenant(
 
 @router.get("/settings", response_model=PlatformSettingsResponse)
 async def get_platform_settings(
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """Get platform settings"""
     result = await db.execute(select(PlatformSettings).limit(1))
@@ -570,7 +572,8 @@ async def update_platform_settings(
 async def list_feature_flags(
     status: Optional[str] = None,
     category: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """List all feature flags"""
     query = select(FeatureFlag)
@@ -631,7 +634,8 @@ async def create_feature_flag(
 @router.get("/feature-flags/{flag_id}", response_model=FeatureFlagResponse)
 async def get_feature_flag(
     flag_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """Get a feature flag by ID"""
     result = await db.execute(
@@ -723,7 +727,8 @@ async def list_tickets(
     priority: Optional[str] = None,
     assigned_to: Optional[UUID] = None,
     search: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """List support tickets with filtering and pagination"""
     query = select(SupportTicket)
@@ -801,7 +806,8 @@ async def list_tickets(
 @router.get("/tickets/{ticket_id}", response_model=SupportTicketResponse)
 async def get_ticket(
     ticket_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """Get support ticket details"""
     result = await db.execute(
@@ -942,7 +948,8 @@ async def resolve_ticket(
 @router.get("/tickets/{ticket_id}/responses", response_model=List[TicketResponseSchema])
 async def get_ticket_responses(
     ticket_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """Get responses for a support ticket"""
     result = await db.execute(
@@ -1050,7 +1057,8 @@ async def add_ticket_response(
 async def list_announcements(
     is_published: Optional[bool] = None,
     announcement_type: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """List system announcements"""
     query = select(SystemAnnouncement)
@@ -1188,7 +1196,8 @@ async def list_audit_logs(
     target_company_id: Optional[UUID] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     """List audit logs with filtering"""
     query = select(SuperAdminAuditLog)
