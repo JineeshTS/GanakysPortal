@@ -110,6 +110,89 @@ export default function MyPayslipsPage() {
   const payslips = payslipsData?.items || []
   const isLoading = isLoadingPayslips
 
+  // Download payslip PDF
+  const handleDownloadPayslip = async (payslip: PayslipItem) => {
+    try {
+      const response = await fetch(`/api/v1/payroll/payslips/${payslip.id}/pdf`, {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `payslip_${monthNames[payslip.month - 1]}_${payslip.year}.pdf`
+        a.click()
+        window.URL.revokeObjectURL(url)
+      } else {
+        alert('Failed to download payslip')
+      }
+    } catch {
+      alert('Failed to download payslip')
+    }
+  }
+
+  // Download Form 16
+  const handleDownloadForm16 = async () => {
+    try {
+      const response = await fetch(`/api/v1/payroll/employee/${user?.employee_id}/form16`, {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Form16_${selectedYear}.pdf`
+        a.click()
+        window.URL.revokeObjectURL(url)
+      } else {
+        alert('Form 16 not yet available')
+      }
+    } catch {
+      alert('Failed to download Form 16')
+    }
+  }
+
+  // Download Form 12BB
+  const handleDownloadForm12BB = async () => {
+    try {
+      const response = await fetch(`/api/v1/payroll/employee/${user?.employee_id}/form12bb`, {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Form12BB_${selectedYear}.pdf`
+        a.click()
+        window.URL.revokeObjectURL(url)
+      } else {
+        alert('Form 12BB not yet available')
+      }
+    } catch {
+      alert('Failed to download Form 12BB')
+    }
+  }
+
+  // Request Salary Certificate
+  const handleRequestSalaryCertificate = async () => {
+    try {
+      const response = await fetch(`/api/v1/payroll/employee/${user?.employee_id}/salary-certificate`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+      if (response.ok) {
+        alert('Salary certificate request submitted. You will be notified when ready.')
+      } else {
+        alert('Failed to submit request')
+      }
+    } catch {
+      alert('Failed to submit request')
+    }
+  }
+
   // Calculate totals from selected payslip
   const totalEarnings = selectedPayslip?.earnings?.reduce((sum, e) => sum + e.amount, 0) || selectedPayslip?.gross_earnings || 0
   const totalDeductions = selectedPayslip?.deductions?.reduce((sum, d) => sum + d.amount, 0) || selectedPayslip?.total_deductions || 0
@@ -304,7 +387,7 @@ export default function MyPayslipsPage() {
                 </CardDescription>
               </div>
               {selectedPayslip && (
-                <Button>
+                <Button onClick={() => handleDownloadPayslip(selectedPayslip)}>
                   <Download className="h-4 w-4 mr-2" />
                   Download PDF
                 </Button>
@@ -409,7 +492,7 @@ export default function MyPayslipsPage() {
                   <p className="text-sm text-muted-foreground">FY 2024-25</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleDownloadForm16}>
                 <Download className="h-4 w-4" />
               </Button>
             </div>
@@ -421,7 +504,7 @@ export default function MyPayslipsPage() {
                   <p className="text-sm text-muted-foreground">Investment Declaration</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleDownloadForm12BB}>
                 <Download className="h-4 w-4" />
               </Button>
             </div>
@@ -433,7 +516,7 @@ export default function MyPayslipsPage() {
                   <p className="text-sm text-muted-foreground">On request</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm">Request</Button>
+              <Button variant="outline" size="sm" onClick={handleRequestSalaryCertificate}>Request</Button>
             </div>
           </div>
         </CardContent>

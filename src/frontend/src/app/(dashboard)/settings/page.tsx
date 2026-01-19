@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +9,48 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Building, Users, Shield, Bell, Database, Globe, Mail, CreditCard, FileText, Settings, Key, Palette } from "lucide-react";
+import { Building, Users, Shield, Bell, Database, Globe, Mail, CreditCard, FileText, Settings, Key, Palette, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("company");
+  const [isSaving, setIsSaving] = useState(false);
+  const [companySettings, setCompanySettings] = useState({
+    companyName: "Gana Industries Pvt Ltd",
+    legalName: "Gana Industries Private Limited",
+    cinNumber: "U12345MH2020PTC123456",
+    gstNumber: "27AABCU9603R1ZM",
+    panNumber: "AABCU9603R",
+    tanNumber: "MUMU12345A",
+    address: "123, Industrial Area, Phase 2, Pune - 411001, Maharashtra, India",
+    financialYearStart: "april"
+  });
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/v1/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(companySettings)
+      });
+      if (response.ok) {
+        toast.success('Settings saved successfully');
+      } else {
+        toast.error('Failed to save settings');
+      }
+    } catch {
+      toast.error('Failed to save settings');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleConfigureIntegration = (integration: string) => {
+    router.push(`/settings/integrations/${integration}`);
+  };
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -20,7 +59,10 @@ export default function SettingsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground">Manage system configuration and preferences</p>
         </div>
-        <Button>Save Changes</Button>
+        <Button onClick={handleSaveChanges} disabled={isSaving}>
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Changes
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -45,36 +87,36 @@ export default function SettingsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Company Name</Label>
-                  <Input defaultValue="Gana Industries Pvt Ltd" />
+                  <Input value={companySettings.companyName} onChange={(e) => setCompanySettings(prev => ({ ...prev, companyName: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Legal Name</Label>
-                  <Input defaultValue="Gana Industries Private Limited" />
+                  <Input value={companySettings.legalName} onChange={(e) => setCompanySettings(prev => ({ ...prev, legalName: e.target.value }))} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>CIN Number</Label>
-                  <Input defaultValue="U12345MH2020PTC123456" />
+                  <Input value={companySettings.cinNumber} onChange={(e) => setCompanySettings(prev => ({ ...prev, cinNumber: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>GST Number</Label>
-                  <Input defaultValue="27AABCU9603R1ZM" />
+                  <Input value={companySettings.gstNumber} onChange={(e) => setCompanySettings(prev => ({ ...prev, gstNumber: e.target.value }))} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>PAN Number</Label>
-                  <Input defaultValue="AABCU9603R" />
+                  <Input value={companySettings.panNumber} onChange={(e) => setCompanySettings(prev => ({ ...prev, panNumber: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>TAN Number</Label>
-                  <Input defaultValue="MUMU12345A" />
+                  <Input value={companySettings.tanNumber} onChange={(e) => setCompanySettings(prev => ({ ...prev, tanNumber: e.target.value }))} />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Registered Address</Label>
-                <Textarea defaultValue="123, Industrial Area, Phase 2, Pune - 411001, Maharashtra, India" />
+                <Textarea value={companySettings.address} onChange={(e) => setCompanySettings(prev => ({ ...prev, address: e.target.value }))} />
               </div>
             </CardContent>
           </Card>
@@ -201,7 +243,7 @@ export default function SettingsPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-4">Sync with Tally accounting software</p>
-                    <Button variant="outline" size="sm">Configure</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleConfigureIntegration('tally')}>Configure</Button>
                   </CardContent>
                 </Card>
                 <Card>
@@ -210,7 +252,7 @@ export default function SettingsPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-4">Auto-file GST returns</p>
-                    <Button variant="outline" size="sm">Configure</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleConfigureIntegration('gst')}>Configure</Button>
                   </CardContent>
                 </Card>
                 <Card>
@@ -219,7 +261,7 @@ export default function SettingsPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-4">Bank statement reconciliation</p>
-                    <Button variant="outline" size="sm">Configure</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleConfigureIntegration('banking')}>Configure</Button>
                   </CardContent>
                 </Card>
                 <Card>
@@ -228,7 +270,7 @@ export default function SettingsPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-4">IRN generation via NIC portal</p>
-                    <Button variant="outline" size="sm">Configure</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleConfigureIntegration('einvoice')}>Configure</Button>
                   </CardContent>
                 </Card>
               </div>

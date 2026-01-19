@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Receipt, CreditCard, Plane, Car, FileText, MoreVertical, Loader2, IndianRupee, CheckCircle, Clock, AlertTriangle, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Plus, Search, Receipt, CreditCard, Plane, Car, FileText, MoreVertical, Loader2, IndianRupee, CheckCircle, Clock, AlertTriangle, Trash2, Eye, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -19,8 +20,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useApi } from '@/hooks';
+import { useApi, useToast } from '@/hooks';
 import { formatCurrency } from '@/lib/format';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ExpenseClaim {
   id: string;
@@ -88,9 +112,36 @@ const categoryIcons: Record<string, React.ReactNode> = {
 };
 
 export default function ExpensesPage() {
+  const router = useRouter();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState('claims');
   const [searchQuery, setSearchQuery] = useState('');
   const [localClaims, setLocalClaims] = useState<ExpenseClaim[]>([]);
+
+  // New Expense Claim Dialog
+  const [newClaimDialogOpen, setNewClaimDialogOpen] = useState(false);
+  const [newClaimData, setNewClaimData] = useState({
+    category: '',
+    amount: '',
+    description: '',
+    expense_date: new Date().toISOString().split('T')[0]
+  });
+  const [isSubmittingClaim, setIsSubmittingClaim] = useState(false);
+
+  // Request Advance Dialog
+  const [advanceDialogOpen, setAdvanceDialogOpen] = useState(false);
+  const [advanceData, setAdvanceData] = useState({
+    purpose: '',
+    amount: '',
+    travel_date: ''
+  });
+  const [isSubmittingAdvance, setIsSubmittingAdvance] = useState(false);
+
+  // Settle Advance Dialog
+  const [settleDialogOpen, setSettleDialogOpen] = useState(false);
+  const [advanceToSettle, setAdvanceToSettle] = useState<TravelAdvance | null>(null);
+  const [settlementAmount, setSettlementAmount] = useState('');
+  const [isSettling, setIsSettling] = useState(false);
 
   // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -116,6 +167,107 @@ export default function ExpensesPage() {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  // Submit new expense claim
+  const handleSubmitClaim = async () => {
+    if (!newClaimData.category || !newClaimData.amount) {
+      showToast('error', 'Please fill in all required fields');
+      return;
+    }
+    setIsSubmittingClaim(true);
+    try {
+      const response = await fetch('/api/v1/expenses/claims', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...newClaimData,
+          amount: parseFloat(newClaimData.amount)
+        })
+      });
+      if (response.ok) {
+        showToast('success', 'Expense claim submitted successfully');
+        setNewClaimDialogOpen(false);
+        setNewClaimData({ category: '', amount: '', description: '', expense_date: new Date().toISOString().split('T')[0] });
+        getClaims('/expenses/claims');
+      } else {
+        showToast('error', 'Failed to submit expense claim');
+      }
+    } catch {
+      showToast('error', 'Failed to submit expense claim');
+    } finally {
+      setIsSubmittingClaim(false);
+    }
+  };
+
+  // Request travel advance
+  const handleRequestAdvance = async () => {
+    if (!advanceData.purpose || !advanceData.amount || !advanceData.travel_date) {
+      showToast('error', 'Please fill in all required fields');
+      return;
+    }
+    setIsSubmittingAdvance(true);
+    try {
+      const response = await fetch('/api/v1/expenses/advances', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...advanceData,
+          amount: parseFloat(advanceData.amount)
+        })
+      });
+      if (response.ok) {
+        showToast('success', 'Travel advance request submitted');
+        setAdvanceDialogOpen(false);
+        setAdvanceData({ purpose: '', amount: '', travel_date: '' });
+        getAdvances('/expenses/advances');
+      } else {
+        showToast('error', 'Failed to request advance');
+      }
+    } catch {
+      showToast('error', 'Failed to request advance');
+    } finally {
+      setIsSubmittingAdvance(false);
+    }
+  };
+
+  // Settle advance
+  const handleSettleAdvance = async () => {
+    if (!advanceToSettle || !settlementAmount) return;
+    setIsSettling(true);
+    try {
+      const response = await fetch(`/api/v1/expenses/advances/${advanceToSettle.id}/settle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ settlement_amount: parseFloat(settlementAmount) })
+      });
+      if (response.ok) {
+        showToast('success', 'Advance settled successfully');
+        setSettleDialogOpen(false);
+        setAdvanceToSettle(null);
+        setSettlementAmount('');
+        getAdvances('/expenses/advances');
+      } else {
+        showToast('error', 'Failed to settle advance');
+      }
+    } catch {
+      showToast('error', 'Failed to settle advance');
+    } finally {
+      setIsSettling(false);
+    }
+  };
+
+  // View claim details
+  const handleViewClaim = (claim: ExpenseClaim) => {
+    router.push(`/expenses/claims/${claim.id}`);
+  };
+
+  // Edit claim
+  const handleEditClaim = (claim: ExpenseClaim) => {
+    router.push(`/expenses/claims/${claim.id}/edit`);
   };
 
   const { data: claimsData, isLoading: claimsLoading, get: getClaims } = useApi<{ data: ExpenseClaim[] }>();
@@ -156,7 +308,7 @@ export default function ExpensesPage() {
         title="Expense Management"
         description="Submit and track expense claims, travel advances, and reimbursements"
         actions={
-          <Button>
+          <Button onClick={() => setNewClaimDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Expense Claim
           </Button>
@@ -257,9 +409,25 @@ export default function ExpensesPage() {
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewClaim(claim)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            {claim.status === 'draft' && (
+                              <DropdownMenuItem onClick={() => handleEditClaim(claim)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         {claim.status === 'rejected' && (
                           <Button
                             variant="ghost"
@@ -312,11 +480,21 @@ export default function ExpensesPage() {
                     </td>
                     <td className="p-4 text-right">
                       {advance.status === 'outstanding' ? (
-                        <Button size="sm">Settle</Button>
+                        <Button size="sm" onClick={() => { setAdvanceToSettle(advance); setSettlementAmount(advance.amount.toString()); setSettleDialogOpen(true); }}>Settle</Button>
                       ) : (
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/expenses/advances/${advance.id}`)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </td>
                   </tr>
@@ -325,7 +503,7 @@ export default function ExpensesPage() {
             </table>
           </div>
           <div className="mt-4">
-            <Button>
+            <Button onClick={() => setAdvanceDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Request Advance
             </Button>
@@ -368,9 +546,19 @@ export default function ExpensesPage() {
                       </Badge>
                     </td>
                     <td className="p-4 text-right">
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => router.push(`/expenses/mileage/${claim.id}`)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))}
@@ -378,7 +566,7 @@ export default function ExpensesPage() {
             </table>
           </div>
           <div className="mt-4">
-            <Button>
+            <Button onClick={() => router.push('/expenses/mileage/new')}>
               <Car className="h-4 w-4 mr-2" />
               New Mileage Claim
             </Button>
@@ -425,7 +613,7 @@ export default function ExpensesPage() {
             ))}
           </div>
           <div className="mt-4">
-            <Button>
+            <Button onClick={() => router.push('/settings/expense-policies')}>
               <Plus className="h-4 w-4 mr-2" />
               Add Policy
             </Button>
@@ -465,6 +653,161 @@ export default function ExpensesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* New Expense Claim Dialog */}
+      <Dialog open={newClaimDialogOpen} onOpenChange={setNewClaimDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Expense Claim</DialogTitle>
+            <DialogDescription>Submit a new expense claim for reimbursement</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Category *</Label>
+              <Select value={newClaimData.category} onValueChange={(value) => setNewClaimData({ ...newClaimData, category: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="travel">Travel</SelectItem>
+                  <SelectItem value="meals">Meals</SelectItem>
+                  <SelectItem value="accommodation">Accommodation</SelectItem>
+                  <SelectItem value="transport">Transport</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Amount (INR) *</Label>
+              <Input
+                type="number"
+                value={newClaimData.amount}
+                onChange={(e) => setNewClaimData({ ...newClaimData, amount: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Expense Date *</Label>
+              <Input
+                type="date"
+                value={newClaimData.expense_date}
+                onChange={(e) => setNewClaimData({ ...newClaimData, expense_date: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={newClaimData.description}
+                onChange={(e) => setNewClaimData({ ...newClaimData, description: e.target.value })}
+                placeholder="Brief description of the expense..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewClaimDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmitClaim} disabled={isSubmittingClaim}>
+              {isSubmittingClaim ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Submit Claim'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Request Advance Dialog */}
+      <Dialog open={advanceDialogOpen} onOpenChange={setAdvanceDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request Travel Advance</DialogTitle>
+            <DialogDescription>Request an advance for upcoming travel expenses</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Purpose *</Label>
+              <Input
+                value={advanceData.purpose}
+                onChange={(e) => setAdvanceData({ ...advanceData, purpose: e.target.value })}
+                placeholder="e.g., Client Visit - Bangalore"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Amount (INR) *</Label>
+              <Input
+                type="number"
+                value={advanceData.amount}
+                onChange={(e) => setAdvanceData({ ...advanceData, amount: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Travel Date *</Label>
+              <Input
+                type="date"
+                value={advanceData.travel_date}
+                onChange={(e) => setAdvanceData({ ...advanceData, travel_date: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAdvanceDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleRequestAdvance} disabled={isSubmittingAdvance}>
+              {isSubmittingAdvance ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Request Advance'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settle Advance Dialog */}
+      <Dialog open={settleDialogOpen} onOpenChange={setSettleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Settle Advance</DialogTitle>
+            <DialogDescription>
+              Settle the advance for {advanceToSettle?.employee_name} - {advanceToSettle?.purpose}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label className="text-muted-foreground">Advance Amount</Label>
+              <p className="font-semibold">{advanceToSettle ? formatCurrency(advanceToSettle.amount) : '-'}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Settlement Amount (INR) *</Label>
+              <Input
+                type="number"
+                value={settlementAmount}
+                onChange={(e) => setSettlementAmount(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSettleDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSettleAdvance} disabled={isSettling}>
+              {isSettling ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Settling...
+                </>
+              ) : (
+                'Settle Advance'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

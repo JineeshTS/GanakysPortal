@@ -428,6 +428,77 @@ export default function ContractsPage() {
     }
   };
 
+  // Export contracts to CSV
+  const handleExport = () => {
+    const headers = ['Contract Number', 'Title', 'Type', 'Party Name', 'Party Type', 'Status', 'Effective Date', 'Expiry Date', 'Value'];
+    const rows = filteredContracts.map(c => [
+      c.contract_number,
+      c.title,
+      c.contract_type,
+      c.party_name,
+      c.party_type,
+      c.status,
+      c.effective_date,
+      c.expiry_date,
+      c.contract_value.toString()
+    ]);
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'contracts.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Download contract document
+  const handleDownloadDocument = async (contract: Contract) => {
+    try {
+      const response = await fetch(`/api/v1/legal/contracts/${contract.id}/document`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${contract.contract_number}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      } else {
+        showToast("error", "Failed to download document");
+      }
+    } catch {
+      showToast("error", "Failed to download document");
+    }
+  };
+
+  // Edit contract state
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<Contract | null>(null);
+
+  const handleEditContract = (contract: Contract) => {
+    setEditFormData(contract);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editFormData) return;
+    setIsSubmitting(true);
+    try {
+      await api.put(`/legal/contracts/${editFormData.id}`, editFormData);
+      setContracts(contracts.map(c => c.id === editFormData.id ? editFormData : c));
+      setIsEditDialogOpen(false);
+      showToast("success", "Contract updated successfully");
+    } catch (error) {
+      console.error("Failed to update contract:", error);
+      showToast("error", "Failed to update contract");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Stats
   const stats = {
     total: contracts.length,
@@ -449,7 +520,7 @@ export default function ContractsPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -836,7 +907,7 @@ export default function ContractsPage() {
                         <Button variant="ghost" size="icon" onClick={() => handleUploadDocument(contract)}>
                           <Upload className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditContract(contract)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         {["expired", "terminated"].includes(contract.status) && (
@@ -963,7 +1034,7 @@ export default function ContractsPage() {
                   <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
                     <FileText className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm flex-1">Contract Document.pdf</span>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => selectedContract && handleDownloadDocument(selectedContract)}>
                       <Download className="h-4 w-4 mr-1" />
                       Download
                     </Button>
@@ -976,9 +1047,114 @@ export default function ContractsPage() {
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
               Close
             </Button>
-            <Button>
+            <Button onClick={() => { setIsViewDialogOpen(false); selectedContract && handleEditContract(selectedContract); }}>
               <Edit className="mr-2 h-4 w-4" />
               Edit Contract
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Contract Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Contract</DialogTitle>
+            <DialogDescription>Update contract details</DialogDescription>
+          </DialogHeader>
+          {editFormData && (
+            <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-2">
+                <Label>Contract Title *</Label>
+                <Input
+                  value={editFormData.title}
+                  onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Party Name *</Label>
+                  <Input
+                    value={editFormData.party_name}
+                    onChange={(e) => setEditFormData({ ...editFormData, party_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Party Contact</Label>
+                  <Input
+                    value={editFormData.party_contact}
+                    onChange={(e) => setEditFormData({ ...editFormData, party_contact: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Effective Date</Label>
+                  <Input
+                    type="date"
+                    value={editFormData.effective_date}
+                    onChange={(e) => setEditFormData({ ...editFormData, effective_date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Expiry Date</Label>
+                  <Input
+                    type="date"
+                    value={editFormData.expiry_date}
+                    onChange={(e) => setEditFormData({ ...editFormData, expiry_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Contract Value (INR)</Label>
+                  <Input
+                    type="number"
+                    value={editFormData.contract_value}
+                    onChange={(e) => setEditFormData({ ...editFormData, contract_value: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={editFormData.status}
+                    onValueChange={(value) => setEditFormData({ ...editFormData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CONTRACT_STATUSES.map((status) => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Terms Summary</Label>
+                <Textarea
+                  value={editFormData.terms_summary}
+                  onChange={(e) => setEditFormData({ ...editFormData, terms_summary: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

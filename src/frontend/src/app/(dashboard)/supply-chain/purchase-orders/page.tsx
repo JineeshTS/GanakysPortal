@@ -435,6 +435,56 @@ export default function PurchaseOrdersPage() {
     setDeleteDialogOpen(true);
   };
 
+  // Export POs to CSV
+  const handleExport = () => {
+    const headers = ['PO Number', 'Vendor', 'Order Date', 'Expected Delivery', 'Status', 'Approval Status', 'Total Amount', 'Received Amount'];
+    const rows = filteredPOs.map(po => [
+      po.po_number,
+      po.vendor_name,
+      po.order_date,
+      po.expected_delivery,
+      po.status,
+      po.approval_status,
+      po.total_amount.toString(),
+      po.received_amount.toString()
+    ]);
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'purchase_orders.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Edit PO dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<PurchaseOrder | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const editApi = useApi<PurchaseOrder>();
+
+  const openEditDialog = (po: PurchaseOrder) => {
+    setEditFormData({ ...po });
+    setEditDialogOpen(true);
+  };
+
+  const handleSavePO = async () => {
+    if (!editFormData) return;
+    setIsEditing(true);
+    try {
+      await editApi.put(`/supply-chain/purchase-orders/${editFormData.id}`, editFormData);
+      setLocalPurchaseOrders(localPurchaseOrders.map(po => po.id === editFormData.id ? editFormData : po));
+      setEditDialogOpen(false);
+      showToast('success', 'Purchase order updated successfully');
+    } catch (error) {
+      console.error('Failed to update PO:', error);
+      showToast('error', 'Failed to update purchase order');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
   const clearFilters = () => {
     setStatusFilter('all');
     setVendorFilter('all');
@@ -461,7 +511,7 @@ export default function PurchaseOrdersPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
@@ -651,7 +701,7 @@ export default function PurchaseOrdersPage() {
                           <Button variant="ghost" size="icon" onClick={() => openViewDialog(po)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(po)}>
                             <Edit className="h-4 w-4" />
                           </Button>
                           {(po.status === 'draft' || po.status === 'cancelled') && (
@@ -1013,6 +1063,114 @@ export default function PurchaseOrdersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit PO Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Purchase Order</DialogTitle>
+            <DialogDescription>{editFormData?.po_number}</DialogDescription>
+          </DialogHeader>
+          {editFormData && (
+            <div className="space-y-4 py-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label>Vendor</Label>
+                  <Select
+                    value={editFormData.vendor_id}
+                    onValueChange={(value) => {
+                      const vendor = vendors.find(v => v.id === value);
+                      setEditFormData({
+                        ...editFormData,
+                        vendor_id: value,
+                        vendor_name: vendor?.name || '',
+                        vendor_code: vendor?.code || ''
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vendors.map((vendor) => (
+                        <SelectItem key={vendor.id} value={vendor.id}>
+                          {vendor.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Expected Delivery</Label>
+                  <Input
+                    type="date"
+                    value={editFormData.expected_delivery}
+                    onChange={(e) => setEditFormData({ ...editFormData, expected_delivery: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label>Status</Label>
+                  <Select
+                    value={editFormData.status}
+                    onValueChange={(value: PurchaseOrder['status']) => setEditFormData({ ...editFormData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="pending_approval">Pending Approval</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="sent">Sent</SelectItem>
+                      <SelectItem value="partial_received">Partial Received</SelectItem>
+                      <SelectItem value="received">Received</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Approval Status</Label>
+                  <Select
+                    value={editFormData.approval_status}
+                    onValueChange={(value: PurchaseOrder['approval_status']) => setEditFormData({ ...editFormData, approval_status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>Notes</Label>
+                <Textarea
+                  value={editFormData.notes}
+                  onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSavePO} disabled={isEditing}>
+              {isEditing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

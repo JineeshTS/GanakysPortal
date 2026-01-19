@@ -20,6 +20,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
   Plus,
   Search,
   Users,
@@ -155,6 +165,62 @@ export default function CustomersPage() {
     }
   }
 
+  // Export customers to CSV
+  const handleExport = () => {
+    const headers = ['Name', 'Email', 'Phone', 'GSTIN', 'Billing Address', 'Credit Limit', 'Credit Days', 'Status']
+    const rows = filteredCustomers.map(c => [
+      c.name,
+      c.email || '',
+      c.phone || '',
+      c.gstin || '',
+      c.billing_address || '',
+      (c.credit_limit || 0).toString(),
+      (c.credit_days || 0).toString(),
+      c.is_active ? 'Active' : 'Inactive'
+    ])
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'customers.csv'
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
+  // View customer dialog state
+  const [viewDialogOpen, setViewDialogOpen] = React.useState(false)
+  const [selectedCustomer, setSelectedCustomer] = React.useState<Customer | null>(null)
+
+  const handleViewCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer)
+    setViewDialogOpen(true)
+  }
+
+  // Edit customer
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
+  const [editFormData, setEditFormData] = React.useState<Customer | null>(null)
+  const [isSaving, setIsSaving] = React.useState(false)
+
+  const handleEditCustomer = (customer: Customer) => {
+    setEditFormData({ ...customer })
+    setEditDialogOpen(true)
+  }
+
+  const handleSaveCustomer = async () => {
+    if (!editFormData) return
+    setIsSaving(true)
+    try {
+      await api.put(`/crm/customers/${editFormData.id}`, editFormData)
+      setCustomers(customers.map(c => c.id === editFormData.id ? editFormData : c))
+      setEditDialogOpen(false)
+    } catch (error) {
+      console.error('Failed to update customer:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   React.useEffect(() => {
     const fetchCustomers = async () => {
       setIsLoading(true)
@@ -213,13 +279,15 @@ export default function CustomersPage() {
                 Back to Pipeline
               </Link>
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Customer
+            <Button asChild>
+              <Link href="/crm/customers/add">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Customer
+              </Link>
             </Button>
           </div>
         }
@@ -399,10 +467,10 @@ export default function CustomersPage() {
                       </td>
                       <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" onClick={() => handleViewCustomer(customer)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" onClick={() => handleEditCustomer(customer)}>
                             <Edit className="h-4 w-4" />
                           </Button>
                           {!customer.is_active && (
@@ -465,6 +533,144 @@ export default function CustomersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Customer Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Customer Details</DialogTitle>
+            <DialogDescription>{selectedCustomer?.name}</DialogDescription>
+          </DialogHeader>
+          {selectedCustomer && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Email</Label>
+                  <p className="font-medium">{selectedCustomer.email || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Phone</Label>
+                  <p className="font-medium">{selectedCustomer.phone ? formatPhone(selectedCustomer.phone) : '-'}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">GSTIN</Label>
+                <p className="font-medium font-mono">{selectedCustomer.gstin || '-'}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Billing Address</Label>
+                <p className="font-medium">{selectedCustomer.billing_address || '-'}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Credit Limit</Label>
+                  <p className="font-medium">{selectedCustomer.credit_limit ? formatCurrency(selectedCustomer.credit_limit) : '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Credit Days</Label>
+                  <p className="font-medium">{selectedCustomer.credit_days ? `${selectedCustomer.credit_days} days` : '-'}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Status</Label>
+                <Badge className={selectedCustomer.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                  {selectedCustomer.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>Close</Button>
+            <Button onClick={() => { setViewDialogOpen(false); selectedCustomer && handleEditCustomer(selectedCustomer) }}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+            <DialogDescription>Update customer information</DialogDescription>
+          </DialogHeader>
+          {editFormData && (
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-2">
+                <Label>Name *</Label>
+                <Input
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    value={editFormData.email || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone</Label>
+                  <Input
+                    value={editFormData.phone || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>GSTIN</Label>
+                <Input
+                  value={editFormData.gstin || ''}
+                  onChange={(e) => setEditFormData({ ...editFormData, gstin: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Billing Address</Label>
+                <Textarea
+                  value={editFormData.billing_address || ''}
+                  onChange={(e) => setEditFormData({ ...editFormData, billing_address: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Credit Limit</Label>
+                  <Input
+                    type="number"
+                    value={editFormData.credit_limit || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, credit_limit: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Credit Days</Label>
+                  <Input
+                    type="number"
+                    value={editFormData.credit_days || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, credit_days: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveCustomer} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

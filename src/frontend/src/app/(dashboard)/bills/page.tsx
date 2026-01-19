@@ -264,6 +264,61 @@ export default function BillsPage() {
     }
   }
 
+  // Export bills to CSV
+  const handleExport = () => {
+    const headers = ['Bill Number', 'Vendor', 'Bill Date', 'Due Date', 'Subtotal', 'GST', 'TDS', 'Total', 'Net Payable', 'Balance Due', 'Status']
+    const rows = filteredBills.map(b => [
+      b.bill_number,
+      b.vendor_name,
+      b.bill_date,
+      b.due_date,
+      b.subtotal.toString(),
+      b.total_tax.toString(),
+      (b.tds_amount || 0).toString(),
+      b.total.toString(),
+      b.net_payable.toString(),
+      b.balance_due.toString(),
+      b.status
+    ])
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'bills.csv'
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
+  // Import bills handler
+  const handleImport = () => {
+    document.getElementById('bill-import-input')?.click()
+  }
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const formData = new FormData()
+      formData.append('file', file)
+      try {
+        const response = await fetch('/api/v1/bills/import', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        })
+        if (response.ok) {
+          alert('Bills imported successfully!')
+          getBills('/bills')
+        } else {
+          alert('Failed to import bills. Please check the file format.')
+        }
+      } catch {
+        alert('Failed to import bills')
+      }
+      e.target.value = ''
+    }
+  }
+
   // Update local bills when API data changes
   React.useEffect(() => {
     if (billsData?.bills) {
@@ -493,11 +548,18 @@ export default function BillsPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleImport}>
               <Upload className="h-4 w-4 mr-2" />
               Import
             </Button>
-            <Button variant="outline" size="sm">
+            <input
+              id="bill-import-input"
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+            <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>

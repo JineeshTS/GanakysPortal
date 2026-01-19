@@ -357,6 +357,69 @@ export default function InvoicesListPage() {
     setSearchQuery('')
   }
 
+  const handleDownloadPDF = async (invoice: Invoice) => {
+    try {
+      // Generate and download PDF
+      const response = await fetch(`/api/v1/invoices/${invoice.id}/pdf`, {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${invoice.invoice_number}.pdf`
+        a.click()
+        window.URL.revokeObjectURL(url)
+      } else {
+        alert('Failed to download PDF')
+      }
+    } catch {
+      alert('Failed to download PDF')
+    }
+  }
+
+  const handleSendEmail = async (invoice: Invoice) => {
+    try {
+      const response = await fetch(`/api/v1/invoices/${invoice.id}/send`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+      if (response.ok) {
+        alert(`Invoice ${invoice.invoice_number} sent to ${invoice.customer_name}`)
+      } else {
+        alert('Failed to send email')
+      }
+    } catch {
+      alert('Failed to send email')
+    }
+  }
+
+  const handleDuplicate = (invoice: Invoice) => {
+    router.push(`/finance/invoices/create?duplicate=${invoice.id}`)
+  }
+
+  const handleExport = () => {
+    // Export invoices to CSV
+    const headers = ['Invoice Number', 'Customer', 'Date', 'Due Date', 'Amount', 'Status']
+    const rows = filteredInvoices.map(inv => [
+      inv.invoice_number,
+      inv.customer_name,
+      inv.invoice_date,
+      inv.due_date,
+      inv.grand_total.toString(),
+      inv.status
+    ])
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `invoices-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
   const columns: Column<Invoice>[] = [
     {
       key: 'invoice_number',
@@ -472,13 +535,13 @@ export default function InvoicesListPage() {
               </Link>
             </Button>
           )}
-          <Button variant="ghost" size="icon" title="Download PDF">
+          <Button variant="ghost" size="icon" title="Download PDF" onClick={() => handleDownloadPDF(row)}>
             <Download className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" title="Send Email">
+          <Button variant="ghost" size="icon" title="Send Email" onClick={() => handleSendEmail(row)}>
             <Mail className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" title="Duplicate">
+          <Button variant="ghost" size="icon" title="Duplicate" onClick={() => handleDuplicate(row)}>
             <Copy className="h-4 w-4" />
           </Button>
         </div>
@@ -498,7 +561,7 @@ export default function InvoicesListPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>

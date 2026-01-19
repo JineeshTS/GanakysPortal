@@ -583,10 +583,38 @@ export default function EmployeesPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => document.getElementById('employee-import-input')?.click()}>
               <Upload className="h-4 w-4 mr-2" />
               Import
             </Button>
+            <input
+              id="employee-import-input"
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  const formData = new FormData()
+                  formData.append('file', file)
+                  fetch('/api/v1/employees/import', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                  }).then(response => {
+                    if (response.ok) {
+                      alert('Employees imported successfully!')
+                      fetchEmployees()
+                    } else {
+                      alert('Failed to import employees. Please check the file format.')
+                    }
+                  }).catch(() => {
+                    alert('Failed to import employees')
+                  })
+                  e.target.value = ''
+                }
+              }}
+            />
             <div className="relative group">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
