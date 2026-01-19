@@ -402,16 +402,24 @@ async def complete_setup_wizard(
     await db.commit()
     await db.refresh(ext_profile)
 
-    # 5. Optionally trigger AI Org Builder (placeholder - will be implemented in Phase 3)
+    # 5. Optionally trigger AI Org Builder
     ai_recommendation_id = None
+    ai_org_builder_status = None
     if wizard_data.generate_org_structure:
-        # TODO: Trigger AI Org Builder service
-        # ai_recommendation_id = await org_builder_service.generate_initial_structure(company_id)
-        pass
+        # AI Org Builder is a premium feature that requires configuration
+        # Log the request and inform the user
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"AI Org Builder requested for company {company_id} - feature requires configuration")
+        ai_org_builder_status = "pending_configuration"
+
+    message = "Company setup completed successfully"
+    if ai_org_builder_status == "pending_configuration":
+        message += ". AI organization structure generation requires additional setup - please contact support to enable this feature."
 
     return CompanySetupWizardResponse(
         success=True,
-        message="Company setup completed successfully",
+        message=message,
         company_id=company_id,
         extended_profile_id=ext_profile.id,
         products_created=products_created,

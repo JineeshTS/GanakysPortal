@@ -1233,46 +1233,91 @@ async def create_custom_payment_batch(
             detail="Finance role required"
         )
 
-    try:
-        # Create batch using service
-        batch = create_payment_batch(batch_data, str(current_user.company_id))
+    from app.models.banking import (
+        PaymentBatch, PaymentInstruction, PaymentBatchType,
+        PaymentBatchStatus, PaymentInstructionStatus, PaymentMode
+    )
+    from datetime import datetime
+    import uuid as uuid_module
 
-        # TODO: Save to database and return
-        return {
-            "id": batch["id"],
-            "company_id": batch["company_id"],
-            "bank_account_id": str(batch_data.bank_account_id),
-            "batch_number": batch["batch_number"],
-            "batch_type": batch["batch_type"],
-            "batch_date": batch["batch_date"],
-            "value_date": batch.get("value_date"),
-            "description": batch.get("description"),
-            "reference": batch.get("reference"),
-            "payment_mode": batch["payment_mode"],
-            "total_amount": batch["total_amount"],
-            "total_count": batch["total_count"],
-            "processed_amount": 0,
-            "processed_count": 0,
-            "failed_amount": 0,
-            "failed_count": 0,
-            "status": batch["status"],
-            "file_format": batch_data.file_format.value if batch_data.file_format else None,
-            "file_reference": None,
-            "bank_batch_id": None,
-            "source_type": batch.get("source_type"),
-            "source_id": batch.get("source_id"),
-            "submitted_at": None,
-            "approved_at": None,
-            "processed_at": None,
-            "created_at": None,
-            "instructions": []
-        }
+    company_id = UUID(current_user.company_id)
 
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+    # Verify bank account exists
+    from sqlalchemy import select
+    from app.models.banking import BankAccount
+
+    account_result = await db.execute(
+        select(BankAccount).where(
+            BankAccount.id == batch_data.bank_account_id,
+            BankAccount.company_id == company_id
         )
+    )
+    if not account_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bank account not found"
+        )
+
+    # Generate batch number
+    batch_number = f"PAY-{datetime.now().strftime('%Y%m%d')}-{uuid_module.uuid4().hex[:6].upper()}"
+
+    # Create payment batch
+    batch = PaymentBatch(
+        company_id=company_id,
+        bank_account_id=batch_data.bank_account_id,
+        batch_number=batch_number,
+        batch_type=PaymentBatchType(batch_data.batch_type.value) if batch_data.batch_type else PaymentBatchType.REIMBURSEMENT,
+        batch_date=batch_data.batch_date,
+        value_date=batch_data.value_date or batch_data.batch_date,
+        description=batch_data.description,
+        reference=batch_data.reference,
+        payment_mode=PaymentMode(batch_data.payment_mode.value) if batch_data.payment_mode else PaymentMode.NEFT,
+        status=PaymentBatchStatus.DRAFT,
+        file_format=batch_data.file_format.value if batch_data.file_format else None,
+        created_by=UUID(current_user.id)
+    )
+    db.add(batch)
+    await db.flush()
+
+    # Create payment instructions
+    total_amount = 0
+    instructions_created = []
+
+    if batch_data.instructions:
+        for seq, instr in enumerate(batch_data.instructions, 1):
+            instruction = PaymentInstruction(
+                company_id=company_id,
+                batch_id=batch.id,
+                sequence_number=seq,
+                beneficiary_name=instr.beneficiary_name,
+                beneficiary_code=instr.beneficiary_code,
+                beneficiary_email=instr.beneficiary_email,
+                beneficiary_phone=instr.beneficiary_phone,
+                account_number=instr.account_number,
+                ifsc_code=instr.ifsc_code,
+                bank_name=instr.bank_name,
+                branch_name=instr.branch_name,
+                amount=instr.amount,
+                narration=instr.narration,
+                remarks=instr.remarks,
+                entity_type=instr.entity_type,
+                entity_id=instr.entity_id,
+                payment_mode=PaymentMode(batch_data.payment_mode.value) if batch_data.payment_mode else PaymentMode.NEFT,
+                status=PaymentInstructionStatus.PENDING
+            )
+            db.add(instruction)
+            instructions_created.append(instruction)
+            total_amount += float(instr.amount)
+
+    # Update batch totals
+    batch.total_amount = total_amount
+    batch.total_count = len(instructions_created)
+
+    await db.commit()
+    await db.refresh(batch)
+
+    # Return created batch using service
+    return await BankingDBService(db, company_id).get_payment_batch(batch.id)
 
 
 @router.get("/payments/{batch_id}", response_model=PaymentBatchResponse)
@@ -1312,11 +1357,45 @@ async def update_payment_batch(
             detail="Finance role required"
         )
 
-    # TODO: Update in database
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Payment batch not found"
+    from sqlalchemy import select, update
+    from app.models.banking import PaymentBatch, PaymentBatchStatus
+
+    company_id = UUID(current_user.company_id)
+
+    # Verify batch exists and belongs to company
+    result = await db.execute(
+        select(PaymentBatch).where(
+            PaymentBatch.id == batch_id,
+            PaymentBatch.company_id == company_id
+        )
     )
+    batch = result.scalar_one_or_none()
+    if not batch:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Payment batch not found"
+        )
+
+    # Only allow updates for draft batches
+    if batch.status != PaymentBatchStatus.DRAFT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot update batch in {batch.status.value} status. Only DRAFT batches can be updated."
+        )
+
+    # Update the batch
+    update_data = batch_data.model_dump(exclude_unset=True)
+    if update_data:
+        await db.execute(
+            update(PaymentBatch)
+            .where(PaymentBatch.id == batch_id)
+            .values(**update_data)
+        )
+        await db.commit()
+        await db.refresh(batch)
+
+    # Return updated batch
+    return await BankingDBService(db, company_id).get_payment_batch(batch_id)
 
 
 @router.post("/payments/{batch_id}/submit")

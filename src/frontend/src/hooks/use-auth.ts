@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { useRouter } from 'next/navigation'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import type { User, LoginRequest, LoginResponse } from '@/types'
 
 // ============================================================================
@@ -209,9 +209,12 @@ export function useRequireAuth(redirectTo: string = '/login') {
   const router = useRouter()
   const { isAuthenticated, isLoading } = useAuthStore()
 
-  if (typeof window !== 'undefined' && !isLoading && !isAuthenticated) {
-    router.push(redirectTo)
-  }
+  useEffect(() => {
+    // Only redirect after loading is complete and user is not authenticated
+    if (!isLoading && !isAuthenticated) {
+      router.push(redirectTo)
+    }
+  }, [isLoading, isAuthenticated, router, redirectTo])
 
   return { isAuthenticated, isLoading }
 }
