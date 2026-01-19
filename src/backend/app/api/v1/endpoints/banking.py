@@ -560,20 +560,128 @@ async def auto_reconcile(
             detail="Finance role required"
         )
 
-    # TODO: Fetch book entries and bank entries from database
-    # For demo, return empty result
+    company_id = UUID(current_user.company_id)
+
+    # Fetch bank transactions within date range
+    from sqlalchemy import select, and_
+    from app.models.banking import BankTransaction, BankAccount
+    from app.models.accounting import JournalEntry, JournalEntryLine
+    from decimal import Decimal
+
+    # Verify account belongs to company
+    account_result = await db.execute(
+        select(BankAccount).where(
+            BankAccount.id == account_id,
+            BankAccount.company_id == company_id
+        )
+    )
+    account = account_result.scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Bank account not found")
+
+    # Fetch bank transactions
+    bank_txn_result = await db.execute(
+        select(BankTransaction).where(
+            BankTransaction.bank_account_id == account_id,
+            BankTransaction.transaction_date >= request.from_date,
+            BankTransaction.transaction_date <= request.to_date
+        )
+    )
+    bank_transactions = bank_txn_result.scalars().all()
+
+    # Fetch book entries (journal entries related to this bank account)
+    # Look for journal entry lines that reference this bank account's GL account
+    book_entries = []
+    try:
+        if account.gl_account_id:
+            book_result = await db.execute(
+                select(JournalEntryLine)
+                .join(JournalEntry, JournalEntryLine.journal_entry_id == JournalEntry.id)
+                .where(
+                    JournalEntryLine.account_id == account.gl_account_id,
+                    JournalEntry.company_id == company_id,
+                    JournalEntry.entry_date >= request.from_date,
+                    JournalEntry.entry_date <= request.to_date,
+                    JournalEntry.status == "posted"
+                )
+            )
+            book_entries = book_result.scalars().all()
+    except Exception:
+        # JournalEntry model may not exist or gl_account_id not set
+        pass
+
+    # Match transactions using tolerance
+    tolerance = Decimal(str(request.match_tolerance or 0.01))
+    date_range = request.match_date_range or 3
+
+    matched_entries = []
+    unmatched_bank = list(bank_transactions)
+    unmatched_book = list(book_entries)
+    matched_bank_ids = set()
+    matched_book_ids = set()
+
+    # Exact match by reference and amount
+    for bank_txn in bank_transactions:
+        for book_entry in book_entries:
+            if book_entry.id in matched_book_ids:
+                continue
+
+            # Get amounts
+            bank_amount = abs(Decimal(str(bank_txn.amount or 0)))
+            book_amount = abs(Decimal(str(book_entry.debit or 0)) - Decimal(str(book_entry.credit or 0)))
+
+            # Check amount match within tolerance
+            if abs(bank_amount - book_amount) <= tolerance:
+                # Check reference match or date proximity
+                ref_match = (
+                    bank_txn.reference and
+                    hasattr(book_entry, 'reference') and
+                    book_entry.reference and
+                    bank_txn.reference.lower() in book_entry.reference.lower()
+                )
+
+                date_match = False
+                if hasattr(book_entry, 'journal_entry') and book_entry.journal_entry:
+                    entry_date = book_entry.journal_entry.entry_date
+                    txn_date = bank_txn.transaction_date
+                    if entry_date and txn_date:
+                        date_diff = abs((entry_date - txn_date).days)
+                        date_match = date_diff <= date_range
+
+                if ref_match or date_match:
+                    matched_entries.append({
+                        "bank_entry_id": str(bank_txn.id),
+                        "book_entry_id": str(book_entry.id),
+                        "amount": float(bank_amount),
+                        "match_type": "exact" if ref_match else "fuzzy",
+                        "confidence": 1.0 if ref_match else 0.8
+                    })
+                    matched_bank_ids.add(bank_txn.id)
+                    matched_book_ids.add(book_entry.id)
+                    break
+
+    # Filter out matched entries
+    unmatched_bank = [t for t in bank_transactions if t.id not in matched_bank_ids]
+    unmatched_book = [e for e in book_entries if e.id not in matched_book_ids]
+
     return AutoReconcileResponse(
         success=True,
         bank_account_id=account_id,
         period={"from": request.from_date, "to": request.to_date},
-        total_book_entries=0,
-        total_bank_entries=0,
-        matched_count=0,
-        unmatched_book_count=0,
-        unmatched_bank_count=0,
-        matched_entries=[],
-        unmatched_book_entries=[],
-        unmatched_bank_entries=[]
+        total_book_entries=len(book_entries),
+        total_bank_entries=len(bank_transactions),
+        matched_count=len(matched_entries),
+        unmatched_book_count=len(unmatched_book),
+        unmatched_bank_count=len(unmatched_bank),
+        matched_entries=matched_entries,
+        unmatched_book_entries=[
+            {"id": str(e.id), "amount": float(e.debit or 0) - float(e.credit or 0)}
+            for e in unmatched_book
+        ],
+        unmatched_bank_entries=[
+            {"id": str(t.id), "amount": float(t.amount or 0), "description": t.description}
+            for t in unmatched_bank
+        ]
     )
 
 
@@ -594,11 +702,94 @@ async def get_reconciliation_report(
     - Unmatched book entries
     - Unmatched bank entries
     """
-    # TODO: Generate report from database
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Reconciliation not found"
+    from sqlalchemy import select
+    from app.models.banking import BankAccount, BankReconciliation, BankTransaction
+
+    company_id = UUID(current_user.company_id)
+
+    # Verify account belongs to company
+    account_result = await db.execute(
+        select(BankAccount).where(
+            BankAccount.id == account_id,
+            BankAccount.company_id == company_id
+        )
     )
+    account = account_result.scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Bank account not found")
+
+    # Fetch reconciliation
+    recon_result = await db.execute(
+        select(BankReconciliation).where(
+            BankReconciliation.id == reconciliation_id,
+            BankReconciliation.bank_account_id == account_id
+        )
+    )
+    reconciliation = recon_result.scalar_one_or_none()
+    if not reconciliation:
+        raise HTTPException(status_code=404, detail="Reconciliation not found")
+
+    # Fetch transactions within reconciliation period
+    txn_result = await db.execute(
+        select(BankTransaction).where(
+            BankTransaction.bank_account_id == account_id,
+            BankTransaction.transaction_date >= reconciliation.from_date,
+            BankTransaction.transaction_date <= reconciliation.to_date
+        ).order_by(BankTransaction.transaction_date)
+    )
+    transactions = txn_result.scalars().all()
+
+    # Calculate totals
+    total_credits = sum(float(t.amount or 0) for t in transactions if t.transaction_type == 'credit')
+    total_debits = sum(float(t.amount or 0) for t in transactions if t.transaction_type == 'debit')
+    matched_txns = [t for t in transactions if t.reconciliation_status == 'reconciled']
+    unmatched_txns = [t for t in transactions if t.reconciliation_status != 'reconciled']
+
+    return {
+        "reconciliation_id": str(reconciliation.id),
+        "bank_account": {
+            "id": str(account.id),
+            "name": account.account_name,
+            "account_number": account.account_number[-4:].rjust(len(account.account_number), '*'),
+            "bank_name": account.bank_name,
+            "current_balance": float(account.current_balance or 0)
+        },
+        "period": {
+            "from_date": str(reconciliation.from_date),
+            "to_date": str(reconciliation.to_date),
+            "statement_date": str(reconciliation.statement_date) if reconciliation.statement_date else None
+        },
+        "balance_summary": {
+            "statement_opening_balance": float(reconciliation.statement_opening_balance or 0),
+            "statement_closing_balance": float(reconciliation.statement_closing_balance or 0),
+            "book_opening_balance": float(reconciliation.book_opening_balance or 0),
+            "book_closing_balance": float(reconciliation.book_closing_balance or 0),
+            "total_credits": total_credits,
+            "total_debits": total_debits,
+            "difference": float(reconciliation.statement_closing_balance or 0) - float(reconciliation.book_closing_balance or 0)
+        },
+        "transaction_summary": {
+            "total_transactions": len(transactions),
+            "matched_count": len(matched_txns),
+            "unmatched_count": len(unmatched_txns)
+        },
+        "transactions": [
+            {
+                "id": str(t.id),
+                "date": str(t.transaction_date),
+                "type": t.transaction_type,
+                "description": t.description,
+                "reference": t.reference,
+                "amount": float(t.amount or 0),
+                "balance": float(t.balance or 0),
+                "status": t.reconciliation_status or "unreconciled"
+            }
+            for t in transactions
+        ],
+        "status": reconciliation.status.value if reconciliation.status else "draft",
+        "created_at": reconciliation.created_at.isoformat() if reconciliation.created_at else None,
+        "completed_at": reconciliation.completed_at.isoformat() if reconciliation.completed_at else None
+    }
 
 
 # ============= Payment Batch Endpoints =============
