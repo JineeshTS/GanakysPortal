@@ -215,9 +215,10 @@ interface PermissionModuleProps {
 function PermissionModule({ module, selectedPermissions, onPermissionChange, disabled }: PermissionModuleProps) {
   const [expanded, setExpanded] = React.useState(true)
 
-  const modulePermissionIds = module.permissions.map(p => p.id)
+  const permissions = module.permissions || []
+  const modulePermissionIds = permissions.map(p => p.id)
   const selectedCount = modulePermissionIds.filter(id => selectedPermissions.includes(id)).length
-  const allSelected = selectedCount === module.permissions.length
+  const allSelected = permissions.length > 0 && selectedCount === permissions.length
   const someSelected = selectedCount > 0 && !allSelected
 
   const handleModuleToggle = () => {

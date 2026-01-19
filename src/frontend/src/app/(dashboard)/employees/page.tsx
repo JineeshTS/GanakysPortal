@@ -394,15 +394,15 @@ export default function EmployeesPage() {
   const generateCSV = (data: Employee[]) => {
     const headers = ['Employee Code', 'Name', 'Email', 'Mobile', 'Department', 'Designation', 'Date of Joining', 'Status', 'CTC']
     const rows = data.map(emp => [
-      emp.employee_code,
-      emp.full_name,
-      emp.work_email,
-      emp.mobile,
+      emp.employee_code || '',
+      emp.full_name || '',
+      emp.work_email || '',
+      emp.mobile || '',
       departments[emp.department_id] || '',
       designations[emp.designation_id] || '',
-      emp.date_of_joining,
-      emp.employment_status,
-      emp.ctc.toString()
+      emp.date_of_joining || '',
+      emp.employment_status || '',
+      emp.ctc?.toString() || ''
     ])
 
     return [headers, ...rows].map(row => row.join(',')).join('\n')

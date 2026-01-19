@@ -111,19 +111,21 @@ function getCalendarDays(year: number, month: number, leaves: LeaveRequest[], ho
 
   const days: CalendarDay[] = []
   const currentDate = new Date(startDate)
+  const safeLeaves = leaves || []
+  const safeHolidays = holidays || []
 
   while (currentDate <= endDate) {
     const dateStr = currentDate.toISOString().split('T')[0]
 
     // Find leaves for this date
-    const dayLeaves = leaves.filter(leave => {
+    const dayLeaves = safeLeaves.filter(leave => {
       const fromDate = new Date(leave.from_date)
       const toDate = new Date(leave.to_date)
       return currentDate >= fromDate && currentDate <= toDate
     })
 
     // Find holiday for this date
-    const holiday = holidays.find(h => h.date === dateStr)
+    const holiday = safeHolidays.find(h => h.date === dateStr)
 
     days.push({
       date: new Date(currentDate),
