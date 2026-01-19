@@ -1,6 +1,9 @@
 /**
  * GanaPortal API Client
  * Handles all API communication with the backend
+ *
+ * Note: Authentication tokens are stored in httpOnly cookies for XSS protection.
+ * All requests include credentials: 'include' to send cookies automatically.
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
@@ -18,29 +21,20 @@ class ApiClient {
     this.baseUrl = baseUrl
   }
 
-  private getAccessToken(): string | null {
-    if (typeof window === 'undefined') return null
-    return localStorage.getItem('access_token')
-  }
-
   private async refreshToken(): Promise<boolean> {
-    const refreshToken = localStorage.getItem('refresh_token')
-    if (!refreshToken) return false
-
     try {
+      // Refresh token is sent via httpOnly cookie automatically
       const response = await fetch(`${this.baseUrl}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+        credentials: 'include'  // Send/receive httpOnly cookies
       })
 
       if (!response.ok) return false
 
-      const data = await response.json()
-      localStorage.setItem('access_token', data.access_token)
-      localStorage.setItem('refresh_token', data.refresh_token)
+      // New tokens are set via httpOnly cookies by backend
       return true
     } catch {
       return false
@@ -50,19 +44,15 @@ class ApiClient {
   async request<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     const { method = 'GET', body, headers = {} } = options
 
-    const accessToken = this.getAccessToken()
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       ...headers,
     }
 
-    if (accessToken) {
-      requestHeaders['Authorization'] = `Bearer ${accessToken}`
-    }
-
     const config: RequestInit = {
       method,
       headers: requestHeaders,
+      credentials: 'include'  // Send httpOnly cookies with every request
     }
 
     if (body) {
@@ -71,20 +61,14 @@ class ApiClient {
 
     let response = await fetch(`${this.baseUrl}${endpoint}`, config)
 
-    // Handle token refresh
-    if (response.status === 401 && accessToken) {
+    // Handle token refresh on 401
+    if (response.status === 401) {
       const refreshed = await this.refreshToken()
       if (refreshed) {
-        requestHeaders['Authorization'] = `Bearer ${this.getAccessToken()}`
-        response = await fetch(`${this.baseUrl}${endpoint}`, {
-          ...config,
-          headers: requestHeaders,
-        })
+        // Retry with refreshed token (cookies updated automatically)
+        response = await fetch(`${this.baseUrl}${endpoint}`, config)
       } else {
         // Redirect to login
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('user')
         window.location.href = '/login'
         throw new Error('Session expired')
       }

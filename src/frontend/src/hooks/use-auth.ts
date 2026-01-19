@@ -9,17 +9,17 @@ import type { User, LoginRequest, LoginResponse } from '@/types'
 // ============================================================================
 // Auth Store
 // ============================================================================
+// Note: Tokens are now stored in httpOnly cookies for security (XSS protection).
+// Only user data is persisted in localStorage.
 
 interface AuthState {
   user: User | null
-  accessToken: string | null
-  refreshToken: string | null
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
 
   setUser: (user: User | null) => void
-  setTokens: (access: string | null, refresh: string | null) => void
+  setAuthenticated: (authenticated: boolean) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   logout: () => void
@@ -29,8 +29,6 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      accessToken: null,
-      refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
@@ -40,11 +38,7 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: !!user
       }),
 
-      setTokens: (accessToken, refreshToken) => set({
-        accessToken,
-        refreshToken,
-        isAuthenticated: !!accessToken
-      }),
+      setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
 
       setLoading: (isLoading) => set({ isLoading }),
 
@@ -52,18 +46,15 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => set({
         user: null,
-        accessToken: null,
-        refreshToken: null,
         isAuthenticated: false,
         error: null
       })
     }),
     {
       name: 'ganaportal-auth',
+      // Only persist user data, not tokens (tokens are in httpOnly cookies)
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated
       })
     }
@@ -81,12 +72,10 @@ export function useAuth() {
   const router = useRouter()
   const {
     user,
-    accessToken,
     isAuthenticated,
     isLoading,
     error,
     setUser,
-    setTokens,
     setLoading,
     setError,
     logout: storeLogout
@@ -105,7 +94,8 @@ export function useAuth() {
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData.toString()
+        body: formData.toString(),
+        credentials: 'include'  // Send/receive httpOnly cookies
       })
 
       if (!response.ok) {
@@ -115,7 +105,7 @@ export function useAuth() {
 
       const data: LoginResponse = await response.json()
 
-      setTokens(data.access_token, data.refresh_token)
+      // Only store user data - tokens are in httpOnly cookies
       setUser(data.user)
 
       router.push('/dashboard')
@@ -127,61 +117,62 @@ export function useAuth() {
     } finally {
       setLoading(false)
     }
-  }, [router, setTokens, setUser, setLoading, setError])
+  }, [router, setUser, setLoading, setError])
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      // Call backend to clear httpOnly cookies and blacklist tokens
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+    } catch {
+      // Ignore errors, still clear local state
+    }
     storeLogout()
     router.push('/login')
   }, [router, storeLogout])
 
   const refreshAccessToken = useCallback(async (): Promise<boolean> => {
-    const { refreshToken } = useAuthStore.getState()
-
-    if (!refreshToken) {
-      logout()
-      return false
-    }
-
     try {
+      // Refresh token is sent via httpOnly cookie automatically
       const response = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: refreshToken })
+        credentials: 'include'
       })
 
       if (!response.ok) {
         throw new Error('Token refresh failed')
       }
 
-      const data = await response.json()
-      setTokens(data.access_token, data.refresh_token || refreshToken)
+      // New tokens are set via httpOnly cookies by backend
       return true
     } catch {
       logout()
       return false
     }
-  }, [logout, setTokens])
+  }, [logout])
 
   const fetchWithAuth = useCallback(async (
     url: string,
     options: RequestInit = {}
   ): Promise<Response> => {
-    const { accessToken } = useAuthStore.getState()
-
-    const headers = new Headers(options.headers)
-    if (accessToken) {
-      headers.set('Authorization', `Bearer ${accessToken}`)
-    }
-
-    let response = await fetch(url, { ...options, headers })
+    // Include credentials to send httpOnly cookies
+    let response = await fetch(url, {
+      ...options,
+      credentials: 'include'
+    })
 
     // If 401, try to refresh token
     if (response.status === 401) {
       const refreshed = await refreshAccessToken()
       if (refreshed) {
-        const newToken = useAuthStore.getState().accessToken
-        headers.set('Authorization', `Bearer ${newToken}`)
-        response = await fetch(url, { ...options, headers })
+        // Retry with refreshed token (cookies updated automatically)
+        response = await fetch(url, {
+          ...options,
+          credentials: 'include'
+        })
       }
     }
 
@@ -190,7 +181,6 @@ export function useAuth() {
 
   return {
     user,
-    accessToken,
     isAuthenticated,
     isLoading,
     error,

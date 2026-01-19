@@ -8,8 +8,9 @@ import secrets
 import logging
 import json
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import Cookie
 from jose import JWTError, jwt
 import bcrypt
 import redis.asyncio as redis
@@ -187,16 +188,48 @@ async def blacklist_token(token: str, expires_in: int) -> bool:
         return False
 
 
+async def get_token_from_request(
+    request: Request,
+    token: str = Depends(oauth2_scheme)
+) -> str:
+    """Get token from Authorization header or httpOnly cookie."""
+    # First try the Authorization header (oauth2_scheme provides this)
+    if token:
+        return token
+
+    # Fall back to httpOnly cookie
+    cookie_token = request.cookies.get("access_token")
+    if cookie_token:
+        return cookie_token
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-    db: AsyncSession = Depends(get_db)
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    token: str = None
 ) -> TokenData:
-    """Get current user from JWT token."""
+    """Get current user from JWT token (header or cookie)."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    # Get token from Authorization header or cookie
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+    elif not token:
+        token = request.cookies.get("access_token")
+
+    if not token:
+        raise credentials_exception
 
     # Check if token is blacklisted
     if await is_token_blacklisted(token):
@@ -289,6 +322,7 @@ def send_email(to_email: str, subject: str, html_body: str) -> bool:
 @router.post("/login", response_model=LoginResponse)
 async def login(
     request: Request,
+    response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: AsyncSession = Depends(get_db)
 ):
@@ -394,6 +428,26 @@ async def login(
                    request.client.host if request.client else None,
                    request.headers.get("user-agent"))
 
+    # Set httpOnly cookies for secure token storage
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,
+        secure=True,  # Only send over HTTPS
+        samesite="lax",  # Protect against CSRF
+        path="/"
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path="/"
+    )
+
     return LoginResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -403,10 +457,25 @@ async def login(
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(request: RefreshRequest):
-    """Refresh access token using refresh token."""
+async def refresh_token(
+    response: Response,
+    request: RefreshRequest = None,
+    refresh_token_cookie: str = Cookie(None, alias="refresh_token")
+):
+    """Refresh access token using refresh token (from body or httpOnly cookie)."""
+    # Get refresh token from cookie or request body
+    token_value = refresh_token_cookie
+    if request and request.refresh_token:
+        token_value = request.refresh_token
+
+    if not token_value:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token required"
+        )
+
     # Check if refresh token is blacklisted
-    if await is_token_blacklisted(request.refresh_token):
+    if await is_token_blacklisted(token_value):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has been revoked"
@@ -414,7 +483,7 @@ async def refresh_token(request: RefreshRequest):
 
     try:
         payload = jwt.decode(
-            request.refresh_token,
+            token_value,
             settings.JWT_SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM]
         )
@@ -435,10 +504,30 @@ async def refresh_token(request: RefreshRequest):
         # Blacklist old refresh token
         exp = payload.get("exp", 0)
         remaining = max(0, exp - int(datetime.now(timezone.utc).timestamp()))
-        await blacklist_token(request.refresh_token, remaining)
+        await blacklist_token(token_value, remaining)
 
         access_token = create_access_token(token_data)
         new_refresh_token = create_refresh_token(token_data)
+
+        # Set httpOnly cookies
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            path="/"
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=new_refresh_token,
+            max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            path="/"
+        )
 
         return Token(
             access_token=access_token,
@@ -455,16 +544,26 @@ async def refresh_token(request: RefreshRequest):
 @router.post("/logout")
 async def logout(
     request: Request,
+    response: Response,
     current_user: Annotated[TokenData, Depends(get_current_user)],
     db: AsyncSession = Depends(get_db)
 ):
     """Logout and invalidate tokens."""
-    # Get the token from the request
+    # Get the token from the request header or cookie
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         token = auth_header[7:]
         # Blacklist for remaining token lifetime (15 minutes max for access token)
         await blacklist_token(token, settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+
+    # Also blacklist refresh token from cookie if present
+    refresh_token = request.cookies.get("refresh_token")
+    if refresh_token:
+        await blacklist_token(refresh_token, settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60)
+
+    # Clear httpOnly cookies
+    response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="refresh_token", path="/")
 
     # Log logout
     await log_audit(db, current_user.user_id, "logout", "user", current_user.user_id,

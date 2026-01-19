@@ -31,19 +31,15 @@ export function useApi<T>(options: UseApiOptions = { requireAuth: true }) {
     isLoading: false
   })
 
-  const { accessToken, logout } = useAuthStore()
+  const { logout } = useAuthStore()
 
+  // Note: Authentication tokens are now stored in httpOnly cookies.
+  // credentials: 'include' sends cookies automatically with each request.
   const getHeaders = useCallback((): HeadersInit => {
-    const headers: HeadersInit = {
+    return {
       'Content-Type': 'application/json'
     }
-
-    if (options.requireAuth && accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`
-    }
-
-    return headers
-  }, [accessToken, options.requireAuth])
+  }, [])
 
   const handleResponse = useCallback(async <R>(response: Response): Promise<R> => {
     if (response.status === 401) {
@@ -65,7 +61,8 @@ export function useApi<T>(options: UseApiOptions = { requireAuth: true }) {
     try {
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'GET',
-        headers: getHeaders()
+        headers: getHeaders(),
+        credentials: 'include'
       })
 
       const data = await handleResponse<T>(response)
@@ -85,6 +82,7 @@ export function useApi<T>(options: UseApiOptions = { requireAuth: true }) {
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: getHeaders(),
+        credentials: 'include',
         body: JSON.stringify(body)
       })
 
@@ -105,6 +103,7 @@ export function useApi<T>(options: UseApiOptions = { requireAuth: true }) {
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'PUT',
         headers: getHeaders(),
+        credentials: 'include',
         body: JSON.stringify(body)
       })
 
@@ -125,6 +124,7 @@ export function useApi<T>(options: UseApiOptions = { requireAuth: true }) {
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'PATCH',
         headers: getHeaders(),
+        credentials: 'include',
         body: JSON.stringify(body)
       })
 
@@ -144,7 +144,8 @@ export function useApi<T>(options: UseApiOptions = { requireAuth: true }) {
     try {
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'DELETE',
-        headers: getHeaders()
+        headers: getHeaders(),
+        credentials: 'include'
       })
 
       if (response.status === 401) {
@@ -204,7 +205,7 @@ export function usePaginatedApi<T>(baseEndpoint: string) {
     isLoading: false
   })
 
-  const { accessToken, logout } = useAuthStore()
+  const { logout } = useAuthStore()
 
   const fetch = useCallback(async (
     params: PaginationParams & Record<string, unknown> = { page: 1, page_size: 20 }
@@ -224,9 +225,9 @@ export function usePaginatedApi<T>(baseEndpoint: string) {
       const response = await globalThis.fetch(url, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       })
 
       if (response.status === 401) {
@@ -254,7 +255,7 @@ export function usePaginatedApi<T>(baseEndpoint: string) {
       const message = err instanceof Error ? err.message : 'Request failed'
       setState(prev => ({ ...prev, error: message, isLoading: false }))
     }
-  }, [accessToken, baseEndpoint, logout])
+  }, [baseEndpoint, logout])
 
   const goToPage = useCallback((page: number) => {
     fetch({ page, page_size: state.pageSize })
@@ -290,7 +291,7 @@ export function useMutation<T, D = unknown>(
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { accessToken, logout } = useAuthStore()
+  const { logout } = useAuthStore()
 
   const mutate = useCallback(async (data?: D): Promise<T | null> => {
     setIsLoading(true)
@@ -300,9 +301,9 @@ export function useMutation<T, D = unknown>(
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: data ? JSON.stringify(data) : undefined
       })
 
@@ -327,7 +328,7 @@ export function useMutation<T, D = unknown>(
     } finally {
       setIsLoading(false)
     }
-  }, [accessToken, endpoint, logout, method, options])
+  }, [endpoint, logout, method, options])
 
   return { mutate, isLoading, error }
 }
