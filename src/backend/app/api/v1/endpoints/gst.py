@@ -182,7 +182,7 @@ async def generate_gstr1(
         b2b_count=result["summary"]["b2b"]["count"],
         b2c_count=result["summary"]["b2cl"]["count"] + len(result["summary"].get("b2cs", {})),
         credit_notes_count=result["summary"]["cdnr"]["count"],
-        debit_notes_count=0,  # TODO: Add debit notes count
+        debit_notes_count=result["summary"].get("dnr", {}).get("count", 0),
         total_taxable_value=Decimal(str(result["total_taxable_value"])),
         total_tax=Decimal(str(result["total_tax"]))
     )

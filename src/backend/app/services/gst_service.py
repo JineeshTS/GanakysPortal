@@ -470,6 +470,7 @@ class GSTService:
                 "b2cl": {"count": len(b2cl_invoices), "taxable": float(sum(i.taxable_value for i in b2cl_invoices))},
                 "b2cs": {"taxable": float(sum(i.taxable_value for i in b2cs_summary))},
                 "cdnr": {"count": len(credit_notes), "taxable": float(cn_taxable)},
+                "dnr": {"count": len(debit_notes), "taxable": float(dn_taxable)},
                 "exports": {"count": len(exports)},
             },
             "total_taxable_value": float(gst_return.total_taxable_value),

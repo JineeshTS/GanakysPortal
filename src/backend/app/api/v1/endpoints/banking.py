@@ -396,22 +396,100 @@ async def upload_bank_statement(
                 }
             )
 
-        # TODO: Save to database and return import result
+        # Save transactions to database
+        from sqlalchemy import select
+        from app.models.banking import BankAccount, BankTransaction, BankStatementImport
+        from datetime import datetime
+
+        company_id = UUID(current_user.company_id)
+
+        # Verify account belongs to company
+        account_result = await db.execute(
+            select(BankAccount).where(
+                BankAccount.id == account_id,
+                BankAccount.company_id == company_id
+            )
+        )
+        account = account_result.scalar_one_or_none()
+        if not account:
+            raise HTTPException(status_code=404, detail="Bank account not found")
+
+        # Create import record
+        import_id = uuid4()
+        import_record = BankStatementImport(
+            id=import_id,
+            company_id=company_id,
+            bank_account_id=account_id,
+            file_name=file.filename,
+            file_format=file_format,
+            statement_from=parse_result.statement_period.get("from") if parse_result.statement_period else None,
+            statement_to=parse_result.statement_period.get("to") if parse_result.statement_period else None,
+            total_records=parse_result.total_records,
+            status="processing",
+            created_by=UUID(current_user.id)
+        )
+        db.add(import_record)
+
+        # Check for duplicates and save transactions
+        imported_count = 0
+        duplicate_count = 0
+
+        for txn in parse_result.transactions:
+            # Check for duplicate by reference and amount
+            existing = await db.execute(
+                select(BankTransaction).where(
+                    BankTransaction.bank_account_id == account_id,
+                    BankTransaction.reference == txn.reference,
+                    BankTransaction.amount == txn.amount,
+                    BankTransaction.transaction_date == txn.date
+                )
+            )
+            if existing.scalar_one_or_none():
+                duplicate_count += 1
+                continue
+
+            # Create new transaction
+            new_txn = BankTransaction(
+                company_id=company_id,
+                bank_account_id=account_id,
+                transaction_date=txn.date,
+                value_date=txn.value_date or txn.date,
+                transaction_type=txn.type.lower(),
+                amount=abs(txn.amount),
+                balance=txn.balance,
+                description=txn.description,
+                reference=txn.reference,
+                narration=txn.narration,
+                import_id=import_id,
+                reconciliation_status="unreconciled"
+            )
+            db.add(new_txn)
+            imported_count += 1
+
+        # Update import record
+        import_record.imported_records = imported_count
+        import_record.duplicate_records = duplicate_count
+        import_record.error_records = parse_result.error_records
+        import_record.status = "completed" if parse_result.success else "completed_with_errors"
+        import_record.completed_at = datetime.utcnow()
+
+        await db.commit()
+
         return {
-            "id": str(uuid4()),
+            "id": str(import_id),
             "bank_account_id": str(account_id),
             "file_name": file.filename,
             "file_format": file_format,
             "statement_from": parse_result.statement_period.get("from") if parse_result.statement_period else None,
             "statement_to": parse_result.statement_period.get("to") if parse_result.statement_period else None,
             "total_records": parse_result.total_records,
-            "imported_records": parse_result.valid_records,
-            "duplicate_records": 0,
+            "imported_records": imported_count,
+            "duplicate_records": duplicate_count,
             "error_records": parse_result.error_records,
-            "status": "completed" if parse_result.success else "completed_with_errors",
+            "status": import_record.status,
             "error_message": str(parse_result.errors[:5]) if parse_result.errors else None,
-            "started_at": None,
-            "completed_at": None
+            "started_at": import_record.created_at.isoformat() if import_record.created_at else None,
+            "completed_at": import_record.completed_at.isoformat() if import_record.completed_at else None
         }
 
     except UnicodeDecodeError:
@@ -1508,48 +1586,79 @@ async def download_payment_file(
 
     File is only available for APPROVED batches.
     """
-    # TODO: Fetch batch from database and generate file
-    # For demo, generate sample file
-
-    # Sample data for demo
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.models.banking import PaymentBatch, PaymentInstruction, BankAccount, PaymentBatchStatus
     from app.schemas.banking import SalaryPaymentEmployee
 
-    sample_employees = [
-        SalaryPaymentEmployee(
-            employee_id=uuid4(),
-            employee_code="EMP001",
-            employee_name="Rajesh Kumar",
-            account_number="1234567890",
-            ifsc_code="HDFC0001234",
-            bank_name="HDFC Bank",
-            net_salary=Decimal("50000.00"),
-            email="rajesh@example.com"
-        ),
-        SalaryPaymentEmployee(
-            employee_id=uuid4(),
-            employee_code="EMP002",
-            employee_name="Priya Sharma",
-            account_number="0987654321",
-            ifsc_code="ICIC0002345",
-            bank_name="ICICI Bank",
-            net_salary=Decimal("45000.00"),
-            email="priya@example.com"
+    company_id = UUID(current_user.company_id)
+
+    # Fetch batch with instructions
+    batch_result = await db.execute(
+        select(PaymentBatch)
+        .where(
+            PaymentBatch.id == batch_id,
+            PaymentBatch.company_id == company_id
         )
+    )
+    batch = batch_result.scalar_one_or_none()
+    if not batch:
+        raise HTTPException(status_code=404, detail="Payment batch not found")
+
+    # Check batch status - only approved batches can be downloaded
+    if batch.status not in [PaymentBatchStatus.APPROVED, PaymentBatchStatus.SUBMITTED]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Payment file can only be downloaded for approved batches. Current status: {batch.status.value}"
+        )
+
+    # Fetch payment instructions
+    instr_result = await db.execute(
+        select(PaymentInstruction)
+        .where(PaymentInstruction.batch_id == batch_id)
+        .order_by(PaymentInstruction.sequence_number)
+    )
+    instructions = instr_result.scalars().all()
+
+    if not instructions:
+        raise HTTPException(status_code=400, detail="No payment instructions found in batch")
+
+    # Fetch source bank account
+    account_result = await db.execute(
+        select(BankAccount).where(BankAccount.id == batch.bank_account_id)
+    )
+    source_account = account_result.scalar_one_or_none()
+    if not source_account:
+        raise HTTPException(status_code=400, detail="Source bank account not found")
+
+    # Convert instructions to SalaryPaymentEmployee format for file generation
+    employees = [
+        SalaryPaymentEmployee(
+            employee_id=instr.entity_id or uuid4(),
+            employee_code=instr.beneficiary_code or f"BEN{instr.sequence_number:04d}",
+            employee_name=instr.beneficiary_name,
+            account_number=instr.account_number,
+            ifsc_code=instr.ifsc_code,
+            bank_name=instr.bank_name or "",
+            net_salary=Decimal(str(instr.amount)),
+            email=instr.beneficiary_email
+        )
+        for instr in instructions
     ]
 
     bank_account = {
-        "account_number": "9876543210",
-        "ifsc_code": "HDFC0000001"
+        "account_number": source_account.account_number,
+        "ifsc_code": source_account.ifsc_code
     }
 
-    format_to_use = file_format or BankFileFormatEnum.GENERIC_NEFT
+    format_to_use = file_format or BankFileFormatEnum(batch.file_format) if batch.file_format else BankFileFormatEnum.GENERIC_NEFT
 
     file_content, file_ext = generate_salary_file(
-        employees=sample_employees,
+        employees=employees,
         bank_account=bank_account,
-        payment_date=date.today(),
+        payment_date=batch.batch_date or date.today(),
         file_format=format_to_use,
-        batch_reference=f"BATCH-{batch_id.hex[:8].upper()}"
+        batch_reference=batch.batch_number or f"BATCH-{batch_id.hex[:8].upper()}"
     )
 
     # Return as downloadable file
@@ -1557,7 +1666,7 @@ async def download_payment_file(
         io.BytesIO(file_content.encode('utf-8')),
         media_type="text/csv" if file_ext == "csv" else "text/plain",
         headers={
-            "Content-Disposition": f"attachment; filename=payment_batch_{batch_id.hex[:8]}.{file_ext}"
+            "Content-Disposition": f"attachment; filename={batch.batch_number or 'payment_batch'}_{batch_id.hex[:8]}.{file_ext}"
         }
     )
 
