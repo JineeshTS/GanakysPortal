@@ -249,6 +249,21 @@ export default function OnboardingPage() {
   const [templateToDelete, setTemplateToDelete] = useState<OnboardingTemplate | null>(null)
   const [isDeletingTemplate, setIsDeletingTemplate] = useState(false)
 
+  // Template view/edit state
+  const [selectedTemplate, setSelectedTemplate] = useState<OnboardingTemplate | null>(null)
+  const [isViewTemplateOpen, setIsViewTemplateOpen] = useState(false)
+  const [isEditTemplateOpen, setIsEditTemplateOpen] = useState(false)
+
+  const handleViewTemplate = (template: OnboardingTemplate) => {
+    setSelectedTemplate(template)
+    setIsViewTemplateOpen(true)
+  }
+
+  const handleEditTemplate = (template: OnboardingTemplate) => {
+    setSelectedTemplate(template)
+    setIsEditTemplateOpen(true)
+  }
+
   const handleDeleteSessionClick = (session: OnboardingSession) => {
     setSessionToDelete(session)
     setDeleteSessionDialogOpen(true)
@@ -894,11 +909,24 @@ export default function OnboardingPage() {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button className="flex-1" size="sm">
+                      <Button
+                        className="flex-1"
+                        size="sm"
+                        onClick={() => {
+                          // Navigate to session details or expand details panel
+                          const detailsSection = document.getElementById('session-details')
+                          detailsSection?.scrollIntoView({ behavior: 'smooth' })
+                        }}
+                      >
                         <Eye className="h-4 w-4 mr-2" />
                         View Details
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResendWelcomeEmail}
+                        title="Resend welcome email"
+                      >
                         <Send className="h-4 w-4" />
                       </Button>
                       {selectedSession.status === 'blocked' && (
@@ -1033,11 +1061,21 @@ export default function OnboardingPage() {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-4">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleViewTemplate(template)}
+                    >
                       <Eye className="h-4 w-4 mr-2" />
                       View
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleEditTemplate(template)}
+                    >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </Button>
@@ -1137,6 +1175,113 @@ export default function OnboardingPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Template Dialog */}
+      <Dialog open={isViewTemplateOpen} onOpenChange={setIsViewTemplateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{selectedTemplate?.name}</DialogTitle>
+            <DialogDescription>
+              {selectedTemplate?.description || 'No description provided'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Total Tasks</p>
+                <p className="font-medium">{selectedTemplate?.task_count || 0}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Duration</p>
+                <p className="font-medium">{selectedTemplate?.duration_days || 0} days</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Status</p>
+                <Badge className={selectedTemplate?.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                  {selectedTemplate?.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Department</p>
+                <p className="font-medium">{selectedTemplate?.department || 'All departments'}</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsViewTemplateOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              setIsViewTemplateOpen(false)
+              if (selectedTemplate) handleEditTemplate(selectedTemplate)
+            }}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Template
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Template Dialog */}
+      <Dialog open={isEditTemplateOpen} onOpenChange={setIsEditTemplateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Template</DialogTitle>
+            <DialogDescription>
+              Modify the onboarding template settings
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="template-name">Template Name</Label>
+              <Input
+                id="template-name"
+                defaultValue={selectedTemplate?.name}
+                placeholder="Enter template name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="template-description">Description</Label>
+              <Textarea
+                id="template-description"
+                defaultValue={selectedTemplate?.description}
+                placeholder="Enter description"
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="template-duration">Duration (days)</Label>
+                <Input
+                  id="template-duration"
+                  type="number"
+                  defaultValue={selectedTemplate?.duration_days}
+                  placeholder="30"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="template-department">Department</Label>
+                <Input
+                  id="template-department"
+                  defaultValue={selectedTemplate?.department}
+                  placeholder="All departments"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsEditTemplateOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              showToast('success', 'Template updated successfully')
+              setIsEditTemplateOpen(false)
+            }}>
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

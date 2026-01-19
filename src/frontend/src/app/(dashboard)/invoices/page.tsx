@@ -244,6 +244,40 @@ export default function InvoicesPage() {
     }
   }
 
+  // Export invoices to CSV
+  const handleExport = () => {
+    const invoicesToExport = filteredInvoices.length > 0 ? filteredInvoices : localInvoices
+    if (invoicesToExport.length === 0) {
+      alert('No invoices to export')
+      return
+    }
+
+    // Create CSV content
+    const headers = ['Invoice Number', 'Date', 'Customer', 'GSTIN', 'Status', 'Amount', 'Paid', 'Balance']
+    const rows = invoicesToExport.map(inv => [
+      inv.invoice_number,
+      inv.invoice_date,
+      inv.customer_name,
+      inv.customer_gstin || '',
+      inv.status,
+      inv.total.toString(),
+      inv.amount_paid.toString(),
+      inv.balance_due.toString()
+    ])
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n')
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `invoices_export_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(link.href)
+  }
+
   // Update local invoices when API data changes
   React.useEffect(() => {
     if (invoiceData?.data) {
@@ -506,7 +540,7 @@ export default function InvoicesPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
