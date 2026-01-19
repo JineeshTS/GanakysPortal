@@ -202,6 +202,7 @@ export default function BankingPage() {
   const [reconcileDialogOpen, setReconcileDialogOpen] = React.useState(false)
   const [addAccountDialogOpen, setAddAccountDialogOpen] = React.useState(false)
   const [isReconciling, setIsReconciling] = React.useState(false)
+  const [statementDialogOpen, setStatementDialogOpen] = React.useState(false)
 
   const { data: accountsData, isLoading: accountsLoading, error: accountsError, get: getAccounts } = useApi<BankAccountsResponse>()
   const { data: transactionsData, isLoading: transactionsLoading, get: getTransactions } = useApi<TransactionsResponse>()
@@ -280,6 +281,45 @@ export default function BankingPage() {
   // Handle add bank account
   const handleAddAccount = () => {
     setAddAccountDialogOpen(true)
+  }
+
+  // Handle view statement
+  const handleViewStatement = () => {
+    if (!selectedAccount) {
+      alert('Please select a bank account first')
+      return
+    }
+    setStatementDialogOpen(true)
+  }
+
+  // Handle download statement
+  const handleDownloadStatement = () => {
+    if (!selectedAccount || transactions.length === 0) {
+      alert('No transactions to download')
+      return
+    }
+
+    const headers = ['Date', 'Type', 'Description', 'Reference', 'Amount', 'Balance', 'Status']
+    const rows = transactions.map(t => [
+      t.date,
+      t.type,
+      t.description,
+      t.reference,
+      t.type === 'credit' ? t.amount.toString() : (-t.amount).toString(),
+      t.balance.toString(),
+      t.status
+    ])
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `${selectedAccount.bank_name}_statement_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(link.href)
   }
 
   // Fetch bank accounts on mount
@@ -666,11 +706,11 @@ export default function BankingPage() {
                 </div>
 
                 <div className="mt-6 flex gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleViewStatement}>
                     <Eye className="h-4 w-4 mr-2" />
                     View Statement
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleDownloadStatement}>
                     <Download className="h-4 w-4 mr-2" />
                     Download
                   </Button>
@@ -710,6 +750,58 @@ export default function BankingPage() {
                 'Delete'
               )}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Statement View Dialog */}
+      <AlertDialog open={statementDialogOpen} onOpenChange={setStatementDialogOpen}>
+        <AlertDialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Bank Statement - {selectedAccount?.account_name}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Account: {selectedAccount?.account_number} | IFSC: {selectedAccount?.ifsc}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-3 py-2 text-left">Date</th>
+                  <th className="px-3 py-2 text-left">Description</th>
+                  <th className="px-3 py-2 text-left">Reference</th>
+                  <th className="px-3 py-2 text-right">Debit</th>
+                  <th className="px-3 py-2 text-right">Credit</th>
+                  <th className="px-3 py-2 text-right">Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((t) => (
+                  <tr key={t.id} className="border-b">
+                    <td className="px-3 py-2">{formatDate(t.date)}</td>
+                    <td className="px-3 py-2">{t.description}</td>
+                    <td className="px-3 py-2 font-mono text-xs">{t.reference}</td>
+                    <td className="px-3 py-2 text-right text-red-600">
+                      {t.type === 'debit' ? formatCurrency(t.amount) : '-'}
+                    </td>
+                    <td className="px-3 py-2 text-right text-green-600">
+                      {t.type === 'credit' ? formatCurrency(t.amount) : '-'}
+                    </td>
+                    <td className="px-3 py-2 text-right font-medium">{formatCurrency(t.balance)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={handleDownloadStatement}>
+              <Download className="h-4 w-4 mr-2" />
+              Download CSV
+            </Button>
+            <AlertDialogCancel>Close</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
