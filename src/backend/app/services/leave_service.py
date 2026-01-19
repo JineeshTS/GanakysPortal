@@ -886,23 +886,82 @@ class LeaveService:
         credited_count = 0
         results = []
 
-        # For each policy, create/update balances
-        # This is a simplified version - in production, you'd iterate over employees
+        # Get all active employees for this company
+        from app.models.employee import Employee
+
+        employee_query = select(Employee).where(
+            and_(
+                Employee.company_id == company_id,
+                Employee.is_active == True
+            )
+        )
+        employee_result = await db.execute(employee_query)
+        employees = list(employee_result.scalars().all())
+
+        if not employees:
+            return {"message": "No active employees found", "credited": 0}
+
+        # For each policy, create/update balances for all employees
         for policy in policies:
             if not policy.leave_type:
                 continue
 
-            # Process carry forward from previous FY
-            prev_fy = cls._get_previous_fy(financial_year)
-            if policy.allow_carry_forward and prev_fy:
-                # TODO: Process carry forward logic
-                pass
+            for employee in employees:
+                # Check if balance already exists for this FY
+                existing_balance_query = select(LeaveBalance).where(
+                    and_(
+                        LeaveBalance.employee_id == employee.id,
+                        LeaveBalance.leave_type_id == policy.leave_type_id,
+                        LeaveBalance.financial_year == financial_year
+                    )
+                )
+                existing_result = await db.execute(existing_balance_query)
+                existing_balance = existing_result.scalar_one_or_none()
+
+                if existing_balance:
+                    continue  # Already credited
+
+                # Calculate carry forward from previous FY
+                carry_forward = Decimal("0")
+                prev_fy = cls._get_previous_fy(financial_year)
+                if policy.allow_carry_forward and prev_fy:
+                    prev_balance_query = select(LeaveBalance).where(
+                        and_(
+                            LeaveBalance.employee_id == employee.id,
+                            LeaveBalance.leave_type_id == policy.leave_type_id,
+                            LeaveBalance.financial_year == prev_fy
+                        )
+                    )
+                    prev_result = await db.execute(prev_balance_query)
+                    prev_balance = prev_result.scalar_one_or_none()
+
+                    if prev_balance and prev_balance.closing_balance > 0:
+                        max_carry = policy.max_carry_forward or Decimal("999")
+                        carry_forward = min(prev_balance.closing_balance, max_carry)
+
+                # Create new balance record
+                new_balance = LeaveBalance(
+                    employee_id=employee.id,
+                    leave_type_id=policy.leave_type_id,
+                    financial_year=financial_year,
+                    opening_balance=carry_forward,
+                    credited=policy.annual_entitlement if not policy.is_accrual_based else Decimal("0"),
+                    used=Decimal("0"),
+                    pending=Decimal("0"),
+                    closing_balance=carry_forward + (policy.annual_entitlement if not policy.is_accrual_based else Decimal("0")),
+                    carry_forward=carry_forward
+                )
+                db.add(new_balance)
+                credited_count += 1
 
             results.append({
                 "leave_type": policy.leave_type.code,
                 "entitlement": float(policy.annual_entitlement),
-                "is_accrual_based": policy.is_accrual_based
+                "is_accrual_based": policy.is_accrual_based,
+                "employees_credited": len(employees)
             })
+
+        await db.commit()
 
         return {
             "financial_year": financial_year,

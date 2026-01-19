@@ -250,8 +250,7 @@ export default function TenantsPage() {
 
   const handleSuspendTenant = async () => {
     if (!selectedTenant || !suspendReason) return
-    // Would call API to suspend tenant
-    console.log('Suspending tenant:', selectedTenant.id, 'Reason:', suspendReason)
+    // TODO: Implement tenant suspension API call
     setShowSuspendDialog(false)
     setSuspendReason('')
     setSelectedTenant(null)
@@ -259,8 +258,7 @@ export default function TenantsPage() {
   }
 
   const handleActivateTenant = async (tenant: Tenant) => {
-    // Would call API to activate tenant
-    console.log('Activating tenant:', tenant.id)
+    // TODO: Implement tenant activation API call
     fetchTenants()
   }
 

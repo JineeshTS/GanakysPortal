@@ -4,11 +4,35 @@ RESTful API for AI services
 """
 from typing import List, Optional, Dict, Any
 from datetime import date
+from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Query
 from pydantic import BaseModel, Field
 
 from app.api.deps import get_current_user
 from app.models.user import User
+from app.services.ai.ai_service import AIService, AIProvider
+from app.services.ai.chat_service import ChatService, ChatSessionManager
+from app.core.config import settings
+from app.core.datetime_utils import utc_now
+
+# Initialize AI services with configured API keys
+def get_ai_service() -> AIService:
+    """Get configured AI service."""
+    api_keys = {}
+    if getattr(settings, 'CLAUDE_API_KEY', None):
+        api_keys[AIProvider.CLAUDE] = settings.CLAUDE_API_KEY
+    if getattr(settings, 'OPENAI_API_KEY', None):
+        api_keys[AIProvider.GPT4] = settings.OPENAI_API_KEY
+    if getattr(settings, 'GEMINI_API_KEY', None):
+        api_keys[AIProvider.GEMINI] = settings.GEMINI_API_KEY
+    if getattr(settings, 'TOGETHER_API_KEY', None):
+        api_keys[AIProvider.TOGETHER] = settings.TOGETHER_API_KEY
+
+    return AIService(api_keys=api_keys)
+
+# Session manager for chat
+_session_manager = ChatSessionManager()
+_chat_services: Dict[str, ChatService] = {}
 
 
 async def require_auth(
@@ -113,21 +137,55 @@ class TaskQueueRequest(BaseModel):
 # ============================================================================
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(
+    request: ChatRequest,
+    current_user: User = Depends(require_auth)
+):
     """
     Send message to AI assistant.
 
     Creates new session or continues existing one.
     """
-    # In production, get from dependency injection
-    session_id = request.session_id or "new-session-id"
+    ai_service = get_ai_service()
 
-    return ChatResponse(
-        session_id=session_id,
-        message="[AI Response] I understand your query. How can I help you with GanaPortal?",
-        provider="claude",
-        tokens_used=150
-    )
+    # Get or create chat service for this user
+    user_id = str(current_user.user_id)
+    company_id = str(current_user.company_id)
+
+    if user_id not in _chat_services:
+        _chat_services[user_id] = ChatService(ai_service)
+
+    chat_service = _chat_services[user_id]
+
+    try:
+        # Create or get session
+        if request.session_id:
+            session_id = request.session_id
+        else:
+            session = await chat_service.create_session(
+                user_id=user_id,
+                company_id=company_id,
+                initial_context={
+                    "user_name": getattr(current_user, 'full_name', 'User'),
+                    "user_role": getattr(current_user, 'role', 'user')
+                }
+            )
+            session_id = session.id
+            _session_manager.register_session(user_id, session_id)
+
+        # Send message and get response
+        response = await chat_service.send_message(session_id, request.message)
+
+        return ChatResponse(
+            session_id=session_id,
+            message=response.content,
+            provider=response.metadata.get("provider", "claude"),
+            tokens_used=response.metadata.get("tokens", 0)
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
 
 
 @router.get("/chat/sessions/{session_id}/history")
@@ -479,45 +537,73 @@ async def requeue_failed_task(task_id: str):
 # ============================================================================
 
 @router.post("/analyze/payroll")
-async def analyze_payroll(payroll_data: Dict[str, Any]):
+async def analyze_payroll(
+    payroll_data: Dict[str, Any],
+    current_user: User = Depends(require_auth)
+):
     """Analyze payroll data with AI insights."""
-    return {
-        "analysis": "Payroll is within normal parameters. PF compliance is 100%.",
-        "insights": [
-            "Total payroll increased 5% MoM due to new hires",
-            "TDS deductions are correctly calculated",
-            "No anomalies detected"
-        ],
-        "recommendations": [
-            "Process payroll by 25th for on-time salary credits"
-        ]
-    }
+    ai_service = get_ai_service()
+
+    try:
+        company_context = {
+            "name": getattr(current_user, 'company_name', 'Company'),
+            "id": str(current_user.company_id)
+        }
+
+        result = await ai_service.analyze_payroll(payroll_data, company_context)
+
+        # Parse the analysis into structured insights
+        analysis_text = result.get("analysis", "")
+
+        return {
+            "analysis": analysis_text,
+            "insights": [line.strip() for line in analysis_text.split('\n') if line.strip() and line.strip()[0].isdigit()],
+            "recommendations": [],
+            "provider": result.get("provider", "claude"),
+            "tokens_used": result.get("tokens_used", 0)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
 
 
 @router.post("/analyze/receivables")
-async def analyze_receivables(receivable_data: List[Dict[str, Any]]):
+async def analyze_receivables(
+    receivable_data: List[Dict[str, Any]],
+    current_user: User = Depends(require_auth)
+):
     """Analyze accounts receivable with collection priorities."""
-    return {
-        "total_outstanding": 850000,
-        "overdue": 210000,
-        "collection_priority": [
-            {"customer": "ABC Corp", "amount": 150000, "days_overdue": 45, "priority": "high"},
-            {"customer": "XYZ Ltd", "amount": 60000, "days_overdue": 32, "priority": "medium"}
-        ],
-        "ai_recommendation": "Focus on ABC Corp - high value and significantly overdue"
-    }
+    ai_service = get_ai_service()
+
+    try:
+        result = await ai_service.analyze_receivables(receivable_data)
+
+        return {
+            "analysis": result.get("analysis", ""),
+            "provider": result.get("provider", "claude"),
+            "tokens_used": result.get("tokens_used", 0)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
 
 
 @router.post("/analyze/report")
 async def generate_report_summary(
     report_type: str,
-    report_data: Dict[str, Any]
+    report_data: Dict[str, Any],
+    current_user: User = Depends(require_auth)
 ):
     """Generate AI summary for any report."""
-    return {
-        "report_type": report_type,
-        "summary": f"AI-generated summary for {report_type} report",
-        "key_metrics": {},
-        "insights": [],
-        "generated_at": "2026-01-07T12:00:00Z"
-    }
+    ai_service = get_ai_service()
+
+    try:
+        result = await ai_service.generate_report_summary(report_data, report_type)
+
+        return {
+            "report_type": report_type,
+            "summary": result.get("summary", ""),
+            "provider": result.get("provider", "claude"),
+            "tokens_used": result.get("tokens_used", 0),
+            "generated_at": utc_now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI summary generation failed: {str(e)}")

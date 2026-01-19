@@ -184,7 +184,8 @@ class ForecastService:
                 if mean_val > 0:
                     cv = std_dev / mean_val  # Coefficient of variation
                     confidence = Decimal(str(max(0.5, 1 - cv))).quantize(Decimal('0.01'))
-            except:
+            except (ValueError, statistics.StatisticsError, ZeroDivisionError):
+                # Default confidence is used if statistics calculation fails
                 pass
 
         forecast_data = PurchaseForecastCreate(

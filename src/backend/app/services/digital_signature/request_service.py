@@ -6,12 +6,15 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List
 from uuid import UUID, uuid4
 import secrets
+import logging
+import html
 
 from fastapi import BackgroundTasks, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 
 from app.core.datetime_utils import utc_now
+from app.core.config import settings
 from app.models.digital_signature import (
     SignatureRequest, SignatureDocument, SignatureSigner,
     SignatureAuditLog, SignatureStatus, SignerStatus
@@ -23,9 +26,80 @@ from app.schemas.digital_signature import (
     BulkActionResult
 )
 
+logger = logging.getLogger(__name__)
+
 
 class SignatureRequestService:
     """Service for managing signature requests"""
+
+    def _send_signer_notification_email(
+        self,
+        signer_name: str,
+        signer_email: str,
+        subject: str,
+        requester_name: str,
+        access_token: str,
+        message: Optional[str] = None,
+        is_reminder: bool = False
+    ) -> None:
+        """Send notification email to a signer"""
+        try:
+            from app.services.email.email_service import EmailService, EmailConfig, EmailMessage
+
+            email_config = EmailConfig(
+                smtp_host=settings.SMTP_HOST,
+                smtp_port=settings.SMTP_PORT,
+                smtp_user=settings.SMTP_USER,
+                smtp_password=settings.SMTP_PASSWORD,
+                use_tls=True,
+                from_email=settings.FROM_EMAIL,
+                from_name=settings.FROM_NAME or "GanaPortal"
+            )
+            email_service = EmailService(email_config)
+
+            # Escape user data for XSS prevention
+            safe_signer_name = html.escape(signer_name or "Signer")
+            safe_subject = html.escape(subject)
+            safe_requester = html.escape(requester_name or "Someone")
+            safe_message = html.escape(message) if message else ""
+
+            # Build signing URL
+            signing_url = f"{settings.FRONTEND_URL}/sign/{access_token}"
+
+            email_subject = f"{'Reminder: ' if is_reminder else ''}Signature Required: {safe_subject}"
+
+            html_body = f"""
+            <html>
+            <body>
+                <p>Dear {safe_signer_name},</p>
+                <p>{safe_requester} has requested your signature on: <strong>{safe_subject}</strong></p>
+                {"<p><em>" + safe_message + "</em></p>" if safe_message else ""}
+                <p>
+                    <a href="{signing_url}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 6px;">
+                        Review and Sign Document
+                    </a>
+                </p>
+                <p>Or copy this link: {signing_url}</p>
+                <p>Best regards,<br>GanaPortal</p>
+            </body>
+            </html>
+            """
+
+            email_message = EmailMessage(
+                to=[signer_email],
+                subject=email_subject,
+                body_html=html_body,
+                body_text=f"{safe_requester} has requested your signature on: {safe_subject}. Review at: {signing_url}"
+            )
+
+            result = email_service.send_email(email_message)
+            if not result.get("success"):
+                logger.error(f"Failed to send signer notification email: {result.get('error')}")
+            else:
+                logger.info(f"Signer notification email sent to {signer_email}")
+
+        except Exception as e:
+            logger.error(f"Failed to send signer notification email: {e}")
 
     async def create_request(
         self,
@@ -344,7 +418,42 @@ class SignatureRequestService:
         await db.commit()
         await db.refresh(request)
 
-        # TODO: Send notification emails to signers via background task
+        # Get signers to notify
+        signers_result = await db.execute(
+            select(SignatureSigner).where(
+                SignatureSigner.request_id == request_id
+            ).order_by(SignatureSigner.signing_order)
+        )
+        signers = signers_result.scalars().all()
+
+        # Send notification emails to signers (current signer first for sequential, all for parallel)
+        for signer in signers:
+            if request.signing_order == "sequential" and not signer.is_current:
+                continue  # Only notify current signer for sequential requests
+
+            if background_tasks:
+                background_tasks.add_task(
+                    self._send_signer_notification_email,
+                    signer_name=signer.signer_name,
+                    signer_email=signer.signer_email,
+                    subject=request.subject,
+                    requester_name=request.requester_name,
+                    access_token=signer.access_token,
+                    message=request.message,
+                    is_reminder=False
+                )
+            else:
+                # Send synchronously if no background tasks
+                self._send_signer_notification_email(
+                    signer_name=signer.signer_name,
+                    signer_email=signer.signer_email,
+                    subject=request.subject,
+                    requester_name=request.requester_name,
+                    access_token=signer.access_token,
+                    message=request.message,
+                    is_reminder=False
+                )
+
         return SignatureRequestResponse.model_validate(request)
 
     async def cancel_request(
@@ -519,6 +628,15 @@ class SignatureRequestService:
         background_tasks: Optional[BackgroundTasks] = None
     ) -> int:
         """Send reminders to pending signers"""
+        # Get the request first for subject and requester info
+        request_result = await db.execute(
+            select(SignatureRequest).where(
+                SignatureRequest.id == request_id,
+                SignatureRequest.company_id == company_id
+            )
+        )
+        request = request_result.scalar_one()
+
         query = select(SignatureSigner).join(
             SignatureRequest,
             SignatureSigner.request_id == SignatureRequest.id
@@ -540,7 +658,29 @@ class SignatureRequestService:
             signer.reminder_count = (signer.reminder_count or 0) + 1
             signer.last_reminder_at = now
             count += 1
-            # TODO: Send reminder email via background task
+
+            # Send reminder email
+            if background_tasks:
+                background_tasks.add_task(
+                    self._send_signer_notification_email,
+                    signer_name=signer.signer_name,
+                    signer_email=signer.signer_email,
+                    subject=request.subject,
+                    requester_name=request.requester_name,
+                    access_token=signer.access_token,
+                    message=message or request.message,
+                    is_reminder=True
+                )
+            else:
+                self._send_signer_notification_email(
+                    signer_name=signer.signer_name,
+                    signer_email=signer.signer_email,
+                    subject=request.subject,
+                    requester_name=request.requester_name,
+                    access_token=signer.access_token,
+                    message=message or request.message,
+                    is_reminder=True
+                )
 
         await db.commit()
         return count

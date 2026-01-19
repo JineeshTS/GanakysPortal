@@ -400,15 +400,151 @@ class GSTService:
         else:
             end_date = date(year, month + 1, 1) - timedelta(days=1)
 
-        # TODO: Query invoices from database
-        # For now, return empty structure
+        # Query invoices from database
+        from app.models.invoice import Invoice, InvoiceType, InvoiceStatus, GSTTreatment
+        from app.models.party import Party
 
+        # Get all approved/sent/paid invoices for the period
+        invoice_query = select(Invoice).where(
+            and_(
+                Invoice.company_id == company_id,
+                Invoice.invoice_date >= start_date,
+                Invoice.invoice_date <= end_date,
+                Invoice.status.in_([InvoiceStatus.APPROVED, InvoiceStatus.SENT, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.PAID]),
+                Invoice.invoice_type == InvoiceType.TAX_INVOICE
+            )
+        )
+        invoice_result = await self.db.execute(invoice_query)
+        invoices = list(invoice_result.scalars().all())
+
+        # Get credit notes for the period
+        cn_query = select(Invoice).where(
+            and_(
+                Invoice.company_id == company_id,
+                Invoice.invoice_date >= start_date,
+                Invoice.invoice_date <= end_date,
+                Invoice.status.in_([InvoiceStatus.APPROVED, InvoiceStatus.SENT, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.PAID]),
+                Invoice.invoice_type == InvoiceType.CREDIT_NOTE
+            )
+        )
+        cn_result = await self.db.execute(cn_query)
+        cn_invoices = list(cn_result.scalars().all())
+
+        # Get debit notes for the period
+        dn_query = select(Invoice).where(
+            and_(
+                Invoice.company_id == company_id,
+                Invoice.invoice_date >= start_date,
+                Invoice.invoice_date <= end_date,
+                Invoice.status.in_([InvoiceStatus.APPROVED, InvoiceStatus.SENT, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.PAID]),
+                Invoice.invoice_type == InvoiceType.DEBIT_NOTE
+            )
+        )
+        dn_result = await self.db.execute(dn_query)
+        dn_invoices = list(dn_result.scalars().all())
+
+        # Categorize invoices into B2B, B2CL, B2CS
         b2b_invoices: List[GSTR1B2BInvoice] = []
         b2cl_invoices: List[GSTR1B2CInvoice] = []
         b2cs_summary: List[GSTR1B2CInvoice] = []
-        credit_notes: List[GSTR1CreditDebitNote] = []
-        debit_notes: List[GSTR1CreditDebitNote] = []
         exports: List[Dict] = []
+
+        supplier_state = gstin[:2] if gstin else ""
+
+        for inv in invoices:
+            # Determine invoice category
+            customer_gstin = inv.billing_gstin
+            inv_place_of_supply = inv.place_of_supply or ""
+            taxable = Decimal(str(inv.taxable_amount or 0))
+
+            if inv.gst_treatment == GSTTreatment.ZERO_RATED:
+                # Export invoice
+                exports.append({
+                    "invoice_number": inv.invoice_number,
+                    "invoice_date": inv.invoice_date.isoformat() if inv.invoice_date else "",
+                    "taxable_value": float(taxable),
+                    "shipping_bill_number": "",
+                    "shipping_bill_date": ""
+                })
+            elif customer_gstin and len(customer_gstin) == 15:
+                # B2B - registered customer
+                b2b_invoices.append(GSTR1B2BInvoice(
+                    gstin=customer_gstin,
+                    invoice_number=inv.invoice_number,
+                    invoice_date=inv.invoice_date.isoformat() if inv.invoice_date else "",
+                    invoice_value=float(inv.grand_total or 0),
+                    place_of_supply=inv_place_of_supply,
+                    reverse_charge="Y" if inv.reverse_charge else "N",
+                    invoice_type="R",
+                    taxable_value=float(taxable),
+                    cgst=float(inv.cgst_amount or 0),
+                    sgst=float(inv.sgst_amount or 0),
+                    igst=float(inv.igst_amount or 0),
+                    cess=float(inv.cess_amount or 0)
+                ))
+            elif taxable >= B2B_THRESHOLD and inv_place_of_supply != supplier_state:
+                # B2CL - Large inter-state to unregistered
+                b2cl_invoices.append(GSTR1B2CInvoice(
+                    invoice_number=inv.invoice_number,
+                    invoice_date=inv.invoice_date.isoformat() if inv.invoice_date else "",
+                    invoice_value=float(inv.grand_total or 0),
+                    place_of_supply=inv_place_of_supply,
+                    taxable_value=float(taxable),
+                    cgst=float(inv.cgst_amount or 0),
+                    sgst=float(inv.sgst_amount or 0),
+                    igst=float(inv.igst_amount or 0),
+                    cess=float(inv.cess_amount or 0)
+                ))
+            else:
+                # B2CS - Small value or intra-state to unregistered
+                b2cs_summary.append(GSTR1B2CInvoice(
+                    invoice_number=inv.invoice_number,
+                    invoice_date=inv.invoice_date.isoformat() if inv.invoice_date else "",
+                    invoice_value=float(inv.grand_total or 0),
+                    place_of_supply=inv_place_of_supply,
+                    taxable_value=float(taxable),
+                    cgst=float(inv.cgst_amount or 0),
+                    sgst=float(inv.sgst_amount or 0),
+                    igst=float(inv.igst_amount or 0),
+                    cess=float(inv.cess_amount or 0)
+                ))
+
+        # Process credit notes
+        credit_notes: List[GSTR1CreditDebitNote] = []
+        for cn in cn_invoices:
+            credit_notes.append(GSTR1CreditDebitNote(
+                note_number=cn.invoice_number,
+                note_date=cn.invoice_date.isoformat() if cn.invoice_date else "",
+                note_type="C",
+                gstin=cn.billing_gstin or "",
+                original_invoice_number=cn.reference_number or "",
+                original_invoice_date="",
+                reason="Sales return",
+                taxable_value=float(cn.taxable_amount or 0),
+                cgst=float(cn.cgst_amount or 0),
+                sgst=float(cn.sgst_amount or 0),
+                igst=float(cn.igst_amount or 0),
+                cess=float(cn.cess_amount or 0)
+            ))
+
+        # Process debit notes
+        debit_notes: List[GSTR1CreditDebitNote] = []
+        for dn in dn_invoices:
+            debit_notes.append(GSTR1CreditDebitNote(
+                note_number=dn.invoice_number,
+                note_date=dn.invoice_date.isoformat() if dn.invoice_date else "",
+                note_type="D",
+                gstin=dn.billing_gstin or "",
+                original_invoice_number=dn.reference_number or "",
+                original_invoice_date="",
+                reason="Price increase",
+                taxable_value=float(dn.taxable_amount or 0),
+                cgst=float(dn.cgst_amount or 0),
+                sgst=float(dn.sgst_amount or 0),
+                igst=float(dn.igst_amount or 0),
+                cess=float(dn.cess_amount or 0)
+            ))
+
         hsn_summary: List[HSNSummaryData] = []
 
         # Calculate totals

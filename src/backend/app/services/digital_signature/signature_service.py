@@ -17,7 +17,7 @@ from sqlalchemy import select
 from app.core.datetime_utils import utc_now
 from app.models.digital_signature import (
     SignatureRequest, SignatureDocument, SignatureSigner, DocumentSignature,
-    SignatureAuditLog, SignatureStatus, SignerStatus
+    SignatureAuditLog, SignatureStatus, SignerStatus, SignatureTemplate
 )
 from app.schemas.digital_signature import (
     SignerResponse, SignDocumentRequest, SignFieldRequest,
@@ -96,6 +96,20 @@ class SignatureService:
         )
         documents = docs_result.scalars().all()
 
+        # Get template authentication requirements if template exists
+        require_otp = False
+        require_aadhaar = False
+        if request.template_id:
+            template_result = await db.execute(
+                select(SignatureTemplate).where(
+                    SignatureTemplate.id == request.template_id
+                )
+            )
+            template = template_result.scalar_one_or_none()
+            if template:
+                require_otp = template.require_otp or False
+                require_aadhaar = template.require_aadhaar or False
+
         return SignerAccessResponse(
             request_id=request.id,
             request_number=request.request_number,
@@ -111,8 +125,8 @@ class SignatureService:
             documents=[DocumentResponse.model_validate(d) for d in documents],
             allow_decline=request.allow_decline,
             allow_delegation=request.allow_delegation,
-            require_otp=False,  # TODO: Get from template
-            require_aadhaar=False,
+            require_otp=require_otp,
+            require_aadhaar=require_aadhaar,
             expires_at=request.expires_at
         )
 
@@ -503,8 +517,56 @@ class SignatureService:
         signer.updated_at = utc_now()
         await db.commit()
 
-        # TODO: Send OTP via email/SMS using notification service
-        # For now, log for development (remove in production)
+        # Send OTP via email
+        try:
+            from app.services.email.email_service import EmailService, EmailConfig, EmailMessage
+            import html
+
+            email_config = EmailConfig(
+                smtp_host=settings.SMTP_HOST,
+                smtp_port=settings.SMTP_PORT,
+                smtp_user=settings.SMTP_USER,
+                smtp_password=settings.SMTP_PASSWORD,
+                use_tls=True,
+                from_email=settings.FROM_EMAIL,
+                from_name=settings.FROM_NAME or "GanaPortal"
+            )
+            email_service = EmailService(email_config)
+
+            safe_name = html.escape(signer.signer_name or "Signer")
+
+            html_body = f"""
+            <html>
+            <body>
+                <p>Dear {safe_name},</p>
+                <p>Your One-Time Password (OTP) for document signing is:</p>
+                <h2 style="letter-spacing: 5px; color: #2563eb;">{otp}</h2>
+                <p>This OTP is valid for {OTP_EXPIRY_SECONDS // 60} minutes.</p>
+                <p><strong>Do not share this OTP with anyone.</strong></p>
+                <p>If you did not request this OTP, please ignore this email.</p>
+                <p>Best regards,<br>GanaPortal</p>
+            </body>
+            </html>
+            """
+
+            message = EmailMessage(
+                to=[signer.signer_email],
+                subject="Your Document Signing OTP",
+                body_html=html_body,
+                body_text=f"Your OTP for document signing is: {otp}. Valid for {OTP_EXPIRY_SECONDS // 60} minutes."
+            )
+
+            result = email_service.send_email(message)
+            if not result.get("success"):
+                logger.error(f"Failed to send OTP email: {result.get('error')}")
+            else:
+                logger.info(f"OTP email sent to {signer.signer_email}")
+
+        except Exception as e:
+            logger.error(f"Failed to send OTP email: {e}")
+            # Don't fail the OTP generation if email fails - OTP is still stored
+
+        # Log OTP in development for testing
         if settings.ENVIRONMENT == "development":
             logger.warning(f"DEV ONLY - OTP for testing: {otp}")
 

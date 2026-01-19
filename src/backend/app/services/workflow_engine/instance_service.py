@@ -4,6 +4,9 @@ Workflow Instance Service - Workflow Engine Module (MOD-16)
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple, Dict, Any
 from uuid import UUID, uuid4
+import operator
+import re
+import logging
 
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +18,125 @@ from app.models.workflow import (
     InstanceStatus, TaskStatus, TaskType
 )
 from app.schemas.workflow import WorkflowInstanceCreate, WorkflowInstanceUpdate
+
+logger = logging.getLogger(__name__)
+
+
+class ConditionEvaluator:
+    """Safe evaluator for workflow condition expressions."""
+
+    # Allowed operators for safe evaluation
+    OPERATORS = {
+        '==': operator.eq,
+        '!=': operator.ne,
+        '>': operator.gt,
+        '<': operator.lt,
+        '>=': operator.ge,
+        '<=': operator.le,
+        'in': lambda a, b: a in b,
+        'not in': lambda a, b: a not in b,
+        'contains': lambda a, b: b in a if isinstance(a, (str, list)) else False,
+    }
+
+    @staticmethod
+    def evaluate(expression: str, variables: Dict[str, Any]) -> bool:
+        """
+        Safely evaluate a condition expression against variables.
+
+        Supported formats:
+        - "variable == value"
+        - "variable > 100"
+        - "status in ['approved', 'pending']"
+        - "amount >= 1000 and department == 'finance'"
+        """
+        if not expression or not expression.strip():
+            return True
+
+        expression = expression.strip()
+
+        try:
+            # Handle AND conditions
+            if ' and ' in expression.lower():
+                parts = re.split(r'\s+and\s+', expression, flags=re.IGNORECASE)
+                return all(ConditionEvaluator._evaluate_single(p.strip(), variables) for p in parts)
+
+            # Handle OR conditions
+            if ' or ' in expression.lower():
+                parts = re.split(r'\s+or\s+', expression, flags=re.IGNORECASE)
+                return any(ConditionEvaluator._evaluate_single(p.strip(), variables) for p in parts)
+
+            return ConditionEvaluator._evaluate_single(expression, variables)
+
+        except Exception as e:
+            logger.error(f"Failed to evaluate condition expression '{expression}': {e}")
+            return False
+
+    @staticmethod
+    def _evaluate_single(expression: str, variables: Dict[str, Any]) -> bool:
+        """Evaluate a single condition (no AND/OR)."""
+        # Try each operator
+        for op_str, op_func in ConditionEvaluator.OPERATORS.items():
+            if f' {op_str} ' in expression:
+                parts = expression.split(f' {op_str} ', 1)
+                if len(parts) == 2:
+                    left = ConditionEvaluator._resolve_value(parts[0].strip(), variables)
+                    right = ConditionEvaluator._resolve_value(parts[1].strip(), variables)
+                    return op_func(left, right)
+
+        # Check for boolean variable
+        var_name = expression.strip()
+        if var_name.startswith('!') or var_name.startswith('not '):
+            var_name = var_name.lstrip('!').replace('not ', '', 1).strip()
+            return not bool(ConditionEvaluator._resolve_value(var_name, variables))
+
+        return bool(ConditionEvaluator._resolve_value(var_name, variables))
+
+    @staticmethod
+    def _resolve_value(token: str, variables: Dict[str, Any]) -> Any:
+        """Resolve a token to its actual value."""
+        token = token.strip()
+
+        # Handle string literals
+        if (token.startswith("'") and token.endswith("'")) or \
+           (token.startswith('"') and token.endswith('"')):
+            return token[1:-1]
+
+        # Handle list literals
+        if token.startswith('[') and token.endswith(']'):
+            # Simple list parsing
+            inner = token[1:-1]
+            items = [s.strip().strip("'\"") for s in inner.split(',')]
+            return items
+
+        # Handle numeric literals
+        try:
+            if '.' in token:
+                return float(token)
+            return int(token)
+        except ValueError:
+            pass
+
+        # Handle boolean literals
+        if token.lower() == 'true':
+            return True
+        if token.lower() == 'false':
+            return False
+        if token.lower() == 'none' or token.lower() == 'null':
+            return None
+
+        # Handle variable reference (dot notation supported)
+        if '.' in token:
+            parts = token.split('.')
+            value = variables
+            for part in parts:
+                if isinstance(value, dict) and part in value:
+                    value = value[part]
+                else:
+                    return None
+            return value
+
+        # Direct variable lookup
+        return variables.get(token)
 
 
 class InstanceService:
@@ -192,14 +314,33 @@ class InstanceService:
         transitions = result.scalars().all()
 
         next_node_id = None
+        default_node_id = None
+
+        # Build evaluation context from instance variables and outcome
+        eval_context = dict(instance.variables or {})
+        if outcome:
+            eval_context['outcome'] = outcome
+
         for transition in transitions:
+            # Track default transition as fallback
             if transition.is_default:
-                next_node_id = transition.to_node_id
-                break
-            # TODO: Evaluate condition expressions
+                default_node_id = transition.to_node_id
+                continue
+
+            # If no condition expression, this transition is taken
             if not transition.condition_expression:
                 next_node_id = transition.to_node_id
                 break
+
+            # Evaluate condition expression
+            if ConditionEvaluator.evaluate(transition.condition_expression, eval_context):
+                next_node_id = transition.to_node_id
+                logger.info(f"Condition '{transition.condition_expression}' evaluated to True")
+                break
+
+        # Use default transition if no condition matched
+        if not next_node_id and default_node_id:
+            next_node_id = default_node_id
 
         if next_node_id:
             # Get next node

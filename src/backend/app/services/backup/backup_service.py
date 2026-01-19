@@ -8,6 +8,9 @@ from dataclasses import dataclass
 from enum import Enum
 import subprocess
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class BackupType(str, Enum):
@@ -281,8 +284,12 @@ class BackupService:
                     "type": "db" if "db_backup" in filename else "files"
                 })
 
-        except Exception:
-            pass
+        except FileNotFoundError:
+            logger.warning(f"Backup directory not found: {self.backup_dir}")
+        except PermissionError as e:
+            logger.error(f"Permission denied accessing backup directory: {e}")
+        except OSError as e:
+            logger.error(f"OS error listing backups: {e}")
 
         return sorted(backups, key=lambda x: x["created_at"], reverse=True)
 

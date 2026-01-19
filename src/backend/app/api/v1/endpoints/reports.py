@@ -1379,8 +1379,15 @@ async def run_schedule_now(
     db.add(execution)
     await db.commit()
 
-    # TODO: Add background task to actually generate the report
-    # background_tasks.add_task(generate_report, execution_id)
+    # Queue report generation via Celery
+    from app.tasks.report_tasks import generate_report_task
+    generate_report_task.delay(
+        report_type=schedule.template.report_type.value if schedule.template else "general",
+        parameters=schedule.parameters or {},
+        user_id=str(current_user.id),
+        organization_id=str(current_user.company_id),
+        output_format="pdf"
+    )
 
     return {
         "schedule_id": str(schedule_id),

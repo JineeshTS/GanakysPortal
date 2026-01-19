@@ -372,9 +372,24 @@ async def create_project(
     user_id = UUID(current_user.user_id)
     project_code = await generate_project_code(db, company_id)
 
-    # Map string enums
-    project_type_enum = ProjectType(project_data.project_type)
-    priority_enum = TaskPriority(project_data.priority)
+    # Map string enums with validation
+    try:
+        project_type_enum = ProjectType(project_data.project_type)
+    except ValueError:
+        valid_types = [t.value for t in ProjectType]
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid project_type '{project_data.project_type}'. Must be one of: {valid_types}"
+        )
+
+    try:
+        priority_enum = TaskPriority(project_data.priority)
+    except ValueError:
+        valid_priorities = [p.value for p in TaskPriority]
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid priority '{project_data.priority}'. Must be one of: {valid_priorities}"
+        )
 
     # Get customer name if provided
     customer_name = None
@@ -774,14 +789,22 @@ async def list_tasks(
             status_enum = TaskStatus(status)
             query = query.where(Task.status == status_enum)
         except ValueError:
-            pass
+            valid_statuses = [s.value for s in TaskStatus]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid status '{status}'. Must be one of: {valid_statuses}"
+            )
 
     if priority:
         try:
             priority_enum = TaskPriority(priority)
             query = query.where(Task.priority == priority_enum)
         except ValueError:
-            pass
+            valid_priorities = [p.value for p in TaskPriority]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid priority '{priority}'. Must be one of: {valid_priorities}"
+            )
 
     # Get total count
     count_query = select(func.count()).select_from(Task).where(Task.company_id == company_id)
@@ -790,15 +813,9 @@ async def list_tasks(
     if assignee_id:
         count_query = count_query.where(Task.assignee_id == assignee_id)
     if status:
-        try:
-            count_query = count_query.where(Task.status == TaskStatus(status))
-        except ValueError:
-            pass
+        count_query = count_query.where(Task.status == TaskStatus(status))
     if priority:
-        try:
-            count_query = count_query.where(Task.priority == TaskPriority(priority))
-        except ValueError:
-            pass
+        count_query = count_query.where(Task.priority == TaskPriority(priority))
 
     total = await db.scalar(count_query) or 0
 
@@ -878,8 +895,17 @@ async def create_task(
 
     task_number = await generate_task_number(db, task_data.project_id, project_code)
 
-    # Map priority string to enum
-    priority_enum = TaskPriority(task_data.priority) if task_data.priority else TaskPriority.MEDIUM
+    # Map priority string to enum with validation
+    priority_enum = TaskPriority.MEDIUM
+    if task_data.priority:
+        try:
+            priority_enum = TaskPriority(task_data.priority)
+        except ValueError:
+            valid_priorities = [p.value for p in TaskPriority]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid priority '{task_data.priority}'. Must be one of: {valid_priorities}"
+            )
 
     # Get assignee name if provided
     assignee_name = None

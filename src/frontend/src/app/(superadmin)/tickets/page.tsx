@@ -243,10 +243,7 @@ export default function TicketsPage() {
 
   const handleAddResponse = async () => {
     if (!selectedTicket || !newResponse.trim()) return
-    console.log('Adding response to ticket:', selectedTicket.id, {
-      content: newResponse,
-      is_internal: isInternal,
-    })
+    // TODO: Implement ticket response API call
     setNewResponse('')
     // Would refresh ticket details
   }

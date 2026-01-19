@@ -143,13 +143,11 @@ export default function MobileUsersPage() {
   const biometricEnabled = mockUsers.filter(u => u.biometric_enabled).length
 
   const handleSuspendUser = async (userId: string) => {
-    // API call would go here
-    console.log('Suspend user:', userId)
+    // TODO: Implement user suspension API call
   }
 
   const handleActivateUser = async (userId: string) => {
-    // API call would go here
-    console.log('Activate user:', userId)
+    // TODO: Implement user activation API call
   }
 
   return (

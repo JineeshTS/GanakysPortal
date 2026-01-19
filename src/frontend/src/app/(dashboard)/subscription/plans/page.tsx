@@ -414,8 +414,7 @@ export default function SubscriptionPlansPage() {
       window.location.href = 'mailto:sales@ganakys.com?subject=Enterprise Plan Inquiry'
     } else {
       // Navigate to checkout
-      console.log('Selected plan:', plan)
-      // Would navigate to checkout page
+      // TODO: Implement checkout navigation
     }
   }
 

@@ -323,12 +323,10 @@ export default function CreateInvoicePage() {
   }
 
   const handleSaveDraft = () => {
-    console.log('Saving draft...')
     // API call to save draft
   }
 
   const handleSaveAndSend = () => {
-    console.log('Saving and sending...')
     // API call to save and send
   }
 

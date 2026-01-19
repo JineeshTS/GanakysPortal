@@ -201,7 +201,7 @@ export default function LeaveCalendarPage() {
 
   const handleDateClick = (date: Date) => {
     // Could open a dialog to apply leave for that date
-    console.log('Date clicked:', date)
+    // TODO: Implement date-specific leave application
   }
 
   const getStatusBadge = (status: LeaveStatus) => {

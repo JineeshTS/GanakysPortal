@@ -178,7 +178,6 @@ export default function ApplyLeavePage() {
       const result = await submitApi.post('/leave/requests', requestData)
 
       if (result) {
-        console.log('Leave request submitted:', result)
         router.push('/leave/requests?status=pending')
       }
     } catch (error) {
