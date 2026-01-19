@@ -47,6 +47,19 @@ export default function AIAssistantPage() {
   const [input, setInput] = React.useState('')
   const [isLoading, setIsLoading] = React.useState(false)
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
+  const isMountedRef = React.useRef(true)
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -72,15 +85,19 @@ export default function AIAssistantPage() {
     setIsLoading(true)
 
     // Simulate AI response (would be actual API call)
-    setTimeout(() => {
+    const currentInput = input // Capture input before clearing
+    timeoutRef.current = setTimeout(() => {
+      // Check if component is still mounted before setting state
+      if (!isMountedRef.current) return
+
       const responses: Record<string, string> = {
         'pf': `**Provident Fund Calculation**\n\nFor an employee with Basic Salary ₹50,000:\n\n• **Employee PF (12%):** ₹6,000\n• **Employer EPS (8.33%):** ₹1,250 (capped at ₹15,000 wage)\n• **Employer EPF (3.67%):** ₹4,750\n• **Total PF:** ₹12,000\n\nNote: EPS contribution is capped at ₹1,250/month for employees with basic > ₹15,000.`,
         'gst': `**GST Filing Due Dates - January 2026**\n\n• **GSTR-1:** 11th January (Monthly filers)\n• **GSTR-3B:** 20th January\n• **GSTR-9:** 31st December 2025 (Annual return)\n• **GSTR-9C:** 31st December 2025 (Reconciliation)\n\nWould you like me to help prepare any of these returns?`,
         'payslip': `I can help generate the payslip. Please provide:\n\n1. Employee ID or code\n2. Month and year\n\nAlternatively, you can go to **Payroll → Payslips** to generate payslips in bulk for all employees.`,
-        'default': `I understand you're asking about "${input}". Let me help you with that.\n\nBased on your query, I can:\n1. Provide calculations or explanations\n2. Guide you to the right module in GanaPortal\n3. Generate reports or documents\n\nCould you please provide more details about what specific information you need?`
+        'default': `I understand you're asking about "${currentInput}". Let me help you with that.\n\nBased on your query, I can:\n1. Provide calculations or explanations\n2. Guide you to the right module in GanaPortal\n3. Generate reports or documents\n\nCould you please provide more details about what specific information you need?`
       }
 
-      const lowerInput = input.toLowerCase()
+      const lowerInput = currentInput.toLowerCase()
       let response = responses.default
 
       if (lowerInput.includes('pf') || lowerInput.includes('provident')) {

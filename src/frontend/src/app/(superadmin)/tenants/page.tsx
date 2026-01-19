@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -122,12 +122,16 @@ export default function TenantsPage() {
   const [showDetailDialog, setShowDetailDialog] = useState(false)
   const [showSuspendDialog, setShowSuspendDialog] = useState(false)
   const [suspendReason, setSuspendReason] = useState('')
+  const isMountedRef = useRef(true)
 
-  const fetchTenants = async () => {
+  const fetchTenants = useCallback(async () => {
     setIsLoading(true)
     try {
       // Mock data - in production would fetch from API
       await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // Check if component is still mounted before setting state
+      if (!isMountedRef.current) return
 
       const mockTenants: Tenant[] = [
         {
@@ -221,13 +225,19 @@ export default function TenantsPage() {
     } catch (err) {
       console.error('Failed to fetch tenants:', err)
     } finally {
-      setIsLoading(false)
+      if (isMountedRef.current) {
+        setIsLoading(false)
+      }
     }
-  }
+  }, [])
 
   useEffect(() => {
+    isMountedRef.current = true
     fetchTenants()
-  }, [page, statusFilter, healthFilter])
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [page, statusFilter, healthFilter, fetchTenants])
 
   const filteredTenants = tenants.filter((tenant) => {
     const matchesSearch =

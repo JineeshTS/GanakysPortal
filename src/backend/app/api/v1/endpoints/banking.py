@@ -672,12 +672,159 @@ async def create_salary_payment_batch(
             detail="HR or Finance role required for salary payments"
         )
 
-    # TODO: Fetch payroll data and create batch
-    # For demo, return placeholder
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Salary payment batch creation not yet implemented - requires payroll integration"
+    company_id = UUID(current_user.company_id)
+
+    # Fetch payroll run with payslips
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.models.payroll import PayrollRun, Payslip
+    from app.models.employee import Employee, EmployeeBank
+    from app.models.banking import (
+        PaymentBatch, PaymentInstruction, PaymentBatchType,
+        PaymentBatchStatus, PaymentInstructionStatus, PaymentMode
     )
+    from datetime import datetime
+    import uuid as uuid_module
+
+    payroll_result = await db.execute(
+        select(PayrollRun)
+        .where(
+            PayrollRun.id == request.payroll_run_id,
+            PayrollRun.company_id == company_id
+        )
+    )
+    payroll_run = payroll_result.scalar_one_or_none()
+
+    if not payroll_run:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Payroll run not found"
+        )
+
+    if payroll_run.status.value not in ["finalized", "completed"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Payroll run must be finalized before creating payment batch"
+        )
+
+    # Fetch payslips for this run
+    payslips_result = await db.execute(
+        select(Payslip).where(Payslip.payroll_run_id == request.payroll_run_id)
+    )
+    payslips = payslips_result.scalars().all()
+
+    if not payslips:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No payslips found for this payroll run"
+        )
+
+    # Fetch employee bank details
+    employee_ids = [p.employee_id for p in payslips]
+    bank_result = await db.execute(
+        select(EmployeeBank)
+        .where(
+            EmployeeBank.employee_id.in_(employee_ids),
+            EmployeeBank.is_primary == True
+        )
+    )
+    bank_details = {b.employee_id: b for b in bank_result.scalars().all()}
+
+    # Fetch employee names
+    emp_result = await db.execute(
+        select(Employee).where(Employee.id.in_(employee_ids))
+    )
+    employees = {e.id: e for e in emp_result.scalars().all()}
+
+    # Create payment batch
+    batch_number = f"SAL-{datetime.now().strftime('%Y%m%d')}-{uuid_module.uuid4().hex[:6].upper()}"
+
+    batch = PaymentBatch(
+        company_id=company_id,
+        bank_account_id=request.bank_account_id,
+        batch_number=batch_number,
+        batch_type=PaymentBatchType.SALARY,
+        batch_date=request.payment_date,
+        value_date=request.payment_date,
+        description=request.description or f"Salary for {payroll_run.month}/{payroll_run.year}",
+        reference=str(request.payroll_run_id),
+        payment_mode=PaymentMode(request.payment_mode.value),
+        status=PaymentBatchStatus.DRAFT,
+        file_format=request.file_format.value if request.file_format else None,
+        created_by=UUID(current_user.id)
+    )
+    db.add(batch)
+    await db.flush()
+
+    # Create payment instructions
+    total_amount = 0
+    instructions = []
+    employees_with_payments = []
+
+    for seq, payslip in enumerate(payslips, 1):
+        emp = employees.get(payslip.employee_id)
+        bank = bank_details.get(payslip.employee_id)
+
+        if not emp:
+            continue
+
+        if not bank:
+            # Skip employees without bank details
+            continue
+
+        if payslip.net_salary <= 0:
+            continue
+
+        instruction = PaymentInstruction(
+            company_id=company_id,
+            batch_id=batch.id,
+            sequence_number=seq,
+            beneficiary_name=emp.full_name,
+            beneficiary_code=emp.employee_code,
+            beneficiary_email=emp.work_email,
+            beneficiary_phone=emp.mobile,
+            account_number=bank.account_number,
+            ifsc_code=bank.ifsc_code,
+            bank_name=bank.bank_name,
+            branch_name=bank.branch_name,
+            amount=payslip.net_salary,
+            narration=f"Salary {payroll_run.month}/{payroll_run.year}",
+            entity_type="employee",
+            entity_id=emp.id,
+            payment_mode=PaymentMode(request.payment_mode.value),
+            status=PaymentInstructionStatus.PENDING
+        )
+        db.add(instruction)
+        instructions.append(instruction)
+        total_amount += float(payslip.net_salary)
+
+        employees_with_payments.append({
+            "employee_id": str(emp.id),
+            "employee_code": emp.employee_code,
+            "employee_name": emp.full_name,
+            "account_number": bank.account_number[-4:].rjust(len(bank.account_number), '*'),
+            "ifsc_code": bank.ifsc_code,
+            "bank_name": bank.bank_name,
+            "net_salary": float(payslip.net_salary),
+            "email": emp.work_email
+        })
+
+    # Update batch totals
+    batch.total_amount = total_amount
+    batch.total_count = len(instructions)
+
+    await db.commit()
+
+    return {
+        "id": str(batch.id),
+        "batch_number": batch.batch_number,
+        "payroll_run_id": str(request.payroll_run_id),
+        "payment_date": str(request.payment_date),
+        "total_amount": total_amount,
+        "employee_count": len(instructions),
+        "status": batch.status.value,
+        "employees": employees_with_payments
+    }
 
 
 @router.post("/payments/vendor", response_model=PaymentBatchResponse)
@@ -701,11 +848,178 @@ async def create_vendor_payment_batch(
             detail="Finance role required for vendor payments"
         )
 
-    # TODO: Fetch bill data and create batch
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Vendor payment batch creation not yet implemented - requires bill integration"
+    company_id = UUID(current_user.company_id)
+
+    if not request.bill_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one bill ID is required"
+        )
+
+    # Fetch bills
+    from sqlalchemy import select
+    from app.models.bill import Bill
+    from app.models.customer import Party, PartyBankAccount
+    from app.models.banking import (
+        PaymentBatch, PaymentInstruction, PaymentBatchType,
+        PaymentBatchStatus, PaymentInstructionStatus, PaymentMode
     )
+    from datetime import datetime
+    import uuid as uuid_module
+
+    bills_result = await db.execute(
+        select(Bill)
+        .where(
+            Bill.id.in_(request.bill_ids),
+            Bill.company_id == company_id
+        )
+    )
+    bills = bills_result.scalars().all()
+
+    if not bills:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No bills found for the provided IDs"
+        )
+
+    # Check bill status - only allow payment for approved/unpaid bills
+    invalid_bills = [b for b in bills if b.status.value not in ["approved", "partially_paid"]]
+    if invalid_bills:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Bills must be approved or partially paid. Invalid bills: {[b.bill_number for b in invalid_bills]}"
+        )
+
+    # Fetch vendor details
+    vendor_ids = list(set(b.vendor_id for b in bills))
+    vendors_result = await db.execute(
+        select(Party).where(Party.id.in_(vendor_ids))
+    )
+    vendors = {v.id: v for v in vendors_result.scalars().all()}
+
+    # Fetch vendor bank details - check if PartyBankAccount exists
+    try:
+        bank_result = await db.execute(
+            select(PartyBankAccount)
+            .where(
+                PartyBankAccount.party_id.in_(vendor_ids),
+                PartyBankAccount.is_primary == True
+            )
+        )
+        vendor_banks = {b.party_id: b for b in bank_result.scalars().all()}
+    except Exception:
+        # PartyBankAccount may not exist, use Party bank fields if available
+        vendor_banks = {}
+
+    # Create payment batch
+    batch_number = f"VEN-{datetime.now().strftime('%Y%m%d')}-{uuid_module.uuid4().hex[:6].upper()}"
+
+    batch = PaymentBatch(
+        company_id=company_id,
+        bank_account_id=request.bank_account_id,
+        batch_number=batch_number,
+        batch_type=PaymentBatchType.VENDOR,
+        batch_date=request.payment_date,
+        value_date=request.payment_date,
+        description=request.description or f"Vendor payments - {len(bills)} bills",
+        payment_mode=PaymentMode(request.payment_mode.value),
+        status=PaymentBatchStatus.DRAFT,
+        file_format=request.file_format.value if request.file_format else None,
+        created_by=UUID(current_user.id)
+    )
+    db.add(batch)
+    await db.flush()
+
+    # Create payment instructions
+    total_amount = 0
+    instructions = []
+    payment_items = []
+    skipped_vendors = []
+
+    for seq, bill in enumerate(bills, 1):
+        vendor = vendors.get(bill.vendor_id)
+        bank = vendor_banks.get(bill.vendor_id)
+
+        if not vendor:
+            continue
+
+        # Get bank details from vendor or vendor bank account
+        if bank:
+            account_number = bank.account_number
+            ifsc_code = bank.ifsc_code
+            bank_name = bank.bank_name
+            branch_name = getattr(bank, 'branch_name', None)
+        elif hasattr(vendor, 'bank_account_number') and vendor.bank_account_number:
+            account_number = vendor.bank_account_number
+            ifsc_code = getattr(vendor, 'ifsc_code', '')
+            bank_name = getattr(vendor, 'bank_name', '')
+            branch_name = None
+        else:
+            # Skip vendors without bank details
+            skipped_vendors.append(vendor.name)
+            continue
+
+        # Calculate amount to pay (balance due)
+        amount_to_pay = float(bill.balance_due or bill.grand_total or 0)
+        if amount_to_pay <= 0:
+            continue
+
+        instruction = PaymentInstruction(
+            company_id=company_id,
+            batch_id=batch.id,
+            sequence_number=seq,
+            beneficiary_name=vendor.name,
+            beneficiary_code=vendor.code,
+            beneficiary_email=vendor.email,
+            beneficiary_phone=vendor.phone or vendor.mobile,
+            account_number=account_number,
+            ifsc_code=ifsc_code,
+            bank_name=bank_name,
+            branch_name=branch_name,
+            amount=amount_to_pay,
+            narration=f"Payment for {bill.bill_number}",
+            remarks=f"Vendor Invoice: {bill.vendor_invoice_number or bill.bill_number}",
+            entity_type="vendor",
+            entity_id=vendor.id,
+            payment_mode=PaymentMode(request.payment_mode.value),
+            status=PaymentInstructionStatus.PENDING
+        )
+        db.add(instruction)
+        instructions.append(instruction)
+        total_amount += amount_to_pay
+
+        payment_items.append({
+            "vendor_id": str(vendor.id),
+            "vendor_name": vendor.name,
+            "vendor_code": vendor.code,
+            "bill_id": str(bill.id),
+            "bill_number": bill.bill_number,
+            "bill_amount": float(bill.grand_total or 0),
+            "amount_to_pay": amount_to_pay,
+            "account_number": account_number[-4:].rjust(len(account_number), '*') if account_number else None,
+            "ifsc_code": ifsc_code
+        })
+
+    # Update batch totals
+    batch.total_amount = total_amount
+    batch.total_count = len(instructions)
+
+    await db.commit()
+
+    response = {
+        "id": str(batch.id),
+        "batch_number": batch.batch_number,
+        "payment_date": str(request.payment_date),
+        "total_amount": total_amount,
+        "vendor_count": len(instructions),
+        "status": batch.status.value,
+        "payment_items": payment_items
+    }
+
+    if skipped_vendors:
+        response["warning"] = f"Skipped vendors without bank details: {', '.join(skipped_vendors)}"
+
+    return response
 
 
 @router.post("/payments/batch", response_model=PaymentBatchResponse)

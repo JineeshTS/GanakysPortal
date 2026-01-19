@@ -261,13 +261,26 @@ interface APIKeyCardProps {
 export function APIKeyCard({ apiKey, onRevoke, onCopy }: APIKeyCardProps) {
   const [copied, setCopied] = React.useState(false)
   const [showKey, setShowKey] = React.useState(false)
+  const copyTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const maskedKey = apiKey.key.slice(0, 8) + '...' + apiKey.key.slice(-4)
 
   const handleCopy = () => {
     navigator.clipboard.writeText(apiKey.key)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current)
+    }
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000)
     onCopy?.()
   }
 

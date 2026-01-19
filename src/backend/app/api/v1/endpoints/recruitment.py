@@ -42,25 +42,29 @@ async def generate_job_code(db: AsyncSession, company_id: UUID) -> str:
     year = date.today().year
     prefix = f"JOB-{year}-"
 
-    # Query max job code for this company and year
-    from sqlalchemy import text
-    query = text("""
-        SELECT COALESCE(MAX(
-            CAST(SUBSTRING(job_code FROM :pattern) AS INTEGER)
-        ), 0)
-        FROM job_openings
-        WHERE company_id = :company_id
-        AND job_code LIKE :prefix_pattern
-    """)
+    # Use SQLAlchemy ORM query instead of raw SQL for safety and portability
+    result = await db.execute(
+        select(JobOpening.job_code)
+        .where(
+            JobOpening.company_id == company_id,
+            JobOpening.job_code.like(f"{prefix}%")
+        )
+        .order_by(JobOpening.created_at.desc())
+    )
+    existing_codes = result.scalars().all()
 
-    result = await db.execute(query, {
-        "company_id": str(company_id),
-        "pattern": f"JOB-{year}-([0-9]+)$",
-        "prefix_pattern": f"{prefix}%"
-    })
-    max_seq = result.scalar() or 0
+    # Parse existing codes to find max sequence
+    max_seq = 0
+    for code in existing_codes:
+        if code and code.startswith(prefix):
+            try:
+                seq_part = code[len(prefix):]
+                seq_num = int(seq_part)
+                max_seq = max(max_seq, seq_num)
+            except (ValueError, IndexError):
+                continue
+
     next_seq = max_seq + 1
-
     return f"{prefix}{next_seq:03d}"
 
 

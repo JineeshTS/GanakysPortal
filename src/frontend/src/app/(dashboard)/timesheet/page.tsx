@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useApi } from "@/hooks";
 import {
   Clock,
@@ -87,6 +87,19 @@ export default function TimesheetPage() {
   const { data: projectsData, get: getProjects } = useApi<ProjectsResponse>();
   const { post: saveTimesheet, isLoading: isSaving } = useApi<TimesheetResponse>();
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+  const messageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Fetch timesheet data when week changes
   useEffect(() => {
@@ -169,6 +182,11 @@ export default function TimesheetPage() {
     const weekStart = getWeekDates()[0].toISOString().split('T')[0];
     const weekEnd = getWeekDates()[6].toISOString().split('T')[0];
 
+    // Clear any existing timeout
+    if (messageTimeoutRef.current) {
+      clearTimeout(messageTimeoutRef.current);
+    }
+
     try {
       await saveTimesheet('/timesheet', {
         week_start: weekStart,
@@ -178,12 +196,24 @@ export default function TimesheetPage() {
         total_hours: getWeeklyTotal(),
         billable_hours: getWeeklyTotal() // For now, assume all hours are billable
       });
-      setSaveMessage('Draft saved successfully');
-      setTimeout(() => setSaveMessage(null), 3000);
+      if (isMountedRef.current) {
+        setSaveMessage('Draft saved successfully');
+        messageTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            setSaveMessage(null);
+          }
+        }, 3000);
+      }
     } catch (err) {
       console.error('Failed to save draft:', err);
-      setSaveMessage('Failed to save draft');
-      setTimeout(() => setSaveMessage(null), 3000);
+      if (isMountedRef.current) {
+        setSaveMessage('Failed to save draft');
+        messageTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            setSaveMessage(null);
+          }
+        }, 3000);
+      }
     }
   };
 

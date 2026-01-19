@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -216,12 +216,16 @@ export default function SuperAdminDashboard() {
     at_risk: 0,
     critical: 0,
   })
+  const isMountedRef = useRef(true)
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = useCallback(async () => {
     setIsLoading(true)
     try {
       // Mock data - in production would fetch from API
       await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // Check if component is still mounted before setting state
+      if (!isMountedRef.current) return
 
       setStats({
         total_tenants: 156,
@@ -253,13 +257,19 @@ export default function SuperAdminDashboard() {
     } catch (err) {
       console.error('Failed to fetch dashboard:', err)
     } finally {
-      setIsLoading(false)
+      if (isMountedRef.current) {
+        setIsLoading(false)
+      }
     }
-  }
+  }, [])
 
   useEffect(() => {
+    isMountedRef.current = true
     fetchDashboard()
-  }, [])
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [fetchDashboard])
 
   // Mock recent activity
   const recentActivity = [
