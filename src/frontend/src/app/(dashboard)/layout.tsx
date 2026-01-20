@@ -14,42 +14,31 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated, user, _hasHydrated } = useAuthStore()
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(true)
 
-  // Check authentication
+  // Check authentication after hydration
   React.useEffect(() => {
+    // Wait for Zustand to hydrate from localStorage
+    if (!_hasHydrated) {
+      return
+    }
+
     const checkAuth = () => {
-      // Check Zustand store first
+      // Check Zustand store (now hydrated from localStorage)
       if (isAuthenticated && user) {
         setIsLoading(false)
         return
       }
 
-      // Check localStorage fallback (for page refresh)
-      const storedUser = localStorage.getItem('ganaportal-auth')
-      if (!storedUser) {
-        router.push('/login')
-        return
-      }
-
-      try {
-        const parsed = JSON.parse(storedUser)
-        if (parsed.state?.isAuthenticated && parsed.state?.user) {
-          setIsLoading(false)
-          return
-        }
-      } catch {
-        // Invalid stored data
-      }
-
+      // Not authenticated, redirect to login
       router.push('/login')
     }
 
     checkAuth()
-  }, [isAuthenticated, user, router])
+  }, [_hasHydrated, isAuthenticated, user, router])
 
   // Close mobile sidebar on route change
   React.useEffect(() => {

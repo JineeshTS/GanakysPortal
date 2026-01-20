@@ -56,8 +56,8 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://ganaportal_user:R2PgyCXcUCYspJg46Btanfttu3HZ0Yw5@db:5432/ganaportal
       - REDIS_URL=redis://redis:6379/0
-      - ENVIRONMENT=development
-      - DEBUG=true
+      - ENVIRONMENT=production
+      - DEBUG=false
       - ENCRYPTION_KEY=v9iYC7SvWKKGTYW9rIm4gletTJM03YpaUZzqpqyyC38=
       - ENCRYPTION_KEY_VERSION=1
     volumes:
@@ -82,16 +82,12 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: ganaportal-frontend
     restart: unless-stopped
     environment:
       - NEXT_PUBLIC_API_URL=/api/v1
-      - NODE_ENV=development
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - NODE_ENV=production
     ports:
       - "3000:3000"
     depends_on:

@@ -25,13 +25,19 @@ interface AuthState {
   logout: () => void
 }
 
-export const useAuthStore = create<AuthState>()(
+interface AuthStateWithHydration extends AuthState {
+  _hasHydrated: boolean
+  setHasHydrated: (state: boolean) => void
+}
+
+export const useAuthStore = create<AuthStateWithHydration>()(
   persist(
     (set) => ({
       user: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      _hasHydrated: false,
 
       setUser: (user) => set({
         user,
@@ -43,6 +49,8 @@ export const useAuthStore = create<AuthState>()(
       setLoading: (isLoading) => set({ isLoading }),
 
       setError: (error) => set({ error }),
+
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
 
       logout: () => set({
         user: null,
@@ -56,7 +64,10 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated
-      })
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      }
     }
   )
 )
@@ -197,16 +208,20 @@ export function useAuth() {
 
 export function useRequireAuth(redirectTo: string = '/login') {
   const router = useRouter()
-  const { isAuthenticated, isLoading } = useAuthStore()
+  const { isAuthenticated, isLoading, _hasHydrated } = useAuthStore()
 
   useEffect(() => {
+    // Wait for Zustand to hydrate from localStorage
+    if (!_hasHydrated) {
+      return
+    }
     // Only redirect after loading is complete and user is not authenticated
     if (!isLoading && !isAuthenticated) {
       router.push(redirectTo)
     }
-  }, [isLoading, isAuthenticated, router, redirectTo])
+  }, [_hasHydrated, isLoading, isAuthenticated, router, redirectTo])
 
-  return { isAuthenticated, isLoading }
+  return { isAuthenticated, isLoading, hasHydrated: _hasHydrated }
 }
 
 // ============================================================================
