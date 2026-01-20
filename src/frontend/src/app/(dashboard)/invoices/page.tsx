@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useDebounce, useApi } from '@/hooks'
+import { useToast } from '@/hooks/use-toast'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -196,6 +197,7 @@ const invoiceStats = {
 
 export default function InvoicesPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [page, setPage] = React.useState(1)
@@ -228,6 +230,7 @@ export default function InvoicesPage() {
       setInvoiceToDelete(null)
     } catch (error) {
       console.error('Failed to delete invoice:', error)
+      toast.error('Failed to delete invoice', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)
     }
@@ -241,6 +244,7 @@ export default function InvoicesPage() {
       router.push(`/dashboard/invoices/new?copy_from=${invoice.id}`)
     } catch (error) {
       console.error('Failed to copy invoice:', error)
+      toast.error('Failed to copy invoice', 'Please try again')
     }
   }
 

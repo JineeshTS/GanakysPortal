@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useApi } from '@/hooks'
+import { useToast } from '@/hooks/use-toast'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -188,6 +189,7 @@ const mockTransactions: BankTransaction[] = [
 ]
 
 export default function BankingPage() {
+  const { toast } = useToast()
   const [selectedAccount, setSelectedAccount] = React.useState<BankAccount | null>(null)
   const [localAccounts, setLocalAccounts] = React.useState<BankAccount[]>(mockBankAccounts)
   const [localTransactions, setLocalTransactions] = React.useState<BankTransaction[]>(mockTransactions)
@@ -241,6 +243,7 @@ export default function BankingPage() {
       setAccountToDelete(null)
     } catch (error) {
       console.error('Failed to delete bank account:', error)
+      toast.error('Failed to delete bank account', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)
     }
@@ -273,6 +276,7 @@ export default function BankingPage() {
       setReconcileDialogOpen(false)
     } catch (error) {
       console.error('Failed to reconcile:', error)
+      toast.error('Failed to reconcile transactions', 'Please try again or contact support')
     } finally {
       setIsReconciling(false)
     }

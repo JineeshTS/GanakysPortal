@@ -5,7 +5,7 @@ from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from enum import Enum
 
 
@@ -82,6 +82,9 @@ class AssetCategoryResponse(AssetCategoryBase):
 # ============ Fixed Asset Schemas ============
 
 class FixedAssetBase(BaseModel):
+    """Base schema with model_config to allow model_ prefix fields."""
+    model_config = ConfigDict(protected_namespaces=())
+
     category_id: UUID
     name: str
     description: Optional[str] = None
@@ -123,6 +126,9 @@ class FixedAssetCreate(FixedAssetBase):
 
 
 class FixedAssetUpdate(BaseModel):
+    """Update schema with model_config to allow model_ prefix fields."""
+    model_config = ConfigDict(protected_namespaces=())
+
     name: Optional[str] = None
     description: Optional[str] = None
     location: Optional[str] = None

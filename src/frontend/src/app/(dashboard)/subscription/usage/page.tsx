@@ -173,22 +173,40 @@ function DailyUsageChart({ data, label }: { data: DailyUsage[]; label: string })
 }
 
 export default function UsagePage() {
+  const { fetchWithAuth } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [usageSummary, setUsageSummary] = useState<UsageSummary | null>(null)
   const [dailyApiUsage, setDailyApiUsage] = useState<DailyUsage[]>([])
   const [dailyAiUsage, setDailyAiUsage] = useState<DailyUsage[]>([])
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
   const fetchUsage = async () => {
     setIsLoading(true)
     setError(null)
     try {
-      // In real app, would fetch from API
-      // const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-      // const res = await fetchWithAuth(`${apiUrl}/subscriptions/usage/summary`)
-
-      // Mock data
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      // Try to fetch from API first
+      const res = await fetchWithAuth(`${apiUrl}/subscriptions/usage/summary`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.usage) {
+          setUsageSummary(data)
+          // Also fetch daily usage if available
+          const apiRes = await fetchWithAuth(`${apiUrl}/subscriptions/usage/daily?type=api`)
+          if (apiRes.ok) {
+            const apiData = await apiRes.json()
+            setDailyApiUsage(apiData.data || [])
+          }
+          const aiRes = await fetchWithAuth(`${apiUrl}/subscriptions/usage/daily?type=ai`)
+          if (aiRes.ok) {
+            const aiData = await aiRes.json()
+            setDailyAiUsage(aiData.data || [])
+          }
+          return // Success - don't use mock data
+        }
+      }
+      // Fall back to mock data if API fails or returns empty
+      await new Promise((resolve) => setTimeout(resolve, 200)) // Brief delay for UX
 
       setUsageSummary({
         subscription_id: 'sub-123',

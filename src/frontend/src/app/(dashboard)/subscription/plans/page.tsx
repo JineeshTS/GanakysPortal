@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
@@ -237,6 +238,8 @@ function PlanCard({
 }
 
 export default function SubscriptionPlansPage() {
+  const router = useRouter()
+  const { fetchWithAuth } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
@@ -410,11 +413,12 @@ export default function SubscriptionPlansPage() {
 
   const handleSelectPlan = (plan: SubscriptionPlan) => {
     if (plan.plan_type === 'enterprise') {
-      // Contact sales
-      window.location.href = 'mailto:sales@ganakys.com?subject=Enterprise Plan Inquiry'
+      // Contact sales - open contact form
+      router.push('/support?type=enterprise-inquiry')
     } else {
-      // Navigate to checkout
-      // TODO: Implement checkout navigation
+      // Navigate to subscription checkout with plan details
+      const billingCycle = isAnnual ? 'annual' : 'monthly'
+      router.push(`/subscription/checkout?plan=${plan.id}&billing=${billingCycle}`)
     }
   }
 

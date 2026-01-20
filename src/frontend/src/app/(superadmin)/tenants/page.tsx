@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -111,6 +112,7 @@ function HealthBadge({ status }: { status: string }) {
 }
 
 export default function TenantsPage() {
+  const { fetchWithAuth } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -123,6 +125,7 @@ export default function TenantsPage() {
   const [showSuspendDialog, setShowSuspendDialog] = useState(false)
   const [suspendReason, setSuspendReason] = useState('')
   const isMountedRef = useRef(true)
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
   const fetchTenants = useCallback(async () => {
     setIsLoading(true)
@@ -250,16 +253,39 @@ export default function TenantsPage() {
 
   const handleSuspendTenant = async () => {
     if (!selectedTenant || !suspendReason) return
-    // TODO: Implement tenant suspension API call
-    setShowSuspendDialog(false)
-    setSuspendReason('')
-    setSelectedTenant(null)
-    fetchTenants()
+    try {
+      const res = await fetchWithAuth(`${apiUrl}/superadmin/tenants/${selectedTenant.id}/suspend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: suspendReason })
+      })
+      if (res.ok) {
+        setShowSuspendDialog(false)
+        setSuspendReason('')
+        setSelectedTenant(null)
+        fetchTenants()
+      } else {
+        console.error('Failed to suspend tenant')
+      }
+    } catch (err) {
+      console.error('Failed to suspend tenant:', err)
+    }
   }
 
   const handleActivateTenant = async (tenant: Tenant) => {
-    // TODO: Implement tenant activation API call
-    fetchTenants()
+    try {
+      const res = await fetchWithAuth(`${apiUrl}/superadmin/tenants/${tenant.id}/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      if (res.ok) {
+        fetchTenants()
+      } else {
+        console.error('Failed to activate tenant')
+      }
+    } catch (err) {
+      console.error('Failed to activate tenant:', err)
+    }
   }
 
   return (

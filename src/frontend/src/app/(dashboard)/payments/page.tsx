@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useDebounce, useApi } from '@/hooks'
+import { useToast } from '@/hooks/use-toast'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -171,6 +172,7 @@ const paymentStats = {
 
 export default function PaymentsPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = React.useState('')
   const [typeFilter, setTypeFilter] = React.useState<string>('all')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
@@ -211,6 +213,7 @@ export default function PaymentsPage() {
       setPaymentToDelete(null)
     } catch (error) {
       console.error('Failed to delete payment:', error)
+      toast.error('Failed to delete payment', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)
     }

@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useDebounce, useApi } from '@/hooks'
+import { useToast } from '@/hooks/use-toast'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -227,6 +228,7 @@ interface BillSummaryResponse {
 
 export default function BillsPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [page, setPage] = React.useState(1)
@@ -259,6 +261,7 @@ export default function BillsPage() {
       setBillToDelete(null)
     } catch (error) {
       console.error('Failed to delete bill:', error)
+      toast.error('Failed to delete bill', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)
     }

@@ -11,9 +11,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
+from sqlalchemy import select, func, desc, asc, or_
+from sqlalchemy.orm import selectinload
+
 from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user, TokenData
 from app.core.datetime_utils import utc_now
+from app.models.bill import Bill, BillItem, BillStatus
 
 
 router = APIRouter()
@@ -288,58 +292,140 @@ async def list_bills(
     """
     company_id = UUID(current_user.company_id)
 
-    # Mock data
-    bills = [
-        BillResponse(
-            id=uuid4(),
-            company_id=company_id,
-            vendor_id=uuid4(),
-            vendor_name="ABC Suppliers Pvt Ltd",
-            bill_number="BILL/2024-25/0001",
-            vendor_invoice_number="VS-INV-2024-456",
-            vendor_invoice_date=date(2024, 12, 1),
-            bill_type="purchase_invoice",
-            bill_date=date(2024, 12, 3),
-            due_date=date(2024, 12, 31),
-            po_number="PO-2024-001",
-            vendor_gstin="27AABCS1234A1Z5",
-            place_of_supply="27",
-            is_igst=False,
-            reverse_charge=False,
-            itc_eligible=True,
-            currency="INR",
-            subtotal=Decimal("50000"),
-            discount_amount=Decimal("0"),
-            taxable_amount=Decimal("50000"),
-            cgst_amount=Decimal("4500"),
-            sgst_amount=Decimal("4500"),
-            igst_amount=Decimal("0"),
-            total_tax=Decimal("9000"),
-            tds_applicable=True,
-            tds_section="194C",
-            tds_rate=Decimal("2"),
-            tds_amount=Decimal("1000"),
-            total_amount=Decimal("59000"),
-            round_off=Decimal("0"),
-            grand_total=Decimal("59000"),
-            net_payable=Decimal("58000"),
-            amount_paid=Decimal("0"),
-            amount_due=Decimal("58000"),
-            status="approved",
-            payment_terms="Net 30",
-            items=[],
-            created_at=utc_now(),
-            updated_at=utc_now()
+    # Build query
+    query = select(Bill).where(
+        Bill.company_id == company_id,
+        Bill.deleted_at.is_(None)
+    ).options(selectinload(Bill.vendor), selectinload(Bill.items))
+
+    count_query = select(func.count(Bill.id)).where(
+        Bill.company_id == company_id,
+        Bill.deleted_at.is_(None)
+    )
+
+    # Apply filters
+    if status:
+        try:
+            status_enum = BillStatus(status)
+            query = query.where(Bill.status == status_enum)
+            count_query = count_query.where(Bill.status == status_enum)
+        except ValueError:
+            pass  # Invalid status, skip filter
+
+    if vendor_id:
+        query = query.where(Bill.vendor_id == vendor_id)
+        count_query = count_query.where(Bill.vendor_id == vendor_id)
+
+    if from_date:
+        query = query.where(Bill.bill_date >= from_date)
+        count_query = count_query.where(Bill.bill_date >= from_date)
+
+    if to_date:
+        query = query.where(Bill.bill_date <= to_date)
+        count_query = count_query.where(Bill.bill_date <= to_date)
+
+    if search:
+        search_filter = or_(
+            Bill.bill_number.ilike(f"%{search}%"),
+            Bill.vendor_invoice_number.ilike(f"%{search}%"),
+            Bill.po_number.ilike(f"%{search}%")
         )
-    ]
+        query = query.where(search_filter)
+        count_query = count_query.where(search_filter)
+
+    # Get total count
+    count_result = await db.execute(count_query)
+    total = count_result.scalar() or 0
+
+    # Apply sorting
+    sort_column = getattr(Bill, sort_by, Bill.bill_date)
+    if sort_order == "desc":
+        query = query.order_by(desc(sort_column))
+    else:
+        query = query.order_by(asc(sort_column))
+
+    # Apply pagination
+    query = query.offset((page - 1) * page_size).limit(page_size)
+
+    # Execute query
+    result = await db.execute(query)
+    db_bills = result.scalars().all()
+
+    # Convert to response model
+    bills = []
+    for bill in db_bills:
+        vendor_name = bill.vendor.name if bill.vendor else "Unknown Vendor"
+        bill_items = []
+        for item in bill.items:
+            bill_items.append(BillItemResponse(
+                id=item.id,
+                line_number=item.line_number or 1,
+                description=item.description or "",
+                hsn_sac_code=item.hsn_sac_code,
+                quantity=item.quantity or Decimal("1"),
+                uom=item.uom or "NOS",
+                unit_price=item.unit_price or Decimal("0"),
+                discount_amount=item.discount_amount or Decimal("0"),
+                taxable_amount=item.taxable_amount or Decimal("0"),
+                gst_rate=item.gst_rate or Decimal("0"),
+                cgst_amount=item.cgst_amount or Decimal("0"),
+                sgst_amount=item.sgst_amount or Decimal("0"),
+                igst_amount=item.igst_amount or Decimal("0"),
+                tds_amount=item.tds_amount or Decimal("0"),
+                total_amount=item.total_amount or Decimal("0")
+            ))
+
+        bills.append(BillResponse(
+            id=bill.id,
+            company_id=bill.company_id,
+            vendor_id=bill.vendor_id,
+            vendor_name=vendor_name,
+            bill_number=bill.bill_number,
+            vendor_invoice_number=bill.vendor_invoice_number,
+            vendor_invoice_date=bill.vendor_invoice_date,
+            bill_type=bill.bill_type.value if bill.bill_type else "purchase_invoice",
+            bill_date=bill.bill_date,
+            due_date=bill.due_date,
+            po_number=bill.po_number,
+            vendor_gstin=bill.vendor_gstin,
+            place_of_supply=bill.place_of_supply,
+            is_igst=bill.is_igst or False,
+            reverse_charge=bill.reverse_charge or False,
+            itc_eligible=bill.itc_eligible if bill.itc_eligible is not None else True,
+            currency=bill.currency or "INR",
+            subtotal=bill.subtotal or Decimal("0"),
+            discount_amount=bill.discount_amount or Decimal("0"),
+            taxable_amount=bill.taxable_amount or Decimal("0"),
+            cgst_amount=bill.cgst_amount or Decimal("0"),
+            sgst_amount=bill.sgst_amount or Decimal("0"),
+            igst_amount=bill.igst_amount or Decimal("0"),
+            total_tax=bill.total_tax or Decimal("0"),
+            tds_applicable=bill.tds_applicable or False,
+            tds_section=bill.tds_section.value if bill.tds_section else None,
+            tds_rate=bill.tds_rate or Decimal("0"),
+            tds_amount=bill.tds_amount or Decimal("0"),
+            total_amount=bill.total_amount or Decimal("0"),
+            round_off=bill.round_off or Decimal("0"),
+            grand_total=bill.grand_total or Decimal("0"),
+            net_payable=bill.net_payable or Decimal("0"),
+            amount_paid=bill.amount_paid or Decimal("0"),
+            amount_due=bill.amount_due or Decimal("0"),
+            status=bill.status.value if bill.status else "draft",
+            payment_terms=bill.payment_terms,
+            items=bill_items,
+            created_at=bill.created_at or utc_now(),
+            updated_at=bill.updated_at or utc_now()
+        ))
+
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
 
     return BillListResponse(
         data=bills,
         meta={
             "page": page,
             "page_size": page_size,
-            "total": len(bills),
-            "total_pages": 1
+            "total": total,
+            "total_pages": total_pages
         }
     )
 

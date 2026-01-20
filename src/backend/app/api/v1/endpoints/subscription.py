@@ -156,14 +156,39 @@ async def get_subscription_dashboard(db: AsyncSession = Depends(get_db)):
     status_result = await db.execute(status_query)
     subscriptions_by_status = {row[0].value: row[1] for row in status_result.fetchall()}
 
-    # Revenue trend (last 6 months) - simplified
+    # Revenue trend (last 6 months) - actual data from invoices
     revenue_trend = []
     today = date.today()
     for i in range(5, -1, -1):
-        month_start = date(today.year, today.month, 1) - timedelta(days=30 * i)
+        # Calculate month boundaries
+        target_month = today.month - i
+        target_year = today.year
+        while target_month <= 0:
+            target_month += 12
+            target_year -= 1
+
+        month_start = date(target_year, target_month, 1)
+        if target_month == 12:
+            month_end = date(target_year + 1, 1, 1) - timedelta(days=1)
+        else:
+            month_end = date(target_year, target_month + 1, 1) - timedelta(days=1)
+
+        # Query paid invoices for this month
+        month_revenue_query = select(
+            func.coalesce(func.sum(SubscriptionInvoice.total_amount), 0)
+        ).where(
+            and_(
+                SubscriptionInvoice.status == "paid",
+                SubscriptionInvoice.paid_at >= datetime.combine(month_start, datetime.min.time()),
+                SubscriptionInvoice.paid_at <= datetime.combine(month_end, datetime.max.time())
+            )
+        )
+        month_revenue_result = await db.execute(month_revenue_query)
+        month_revenue = month_revenue_result.scalar() or Decimal("0")
+
         revenue_trend.append({
             "month": month_start.strftime("%Y-%m"),
-            "revenue": float(mrr)  # Placeholder - would need historical data
+            "revenue": float(month_revenue)
         })
 
     return SubscriptionDashboard(

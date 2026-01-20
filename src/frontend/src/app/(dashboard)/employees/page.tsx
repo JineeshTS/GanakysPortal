@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useDebounce, useApi } from '@/hooks'
+import { useToast } from '@/hooks/use-toast'
 import { formatCurrency, formatDate } from '@/lib/format'
 import {
   Plus,
@@ -112,6 +113,7 @@ interface QuickViewEmployee extends Employee {
 
 export default function EmployeesPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = React.useState('')
   const [employees, setEmployees] = React.useState<EmployeeApiResponse[]>([])
   const [page, setPage] = React.useState(1)
@@ -301,6 +303,7 @@ export default function EmployeesPage() {
       setEmployeeToDelete(null)
     } catch (error) {
       console.error('Failed to delete employee:', error)
+      toast.error('Failed to delete employee', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)
     }

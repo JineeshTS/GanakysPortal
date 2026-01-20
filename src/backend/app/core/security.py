@@ -196,9 +196,13 @@ class SQLInjectionMiddleware(BaseHTTPMiddleware):
     layer of protection by detecting and blocking obvious attack patterns.
 
     This middleware:
-    - Checks query strings, URL paths, and JSON request bodies
+    - Checks query strings and URL paths only (body inspection disabled to avoid stream issues)
     - URL-decodes values before pattern matching to catch encoding bypasses
     - Logs detected attempts for security monitoring
+
+    NOTE: Body inspection is intentionally disabled because Starlette's BaseHTTPMiddleware
+    has issues with body stream consumption that can cause "No response returned" errors.
+    SQL injection protection for body content relies on parameterized queries (SQLAlchemy ORM).
     """
 
     # Comprehensive SQL injection patterns
@@ -246,16 +250,6 @@ class SQLInjectionMiddleware(BaseHTTPMiddleware):
         r";\s*\-\-",
     ]
 
-    # Content types to inspect for body content
-    INSPECTABLE_CONTENT_TYPES = [
-        "application/json",
-        "application/x-www-form-urlencoded",
-        "text/plain",
-    ]
-
-    # Max body size to inspect (avoid memory issues with large uploads)
-    MAX_BODY_SIZE = 1024 * 1024  # 1MB
-
     def __init__(self, app):
         super().__init__(app)
         self._patterns = [re.compile(p, re.IGNORECASE) for p in self.SQL_PATTERNS]
@@ -291,32 +285,9 @@ class SQLInjectionMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Invalid request path"}
             )
 
-        # Check request body for POST/PUT/PATCH requests
-        if request.method in ("POST", "PUT", "PATCH"):
-            content_type = request.headers.get("content-type", "").lower()
-
-            # Only inspect certain content types
-            if any(ct in content_type for ct in self.INSPECTABLE_CONTENT_TYPES):
-                try:
-                    body = await request.body()
-
-                    # Skip if body is too large
-                    if len(body) <= self.MAX_BODY_SIZE:
-                        body_str = body.decode("utf-8", errors="ignore")
-                        body_str = unquote_plus(body_str)
-
-                        if self._contains_sql_injection(body_str):
-                            logger.warning(
-                                f"SQL injection attempt detected in body from {request.client.host}: {body_str[:200]}"
-                            )
-                            from starlette.responses import JSONResponse
-                            return JSONResponse(
-                                status_code=400,
-                                content={"detail": "Invalid request body"}
-                            )
-                except Exception as e:
-                    # Don't block request if we can't read body
-                    logger.debug(f"Could not inspect request body: {e}")
+        # NOTE: Body inspection disabled - causes "No response returned" errors
+        # due to Starlette BaseHTTPMiddleware body stream consumption issues.
+        # SQL injection protection for body content relies on parameterized queries.
 
         return await call_next(request)
 
@@ -346,9 +317,13 @@ class XSSProtectionMiddleware(BaseHTTPMiddleware):
     and blocking obvious XSS attack patterns in inputs.
 
     This middleware:
-    - Checks query strings, URL paths, and request bodies
+    - Checks query strings and URL paths only (body inspection disabled to avoid stream issues)
     - URL-decodes values before pattern matching to catch encoding bypasses
     - Logs detected attempts for security monitoring
+
+    NOTE: Body inspection is intentionally disabled because Starlette's BaseHTTPMiddleware
+    has issues with body stream consumption that can cause "No response returned" errors.
+    XSS protection for body content relies on proper output encoding in the frontend.
     """
 
     XSS_PATTERNS = [
@@ -393,16 +368,6 @@ class XSSProtectionMiddleware(BaseHTTPMiddleware):
         r"&#x3c;\s*script",
     ]
 
-    # Content types to inspect for body content
-    INSPECTABLE_CONTENT_TYPES = [
-        "application/json",
-        "application/x-www-form-urlencoded",
-        "text/plain",
-    ]
-
-    # Max body size to inspect
-    MAX_BODY_SIZE = 1024 * 1024  # 1MB
-
     def __init__(self, app):
         super().__init__(app)
         self._patterns = [re.compile(p, re.IGNORECASE | re.DOTALL) for p in self.XSS_PATTERNS]
@@ -437,32 +402,9 @@ class XSSProtectionMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Invalid request path"}
             )
 
-        # Check request body for POST/PUT/PATCH requests
-        if request.method in ("POST", "PUT", "PATCH"):
-            content_type = request.headers.get("content-type", "").lower()
-
-            # Only inspect certain content types
-            if any(ct in content_type for ct in self.INSPECTABLE_CONTENT_TYPES):
-                try:
-                    body = await request.body()
-
-                    # Skip if body is too large
-                    if len(body) <= self.MAX_BODY_SIZE:
-                        body_str = body.decode("utf-8", errors="ignore")
-                        body_str = unquote_plus(body_str)
-
-                        if self._contains_xss(body_str):
-                            logger.warning(
-                                f"XSS attempt detected in body from {request.client.host}: {body_str[:200]}"
-                            )
-                            from starlette.responses import JSONResponse
-                            return JSONResponse(
-                                status_code=400,
-                                content={"detail": "Invalid request body"}
-                            )
-                except Exception as e:
-                    # Don't block request if we can't read body
-                    logger.debug(f"Could not inspect request body: {e}")
+        # NOTE: Body inspection disabled - causes "No response returned" errors
+        # due to Starlette BaseHTTPMiddleware body stream consumption issues.
+        # XSS protection for body content relies on proper output encoding.
 
         return await call_next(request)
 

@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useApi } from '@/hooks'
+import { useToast } from '@/hooks/use-toast'
 import type { Project, ProjectStatus, Task, Milestone } from '@/types'
 import {
   Plus,
@@ -580,6 +581,7 @@ function AddProjectDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
 }
 
 export default function ProjectsPage() {
+  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [addDialogOpen, setAddDialogOpen] = useState(false)
@@ -608,6 +610,7 @@ export default function ProjectsPage() {
       setProjectToDelete(null)
     } catch (error) {
       console.error('Failed to delete project:', error)
+      toast.error('Failed to delete project', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)
     }

@@ -200,8 +200,9 @@ export default function LeaveCalendarPage() {
   }
 
   const handleDateClick = (date: Date) => {
-    // Could open a dialog to apply leave for that date
-    // TODO: Implement date-specific leave application
+    // Navigate to leave application page with the selected date pre-filled
+    const formattedDate = date.toISOString().split('T')[0]
+    router.push(`/leave/apply?from_date=${formattedDate}&to_date=${formattedDate}`)
   }
 
   const getStatusBadge = (status: LeaveStatus) => {

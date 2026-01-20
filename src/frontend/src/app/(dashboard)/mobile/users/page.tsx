@@ -96,6 +96,7 @@ export default function MobileUsersPage() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<MobileUser | null>(null)
 
+  const { fetchWithAuth } = useAuth()
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
   const fetchUsers = useCallback(async () => {
@@ -143,11 +144,41 @@ export default function MobileUsersPage() {
   const biometricEnabled = mockUsers.filter(u => u.biometric_enabled).length
 
   const handleSuspendUser = async (userId: string) => {
-    // TODO: Implement user suspension API call
+    try {
+      const res = await fetchWithAuth(`${apiUrl}/mobile/users/${userId}/suspend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      if (res.ok) {
+        // Update local state
+        setUsers(prev => prev.map(u =>
+          u.id === userId ? { ...u, status: 'suspended' as const } : u
+        ))
+      } else {
+        console.error('Failed to suspend user')
+      }
+    } catch (err) {
+      console.error('Failed to suspend user:', err)
+    }
   }
 
   const handleActivateUser = async (userId: string) => {
-    // TODO: Implement user activation API call
+    try {
+      const res = await fetchWithAuth(`${apiUrl}/mobile/users/${userId}/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      if (res.ok) {
+        // Update local state
+        setUsers(prev => prev.map(u =>
+          u.id === userId ? { ...u, status: 'active' as const } : u
+        ))
+      } else {
+        console.error('Failed to activate user')
+      }
+    } catch (err) {
+      console.error('Failed to activate user:', err)
+    }
   }
 
   return (

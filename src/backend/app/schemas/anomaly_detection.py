@@ -5,12 +5,17 @@ Pydantic schemas for anomaly detection
 from datetime import datetime, date
 from typing import Optional, List, Any, Dict
 from uuid import UUID
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from app.models.anomaly_detection import (
     AnomalyCategory, AnomalySeverity, AnomalyStatus,
     DetectionMethod, FeedbackType, ModelStatus
 )
+
+
+class AnomalyBaseModel(BaseModel):
+    """Base model with configuration to allow model_ prefix fields."""
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ============ Rule Schemas ============
@@ -116,7 +121,7 @@ class AnomalyBaselineResponse(BaseModel):
 
 # ============ Detection Schemas ============
 
-class AnomalyDetectionCreate(BaseModel):
+class AnomalyDetectionCreate(AnomalyBaseModel):
     """Schema for creating detection (typically internal)"""
     category: AnomalyCategory
     severity: AnomalySeverity
@@ -197,7 +202,7 @@ class AnomalyDetectionResponse(BaseModel):
     detected_at: datetime
     updated_at: Optional[datetime] = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 class AnomalyDetectionListResponse(BaseModel):
@@ -237,7 +242,7 @@ class AnomalyPatternResponse(BaseModel):
 
 # ============ Model Schemas ============
 
-class AnomalyModelCreate(BaseModel):
+class AnomalyModelCreate(AnomalyBaseModel):
     """Schema for creating ML model"""
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
@@ -288,7 +293,7 @@ class AnomalyModelResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 class AnomalyModelListResponse(BaseModel):
@@ -424,7 +429,7 @@ class CalculateBaselineRequest(BaseModel):
     period_days: int = 90
 
 
-class TrainModelRequest(BaseModel):
+class TrainModelRequest(AnomalyBaseModel):
     """Schema for training model"""
     model_type: str
     name: str

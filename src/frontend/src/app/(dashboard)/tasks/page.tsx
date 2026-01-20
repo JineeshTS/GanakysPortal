@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useApi } from '@/hooks'
+import { useToast } from '@/hooks/use-toast'
 import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -692,6 +693,7 @@ function AddTaskDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 }
 
 export default function TasksPage() {
+  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
   const [projectFilter, setProjectFilter] = useState<string>('all')
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
@@ -723,6 +725,7 @@ export default function TasksPage() {
       setTaskToDelete(null)
     } catch (error) {
       console.error('Failed to delete task:', error)
+      toast.error('Failed to delete task', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)
     }

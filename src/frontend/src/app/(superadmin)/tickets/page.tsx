@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -101,6 +102,7 @@ function PriorityBadge({ priority }: { priority: string }) {
 }
 
 export default function TicketsPage() {
+  const { fetchWithAuth } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -111,6 +113,7 @@ export default function TicketsPage() {
   const [newResponse, setNewResponse] = useState('')
   const [isInternal, setIsInternal] = useState(false)
   const [page, setPage] = useState(1)
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
 
   const fetchTickets = async () => {
     setIsLoading(true)
@@ -243,9 +246,26 @@ export default function TicketsPage() {
 
   const handleAddResponse = async () => {
     if (!selectedTicket || !newResponse.trim()) return
-    // TODO: Implement ticket response API call
-    setNewResponse('')
-    // Would refresh ticket details
+    try {
+      const res = await fetchWithAuth(`${apiUrl}/superadmin/tickets/${selectedTicket.id}/responses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: newResponse.trim(),
+          is_internal: isInternal
+        })
+      })
+      if (res.ok) {
+        setNewResponse('')
+        setIsInternal(false)
+        // Refresh ticket details
+        fetchTickets()
+      } else {
+        console.error('Failed to add response')
+      }
+    } catch (err) {
+      console.error('Failed to add response:', err)
+    }
   }
 
   return (
