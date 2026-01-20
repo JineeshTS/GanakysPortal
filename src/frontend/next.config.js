@@ -16,16 +16,18 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   // API routing is handled by nginx in production
-  // Only use rewrites in development
+  // In development with Docker, use Docker network name
   async rewrites() {
     // Skip rewrites in production (nginx handles /api/ routing)
     if (process.env.NODE_ENV === 'production') {
       return []
     }
+    // Use Docker network name 'backend' and internal port 8000
+    const backendUrl = process.env.BACKEND_INTERNAL_URL || 'http://backend:8000'
     return [
       {
         source: '/api/:path*',
-        destination: 'http://127.0.0.1:8002/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
       },
     ]
   },

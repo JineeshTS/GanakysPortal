@@ -429,12 +429,14 @@ async def login(
                    request.headers.get("user-agent"))
 
     # Set httpOnly cookies for secure token storage
+    # Use secure=True only in production (requires HTTPS)
+    is_production = settings.ENVIRONMENT == "production"
     response.set_cookie(
         key="access_token",
         value=access_token,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         httponly=True,
-        secure=True,  # Only send over HTTPS
+        secure=is_production,
         samesite="lax",  # Protect against CSRF
         path="/"
     )
@@ -443,7 +445,7 @@ async def login(
         value=refresh_token,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         httponly=True,
-        secure=True,
+        secure=is_production,
         samesite="lax",
         path="/"
     )
@@ -510,12 +512,13 @@ async def refresh_token(
         new_refresh_token = create_refresh_token(token_data)
 
         # Set httpOnly cookies
+        is_production = settings.ENVIRONMENT == "production"
         response.set_cookie(
             key="access_token",
             value=access_token,
             max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             httponly=True,
-            secure=True,
+            secure=is_production,
             samesite="lax",
             path="/"
         )
@@ -524,7 +527,7 @@ async def refresh_token(
             value=new_refresh_token,
             max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
             httponly=True,
-            secure=True,
+            secure=is_production,
             samesite="lax",
             path="/"
         )

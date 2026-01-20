@@ -5,7 +5,7 @@ Common dependencies used across API endpoints
 from typing import Optional, Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
@@ -22,13 +22,19 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=F
 
 
 async def get_current_user(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     token: Optional[str] = Depends(oauth2_scheme)
 ):
     """
     Get current authenticated user from JWT token.
+    Checks both Authorization header and httpOnly cookies.
     Returns None if no token provided or token is invalid.
     """
+    # If no token from Authorization header, check cookies
+    if not token:
+        token = request.cookies.get("access_token")
+
     if not token:
         return None
 
