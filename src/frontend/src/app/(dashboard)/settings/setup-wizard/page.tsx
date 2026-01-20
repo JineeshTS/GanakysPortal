@@ -164,7 +164,6 @@ export default function SetupWizardPage() {
         showToast({ title: 'Error', description: 'Failed to fetch setup status', variant: 'destructive' })
       }
     } catch (error) {
-      console.error('Failed to fetch setup status:', error)
       showToast({ title: 'Error', description: 'Failed to fetch setup status', variant: 'destructive' })
       // Set default status on error
       setStatus({

@@ -163,7 +163,7 @@ export default function ExpensesPage() {
       setDeleteDialogOpen(false);
       setClaimToDelete(null);
     } catch (error) {
-      console.error('Failed to delete expense claim:', error);
+      showToast('error', 'Failed to delete expense claim');
     } finally {
       setIsDeleting(false);
     }
@@ -177,16 +177,11 @@ export default function ExpensesPage() {
     }
     setIsSubmittingClaim(true);
     try {
-      const response = await fetch('/api/v1/expenses/claims', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          ...newClaimData,
-          amount: parseFloat(newClaimData.amount)
-        })
+      const response = await api.post('/expenses/claims', {
+        ...newClaimData,
+        amount: parseFloat(newClaimData.amount)
       });
-      if (response.ok) {
+      if (response) {
         showToast('success', 'Expense claim submitted successfully');
         setNewClaimDialogOpen(false);
         setNewClaimData({ category: '', amount: '', description: '', expense_date: new Date().toISOString().split('T')[0] });
@@ -209,16 +204,11 @@ export default function ExpensesPage() {
     }
     setIsSubmittingAdvance(true);
     try {
-      const response = await fetch('/api/v1/expenses/advances', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          ...advanceData,
-          amount: parseFloat(advanceData.amount)
-        })
+      const response = await api.post('/expenses/advances', {
+        ...advanceData,
+        amount: parseFloat(advanceData.amount)
       });
-      if (response.ok) {
+      if (response) {
         showToast('success', 'Travel advance request submitted');
         setAdvanceDialogOpen(false);
         setAdvanceData({ purpose: '', amount: '', travel_date: '' });
@@ -238,13 +228,8 @@ export default function ExpensesPage() {
     if (!advanceToSettle || !settlementAmount) return;
     setIsSettling(true);
     try {
-      const response = await fetch(`/api/v1/expenses/advances/${advanceToSettle.id}/settle`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ settlement_amount: parseFloat(settlementAmount) })
-      });
-      if (response.ok) {
+      const response = await api.post(`/expenses/advances/${advanceToSettle.id}/settle`, { settlement_amount: parseFloat(settlementAmount) });
+      if (response) {
         showToast('success', 'Advance settled successfully');
         setSettleDialogOpen(false);
         setAdvanceToSettle(null);
@@ -274,6 +259,7 @@ export default function ExpensesPage() {
   const { data: advancesData, isLoading: advancesLoading, get: getAdvances } = useApi<{ data: TravelAdvance[] }>();
   const { data: policiesData, isLoading: policiesLoading, get: getPolicies } = useApi<{ data: ExpensePolicy[] }>();
   const { data: mileageData, isLoading: mileageLoading, get: getMileage } = useApi<{ data: MileageClaim[] }>();
+  const api = useApi();
 
   useEffect(() => {
     getClaims('/expenses/claims');

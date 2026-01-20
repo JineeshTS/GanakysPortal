@@ -2,9 +2,12 @@
 Signature Provider Service
 Manages digital signature provider configurations
 """
+import logging
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -202,13 +205,13 @@ class SignatureProviderService:
         if provider.api_key_encrypted:
             try:
                 api_key = encryption_service.decrypt(provider.api_key_encrypted)
-            except Exception:
-                pass  # Return None if decryption fails
+            except Exception as e:
+                logger.error(f"Failed to decrypt API key for provider {provider.id}: {e}")
 
         if provider.api_secret_encrypted:
             try:
                 api_secret = encryption_service.decrypt(provider.api_secret_encrypted)
-            except Exception:
-                pass  # Return None if decryption fails
+            except Exception as e:
+                logger.error(f"Failed to decrypt API secret for provider {provider.id}: {e}")
 
         return api_key, api_secret

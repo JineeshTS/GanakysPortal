@@ -390,7 +390,6 @@ export default function PurchaseOrdersPage() {
       resetForm();
       showToast('success', 'Purchase order created successfully');
     } catch (error) {
-      console.error('Failed to create PO:', error);
       showToast('error', 'Failed to create purchase order');
     } finally {
       setIsCreating(false);
@@ -409,7 +408,6 @@ export default function PurchaseOrdersPage() {
       setSelectedPO(null);
       showToast('success', 'Purchase order deleted successfully');
     } catch (error) {
-      console.error('Failed to delete PO:', error);
       showToast('error', 'Failed to delete purchase order');
     } finally {
       setIsDeleting(false);
@@ -478,7 +476,6 @@ export default function PurchaseOrdersPage() {
       setEditDialogOpen(false);
       showToast('success', 'Purchase order updated successfully');
     } catch (error) {
-      console.error('Failed to update PO:', error);
       showToast('error', 'Failed to update purchase order');
     } finally {
       setIsEditing(false);

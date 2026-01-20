@@ -2,10 +2,13 @@
 Fixed Asset Management API Endpoints - BE-034
 Asset register, depreciation, and tracking
 """
+import logging
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Optional, List
 from uuid import UUID, uuid4
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -203,7 +206,7 @@ async def list_assets(
             status_enum = AssetStatus(status)
             query = query.where(FixedAsset.status == status_enum)
         except ValueError:
-            pass  # Invalid status, ignore filter
+            logger.warning(f"Invalid asset status filter value: {status}")
     if location:
         query = query.where(FixedAsset.location.ilike(f"%{location}%"))
     if search:
@@ -484,7 +487,7 @@ async def update_asset(
         try:
             asset.status = AssetStatus(asset_data.status)
         except ValueError:
-            pass
+            logger.warning(f"Invalid asset status value during update: {asset_data.status}")
 
     asset.updated_at = utc_now()
     await db.commit()

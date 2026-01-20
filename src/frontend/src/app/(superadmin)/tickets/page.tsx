@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -103,6 +104,7 @@ function PriorityBadge({ priority }: { priority: string }) {
 
 export default function TicketsPage() {
   const { fetchWithAuth } = useAuth()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -221,7 +223,7 @@ export default function TicketsPage() {
 
       setTickets(mockTickets)
     } catch (err) {
-      console.error('Failed to fetch tickets:', err)
+      toast.error('Failed to fetch tickets', 'Please try again')
     } finally {
       setIsLoading(false)
     }
@@ -260,11 +262,12 @@ export default function TicketsPage() {
         setIsInternal(false)
         // Refresh ticket details
         fetchTickets()
+        toast.success('Response added', 'Your response has been added successfully')
       } else {
-        console.error('Failed to add response')
+        toast.error('Failed to add response', 'Please try again')
       }
     } catch (err) {
-      console.error('Failed to add response:', err)
+      toast.error('Failed to add response', 'Please try again')
     }
   }
 

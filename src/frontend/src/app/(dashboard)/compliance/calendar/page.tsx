@@ -320,7 +320,7 @@ export default function ComplianceCalendarPage() {
           setEvents(result.events);
         }
       } catch (error) {
-        console.error("Failed to fetch calendar events:", error);
+        showToast("error", "Failed to fetch calendar events");
       } finally {
         setIsLoading(false);
       }

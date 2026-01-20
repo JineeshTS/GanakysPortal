@@ -574,7 +574,7 @@ export default function OrganizationSetupPage() {
       if (aiSummaryRes) setAiSummary(aiSummaryRes as DashboardSummary)
       if (recsRes) setRecommendations((recsRes as any).data || [])
     } catch (error) {
-      console.error('Failed to load data:', error)
+      showToast('error', 'Failed to load data', 'Please try again')
     } finally {
       setIsLoading(false)
     }

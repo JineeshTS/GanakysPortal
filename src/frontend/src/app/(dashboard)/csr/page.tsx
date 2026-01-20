@@ -412,7 +412,6 @@ export default function CSRTrackingPage() {
       setItemToDelete(null);
       showToast("success", `${itemToDelete.type.charAt(0).toUpperCase() + itemToDelete.type.slice(1)} deleted successfully`);
     } catch (error) {
-      console.error(`Failed to delete ${itemToDelete.type}:`, error);
       showToast("error", `Failed to delete ${itemToDelete.type}`);
     } finally {
       setIsDeleting(false);

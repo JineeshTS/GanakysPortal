@@ -243,6 +243,7 @@ export default function BillsPage() {
   const { data: billsData, isLoading: billsLoading, error: billsError, get: getBills } = useApi<BillListResponse>()
   const { data: summaryData, isLoading: summaryLoading, get: getSummary } = useApi<BillSummaryResponse>()
   const deleteApi = useApi()
+  const importApi = useApi()
 
   // Delete handlers
   const handleDeleteClick = (bill: Bill, e: React.MouseEvent) => {
@@ -260,7 +261,6 @@ export default function BillsPage() {
       setDeleteDialogOpen(false)
       setBillToDelete(null)
     } catch (error) {
-      console.error('Failed to delete bill:', error)
       toast.error('Failed to delete bill', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)
@@ -304,12 +304,8 @@ export default function BillsPage() {
       const formData = new FormData()
       formData.append('file', file)
       try {
-        const response = await fetch('/api/v1/bills/import', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include'
-        })
-        if (response.ok) {
+        const response = await importApi.postFormData('/bills/import', formData)
+        if (response) {
           alert('Bills imported successfully!')
           getBills('/bills')
         } else {

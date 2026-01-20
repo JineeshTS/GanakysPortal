@@ -114,7 +114,7 @@ class ConditionEvaluator:
                 return float(token)
             return int(token)
         except ValueError:
-            pass
+            logger.debug(f"Token '{token}' is not a numeric literal, trying other types")
 
         # Handle boolean literals
         if token.lower() == 'true':

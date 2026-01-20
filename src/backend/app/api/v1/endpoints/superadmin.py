@@ -2,9 +2,12 @@
 Super Admin Portal API Endpoints
 Platform-level administration for multi-tenant SaaS management
 """
+import logging
 from datetime import datetime, timedelta
 from typing import Optional, List, Annotated
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from app.core.datetime_utils import utc_now
@@ -1481,8 +1484,8 @@ async def super_admin_logout(
     try:
         body = await request.json()
         refresh_token = body.get("refresh_token")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"No JSON body provided for logout request (optional): {e}")
 
     await auth_service.logout(db, current_admin.id, refresh_token)
 

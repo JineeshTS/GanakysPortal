@@ -336,7 +336,6 @@ export default function FeatureFlagsPage() {
       setFlagToDelete(null)
       showToast("success", "Feature flag deleted successfully")
     } catch (error) {
-      console.error("Failed to delete feature flag:", error)
       showToast("error", "Failed to delete feature flag")
     } finally {
       setIsDeleting(false)

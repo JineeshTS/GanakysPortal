@@ -9,7 +9,7 @@ import { LeaveBalanceGrid } from '@/components/leave/LeaveBalanceCard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getFinancialYear, formatDate } from '@/lib/format'
-import { useApi } from '@/hooks'
+import { useApi, useToast } from '@/hooks'
 import {
   Calendar,
   Info,
@@ -78,6 +78,7 @@ export default function ApplyLeavePage() {
   const [leaveBalances, setLeaveBalances] = React.useState<LeaveBalance[]>([])
   const [upcomingHolidays, setUpcomingHolidays] = React.useState<{date: string, name: string, type: string}[]>([])
 
+  const { showToast } = useToast()
   const typesApi = useApi<LeaveTypeApiResponse>()
   const balanceApi = useApi<LeaveBalanceApiResponse>()
   const holidaysApi = useApi<HolidayApiResponse>()
@@ -138,7 +139,7 @@ export default function ApplyLeavePage() {
           setUpcomingHolidays(mappedHolidays)
         }
       } catch (error) {
-        console.error('Failed to fetch leave data:', error)
+        showToast('error', 'Failed to fetch leave data')
       } finally {
         setIsLoading(false)
       }
@@ -181,7 +182,7 @@ export default function ApplyLeavePage() {
         router.push('/leave/requests?status=pending')
       }
     } catch (error) {
-      console.error('Failed to submit leave request:', error)
+      showToast('error', 'Failed to submit leave request')
       throw error
     } finally {
       setIsSubmitting(false)

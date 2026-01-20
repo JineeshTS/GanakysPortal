@@ -30,7 +30,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { useDebounce } from '@/hooks'
+import { useDebounce, useApi } from '@/hooks'
 import {
   Plus,
   Download,
@@ -233,6 +233,7 @@ const customers = [
 
 export default function InvoicesListPage() {
   const router = useRouter()
+  const api = useApi()
   const [invoices, setInvoices] = React.useState(mockInvoices)
   const [searchQuery, setSearchQuery] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
@@ -360,11 +361,8 @@ export default function InvoicesListPage() {
   const handleDownloadPDF = async (invoice: Invoice) => {
     try {
       // Generate and download PDF
-      const response = await fetch(`/api/v1/invoices/${invoice.id}/pdf`, {
-        credentials: 'include'
-      })
-      if (response.ok) {
-        const blob = await response.blob()
+      const blob = await api.getBlob(`/invoices/${invoice.id}/pdf`)
+      if (blob) {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
@@ -381,11 +379,8 @@ export default function InvoicesListPage() {
 
   const handleSendEmail = async (invoice: Invoice) => {
     try {
-      const response = await fetch(`/api/v1/invoices/${invoice.id}/send`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-      if (response.ok) {
+      const response = await api.post(`/invoices/${invoice.id}/send`, {})
+      if (response) {
         alert(`Invoice ${invoice.invoice_number} sent to ${invoice.customer_name}`)
       } else {
         alert('Failed to send email')

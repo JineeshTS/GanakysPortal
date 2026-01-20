@@ -131,7 +131,6 @@ export default function StatutoryPage() {
       setItemToDelete(null);
       showToast("success", "Compliance record deleted successfully");
     } catch (error) {
-      console.error("Failed to delete compliance record:", error);
       showToast("error", "Failed to delete compliance record");
     } finally {
       setIsDeleting(false);

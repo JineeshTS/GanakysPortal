@@ -207,7 +207,6 @@ export default function ManufacturingPage() {
       setOrderToDelete(null);
       showToast("success", "Production order deleted successfully");
     } catch (error) {
-      console.error("Failed to delete order:", error);
       showToast("error", "Failed to delete production order");
     } finally {
       setIsDeleting(false);

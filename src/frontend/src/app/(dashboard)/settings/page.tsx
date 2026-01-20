@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useApi } from "@/hooks";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const api = useApi();
   const [activeTab, setActiveTab] = useState("company");
   const [isSaving, setIsSaving] = useState(false);
   const [companySettings, setCompanySettings] = useState({
@@ -30,13 +32,8 @@ export default function SettingsPage() {
   const handleSaveChanges = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch('/api/v1/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(companySettings)
-      });
-      if (response.ok) {
+      const response = await api.put('/settings', companySettings);
+      if (response) {
         toast.success('Settings saved successfully');
       } else {
         toast.error('Failed to save settings');

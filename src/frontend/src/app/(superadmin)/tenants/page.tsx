@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -113,6 +114,7 @@ function HealthBadge({ status }: { status: string }) {
 
 export default function TenantsPage() {
   const { fetchWithAuth } = useAuth()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -226,7 +228,7 @@ export default function TenantsPage() {
       setTenants(mockTenants)
       setTotalPages(3)
     } catch (err) {
-      console.error('Failed to fetch tenants:', err)
+      toast.error('Failed to fetch tenants', 'Please try again')
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false)
@@ -264,11 +266,12 @@ export default function TenantsPage() {
         setSuspendReason('')
         setSelectedTenant(null)
         fetchTenants()
+        toast.success('Tenant suspended', 'Tenant has been suspended successfully')
       } else {
-        console.error('Failed to suspend tenant')
+        toast.error('Failed to suspend tenant', 'Please try again')
       }
     } catch (err) {
-      console.error('Failed to suspend tenant:', err)
+      toast.error('Failed to suspend tenant', 'Please try again')
     }
   }
 
@@ -280,11 +283,12 @@ export default function TenantsPage() {
       })
       if (res.ok) {
         fetchTenants()
+        toast.success('Tenant activated', 'Tenant has been activated successfully')
       } else {
-        console.error('Failed to activate tenant')
+        toast.error('Failed to activate tenant', 'Please try again')
       }
     } catch (err) {
-      console.error('Failed to activate tenant:', err)
+      toast.error('Failed to activate tenant', 'Please try again')
     }
   }
 

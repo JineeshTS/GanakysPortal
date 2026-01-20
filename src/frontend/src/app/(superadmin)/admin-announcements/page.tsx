@@ -255,7 +255,6 @@ export default function AnnouncementsPage() {
       setAnnouncementToDelete(null)
       showToast("success", "Announcement deleted successfully")
     } catch (error) {
-      console.error("Failed to delete announcement:", error)
       showToast("error", "Failed to delete announcement")
     } finally {
       setIsDeleting(false)

@@ -229,7 +229,6 @@ export default function InvoicesPage() {
       setDeleteDialogOpen(false)
       setInvoiceToDelete(null)
     } catch (error) {
-      console.error('Failed to delete invoice:', error)
       toast.error('Failed to delete invoice', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)
@@ -243,7 +242,6 @@ export default function InvoicesPage() {
       // Navigate to new invoice page with prefilled data from the copied invoice
       router.push(`/dashboard/invoices/new?copy_from=${invoice.id}`)
     } catch (error) {
-      console.error('Failed to copy invoice:', error)
       toast.error('Failed to copy invoice', 'Please try again')
     }
   }

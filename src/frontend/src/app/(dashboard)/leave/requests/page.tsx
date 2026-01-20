@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { formatDate, getFinancialYear } from '@/lib/format'
-import { useApi } from '@/hooks'
+import { useApi, useToast } from '@/hooks'
 import {
   Calendar,
   CheckCircle,
@@ -138,6 +138,7 @@ export default function LeaveRequestsPage() {
   const [isProcessing, setIsProcessing] = React.useState(false)
 
   const isManager = true // Mock - would come from auth context
+  const { showToast } = useToast()
   const requestsApi = useApi<LeaveRequestApiResponse>()
   const approveApi = useApi()
   const rejectApi = useApi()
@@ -174,7 +175,7 @@ export default function LeaveRequestsPage() {
           setRequests(mappedRequests)
         }
       } catch (error) {
-        console.error('Failed to fetch leave requests:', error)
+        showToast('error', 'Failed to fetch leave requests')
       } finally {
         setIsLoading(false)
       }
@@ -269,7 +270,7 @@ export default function LeaveRequestsPage() {
         setSelectedRequest(null)
       }
     } catch (error) {
-      console.error('Failed to approve leave request:', error)
+      showToast('error', 'Failed to approve leave request')
     } finally {
       setIsProcessing(false)
     }
@@ -301,7 +302,7 @@ export default function LeaveRequestsPage() {
         setRejectionReason('')
       }
     } catch (error) {
-      console.error('Failed to reject leave request:', error)
+      showToast('error', 'Failed to reject leave request')
     } finally {
       setIsProcessing(false)
     }

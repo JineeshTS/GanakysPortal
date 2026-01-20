@@ -384,7 +384,7 @@ export default function ComplianceAuditsPage() {
           setAudits(result.items);
         }
       } catch (error) {
-        console.error("Failed to fetch audits:", error);
+        showToast("error", "Failed to fetch audits");
       } finally {
         setIsLoading(false);
       }

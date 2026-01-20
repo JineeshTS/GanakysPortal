@@ -103,7 +103,6 @@ export default function AnalyticsPage() {
       setDashboardToDelete(null);
       showToast('success', 'Dashboard deleted successfully');
     } catch (error) {
-      console.error('Failed to delete dashboard:', error);
       showToast('error', 'Failed to delete dashboard');
     } finally {
       setIsDeletingDashboard(false);
@@ -125,7 +124,6 @@ export default function AnalyticsPage() {
       setReportToDelete(null);
       showToast('success', 'Report template deleted successfully');
     } catch (error) {
-      console.error('Failed to delete report template:', error);
       showToast('error', 'Failed to delete report template');
     } finally {
       setIsDeletingReport(false);

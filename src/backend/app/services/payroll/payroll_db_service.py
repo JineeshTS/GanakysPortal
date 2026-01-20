@@ -1,10 +1,13 @@
 """
 Payroll Database Service - Async database operations for payroll
 """
+import logging
 from decimal import Decimal
 from datetime import date, datetime
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy import select, func, and_, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -69,7 +72,7 @@ class PayrollDBService:
                 query = query.where(PayrollRun.status == status_enum)
                 count_query = count_query.where(PayrollRun.status == status_enum)
             except ValueError:
-                pass  # Invalid status, ignore filter
+                logger.warning(f"Invalid payroll status filter value: {status}")
 
         # Get total count
         total_result = await self.db.execute(count_query)

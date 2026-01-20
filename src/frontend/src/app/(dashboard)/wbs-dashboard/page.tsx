@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/hooks/use-toast'
 import { StatCard } from '@/components/layout/stat-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -192,6 +193,7 @@ export default function WBSDashboardPage() {
   const [dashboard, setDashboard] = useState<WBSDashboardSummary | null>(null)
   const [phases, setPhases] = useState<WBSPhase[]>([])
   const { fetchWithAuth } = useAuth()
+  const { toast } = useToast()
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -213,7 +215,7 @@ export default function WBSDashboardPage() {
         setPhases(phasesData)
       }
     } catch (err) {
-      console.error('Failed to fetch WBS data:', err)
+      toast.error('Failed to fetch WBS data', 'Please try again or contact support')
       setError('Failed to load WBS data. API may not be running.')
       // Use mock data
       setDashboard({

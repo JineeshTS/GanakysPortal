@@ -2,10 +2,13 @@
 Project Management API Endpoints - BE-032, BE-033
 Projects, tasks, milestones, and time tracking
 """
+import logging
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Optional, List
 from uuid import UUID, uuid4
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -286,7 +289,7 @@ async def list_projects(
         try:
             count_query = count_query.where(Project.status == ProjectStatus(status))
         except ValueError:
-            pass
+            logger.warning(f"Invalid project status filter value: {status}")
     if customer_id:
         count_query = count_query.where(Project.customer_id == customer_id)
     if project_manager_id:

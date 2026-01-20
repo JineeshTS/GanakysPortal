@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { useApi } from '@/hooks'
+import { useApi, useToast } from '@/hooks'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -116,6 +116,7 @@ export default function JournalEntriesPage() {
   const [searchQuery, setSearchQuery] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [isLoading, setIsLoading] = React.useState(false)
+  const { showToast } = useToast()
   const api = useApi()
 
   // Delete state
@@ -138,7 +139,7 @@ export default function JournalEntriesPage() {
       setDeleteDialogOpen(false)
       setEntryToDelete(null)
     } catch (error) {
-      console.error('Failed to delete journal entry:', error)
+      showToast('error', 'Failed to delete journal entry')
     } finally {
       setIsDeleting(false)
     }

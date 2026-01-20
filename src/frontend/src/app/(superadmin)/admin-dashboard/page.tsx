@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -209,6 +210,7 @@ function ActivityItem({
 }
 
 export default function SuperAdminDashboard() {
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [healthDistribution, setHealthDistribution] = useState<TenantHealthDistribution>({
@@ -255,7 +257,7 @@ export default function SuperAdminDashboard() {
         critical: 5,
       })
     } catch (err) {
-      console.error('Failed to fetch dashboard:', err)
+      toast.error('Failed to fetch dashboard', 'Please try again')
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false)

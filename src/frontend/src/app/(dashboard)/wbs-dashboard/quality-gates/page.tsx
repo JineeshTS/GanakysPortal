@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -198,6 +199,7 @@ export default function WBSQualityGatesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [gates, setGates] = useState<WBSQualityGate[]>([])
   const { fetchWithAuth } = useAuth()
+  const { toast } = useToast()
 
   const fetchGates = useCallback(async () => {
     setIsLoading(true)
@@ -209,7 +211,7 @@ export default function WBSQualityGatesPage() {
         setGates(data)
       }
     } catch (err) {
-      console.error('Failed to fetch quality gates:', err)
+      toast.error('Failed to fetch quality gates', 'Please try again or contact support')
     } finally {
       setIsLoading(false)
     }

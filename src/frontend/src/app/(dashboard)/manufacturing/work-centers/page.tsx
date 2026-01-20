@@ -257,7 +257,6 @@ export default function WorkCentersPage() {
       setItemToDelete(null);
       showToast('success', 'Work center deleted successfully');
     } catch (error) {
-      console.error('Failed to delete:', error);
       showToast('error', 'Failed to delete work center');
     } finally {
       setIsDeleting(false);
@@ -304,7 +303,6 @@ export default function WorkCentersPage() {
       resetForm();
       showToast('success', 'Work center added successfully');
     } catch (error) {
-      console.error('Failed to add work center:', error);
       showToast('error', 'Failed to add work center');
     }
   };
@@ -331,7 +329,6 @@ export default function WorkCentersPage() {
       resetForm();
       showToast('success', 'Work center updated successfully');
     } catch (error) {
-      console.error('Failed to update work center:', error);
       showToast('error', 'Failed to update work center');
     }
   };
@@ -345,7 +342,6 @@ export default function WorkCentersPage() {
       );
       showToast('success', `Work center status changed to ${newStatus}`);
     } catch (error) {
-      console.error('Failed to update status:', error);
       showToast('error', 'Failed to update work center status');
     }
   };

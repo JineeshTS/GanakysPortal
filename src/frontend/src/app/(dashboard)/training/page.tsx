@@ -111,7 +111,6 @@ export default function TrainingPage() {
       setCourseToDelete(null)
       showToast('success', 'Course deleted successfully')
     } catch (error) {
-      console.error('Failed to delete course:', error)
       showToast('error', 'Failed to delete course')
     } finally {
       setIsDeletingCourse(false)
@@ -133,7 +132,6 @@ export default function TrainingPage() {
       setCertToDelete(null)
       showToast('success', 'Certification deleted successfully')
     } catch (error) {
-      console.error('Failed to delete certification:', error)
       showToast('error', 'Failed to delete certification')
     } finally {
       setIsDeletingCert(false)

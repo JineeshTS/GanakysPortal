@@ -87,6 +87,7 @@ export default function MyPayslipsPage() {
   // API hooks
   const { data: payslipsData, isLoading: isLoadingPayslips, error: payslipsError, get: getPayslips } = useApi<PayslipListResponse>()
   const { data: ytdData, isLoading: isLoadingYtd, get: getYtd } = useApi<YTDSummary>()
+  const api = useApi()
 
   // Fetch payslips
   const fetchData = useCallback(() => {
@@ -113,11 +114,8 @@ export default function MyPayslipsPage() {
   // Download payslip PDF
   const handleDownloadPayslip = async (payslip: PayslipItem) => {
     try {
-      const response = await fetch(`/api/v1/payroll/payslips/${payslip.id}/pdf`, {
-        credentials: 'include'
-      })
-      if (response.ok) {
-        const blob = await response.blob()
+      const blob = await api.getBlob(`/payroll/payslips/${payslip.id}/pdf`)
+      if (blob) {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
@@ -135,11 +133,8 @@ export default function MyPayslipsPage() {
   // Download Form 16
   const handleDownloadForm16 = async () => {
     try {
-      const response = await fetch(`/api/v1/payroll/employee/${user?.employee_id}/form16`, {
-        credentials: 'include'
-      })
-      if (response.ok) {
-        const blob = await response.blob()
+      const blob = await api.getBlob(`/payroll/employee/${user?.employee_id}/form16`)
+      if (blob) {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
@@ -157,11 +152,8 @@ export default function MyPayslipsPage() {
   // Download Form 12BB
   const handleDownloadForm12BB = async () => {
     try {
-      const response = await fetch(`/api/v1/payroll/employee/${user?.employee_id}/form12bb`, {
-        credentials: 'include'
-      })
-      if (response.ok) {
-        const blob = await response.blob()
+      const blob = await api.getBlob(`/payroll/employee/${user?.employee_id}/form12bb`)
+      if (blob) {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
@@ -179,11 +171,8 @@ export default function MyPayslipsPage() {
   // Request Salary Certificate
   const handleRequestSalaryCertificate = async () => {
     try {
-      const response = await fetch(`/api/v1/payroll/employee/${user?.employee_id}/salary-certificate`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-      if (response.ok) {
+      const response = await api.post(`/payroll/employee/${user?.employee_id}/salary-certificate`, {})
+      if (response) {
         alert('Salary certificate request submitted. You will be notified when ready.')
       } else {
         alert('Failed to submit request')

@@ -462,7 +462,6 @@ export default function GoodsReceiptPage() {
       resetForm();
       showToast('success', 'Goods receipt created successfully');
     } catch (error) {
-      console.error('Failed to create GRN:', error);
       showToast('error', 'Failed to create goods receipt');
     } finally {
       setIsCreating(false);
@@ -481,7 +480,6 @@ export default function GoodsReceiptPage() {
       setSelectedGRN(null);
       showToast('success', 'Goods receipt deleted successfully');
     } catch (error) {
-      console.error('Failed to delete GRN:', error);
       showToast('error', 'Failed to delete goods receipt');
     } finally {
       setIsDeleting(false);

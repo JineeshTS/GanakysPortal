@@ -112,7 +112,6 @@ export default function SupplyChainPage() {
       setItemToDelete(null);
       showToast('success', `${itemToDelete.type.slice(0, -1)} deleted successfully`);
     } catch (error) {
-      console.error('Failed to delete:', error);
       showToast('error', 'Failed to delete');
     } finally {
       setIsDeleting(false);

@@ -336,7 +336,6 @@ export default function BOMPage() {
       setItemToDelete(null);
       showToast('success', 'BOM deleted successfully');
     } catch (error) {
-      console.error('Failed to delete:', error);
       showToast('error', 'Failed to delete BOM');
     } finally {
       setIsDeleting(false);
@@ -374,7 +373,6 @@ export default function BOMPage() {
       resetForm();
       showToast('success', 'BOM created successfully');
     } catch (error) {
-      console.error('Failed to create BOM:', error);
       showToast('error', 'Failed to create BOM');
     }
   };

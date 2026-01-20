@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -300,6 +301,7 @@ export default function WBSAgentsPage() {
   const [agents, setAgents] = useState<WBSAgentConfig[]>([])
   const [taskStats, setTaskStats] = useState<Record<string, AgentStats>>({})
   const { fetchWithAuth } = useAuth()
+  const { toast } = useToast()
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -333,7 +335,7 @@ export default function WBSAgentsPage() {
         setTaskStats(stats)
       }
     } catch (err) {
-      console.error('Failed to fetch agents:', err)
+      toast.error('Failed to fetch agents', 'Please try again or contact support')
     } finally {
       setIsLoading(false)
     }

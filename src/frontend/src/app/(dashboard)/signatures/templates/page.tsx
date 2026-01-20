@@ -275,7 +275,6 @@ export default function SignatureTemplatesPage() {
       setTemplateToDelete(null);
       showToast("success", "Template deleted successfully");
     } catch (error) {
-      console.error("Failed to delete template:", error);
       showToast("error", "Failed to delete template");
     } finally {
       setIsDeleting(false);

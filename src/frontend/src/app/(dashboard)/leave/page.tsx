@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatDate, getFinancialYear } from '@/lib/format'
-import { useApi } from '@/hooks'
+import { useApi, useToast } from '@/hooks'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -203,6 +203,7 @@ export default function LeavePage() {
   const [requestToCancel, setRequestToCancel] = React.useState<LeaveRequest | null>(null)
   const [isCancelling, setIsCancelling] = React.useState(false)
 
+  const { showToast } = useToast()
   const balanceApi = useApi<LeaveBalanceApiResponse>()
   const holidayApi = useApi<HolidayApiResponse>()
   const requestsApi = useApi<LeaveRequestsApiResponse>()
@@ -248,7 +249,7 @@ export default function LeavePage() {
           setRequests(requestsResult.items)
         }
       } catch (error) {
-        console.error('Failed to fetch leave data:', error)
+        showToast('error', 'Failed to fetch leave data')
       } finally {
         setIsLoading(false)
       }
@@ -275,7 +276,7 @@ export default function LeavePage() {
       setCancelDialogOpen(false)
       setRequestToCancel(null)
     } catch (error) {
-      console.error('Failed to cancel leave request:', error)
+      showToast('error', 'Failed to cancel leave request')
     } finally {
       setIsCancelling(false)
     }

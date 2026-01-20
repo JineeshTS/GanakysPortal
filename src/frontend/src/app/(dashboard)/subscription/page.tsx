@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from "@/hooks/use-auth"
+import { useToast } from '@/hooks/use-toast'
 import { StatCard } from '@/components/layout/stat-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -145,6 +146,7 @@ export default function SubscriptionDashboardPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const { fetchWithAuth } = useAuth()
+  const { toast } = useToast()
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -173,7 +175,7 @@ export default function SubscriptionDashboardPage() {
         setInvoices(data)
       }
     } catch (err) {
-      console.error('Failed to fetch subscription data:', err)
+      toast.error('Failed to fetch subscription data', 'Please try again or contact support')
       setError('Failed to load data. API may not be running.')
       // Mock data for demo
       setDashboard({

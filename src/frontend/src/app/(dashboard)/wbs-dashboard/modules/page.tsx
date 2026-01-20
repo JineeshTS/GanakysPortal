@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -145,6 +146,7 @@ export default function WBSModulesPage() {
   const [modules, setModules] = useState<WBSModule[]>([])
   const [sortBy, setSortBy] = useState<'priority' | 'name' | 'progress'>('priority')
   const { fetchWithAuth } = useAuth()
+  const { toast } = useToast()
 
   const fetchModules = useCallback(async () => {
     setIsLoading(true)
@@ -156,7 +158,7 @@ export default function WBSModulesPage() {
         setModules(data)
       }
     } catch (err) {
-      console.error('Failed to fetch modules:', err)
+      toast.error('Failed to fetch modules', 'Please try again or contact support')
     } finally {
       setIsLoading(false)
     }

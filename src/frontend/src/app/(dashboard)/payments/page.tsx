@@ -212,7 +212,6 @@ export default function PaymentsPage() {
       setDeleteDialogOpen(false)
       setPaymentToDelete(null)
     } catch (error) {
-      console.error('Failed to delete payment:', error)
       toast.error('Failed to delete payment', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)

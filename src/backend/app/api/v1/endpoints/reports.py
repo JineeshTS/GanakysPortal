@@ -2,9 +2,12 @@
 Reports API Endpoints - BE-050
 Comprehensive reporting endpoints for HR, Payroll, Compliance, and Financial reports
 """
+import logging
 from typing import List, Optional
 from datetime import date
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -118,8 +121,8 @@ async def get_dashboard_summary(
             {"company_id": str(company_id)}
         )
         pending_leave_requests = pending_result.scalar() or 0
-    except Exception:
-        pass  # Leave queries fail due to schema, use defaults
+    except Exception as e:
+        logger.debug(f"Leave request query failed (using defaults): {e}")
 
     # Receivables (total outstanding invoices)
     receivables = 0.0
@@ -145,8 +148,8 @@ async def get_dashboard_summary(
             )
         )
         overdue_invoices = overdue_result.scalar() or 0
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Receivables query failed (using defaults): {e}")
 
     # Payables (total outstanding bills)
     payables = 0.0
@@ -172,8 +175,8 @@ async def get_dashboard_summary(
             )
         )
         overdue_bills = overdue_bill_result.scalar() or 0
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Payables query failed (using defaults): {e}")
 
     return {
         "stats": {
@@ -1220,8 +1223,8 @@ async def create_report_schedule(
             next_run = next_run.replace(hour=hour, minute=minute, second=0, microsecond=0)
             if next_run <= datetime.utcnow():
                 next_run += timedelta(days=1)
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to parse run_time '{schedule.run_time}': {e}")
 
     new_schedule = ReportSchedule(
         id=uuid.uuid4(),

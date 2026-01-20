@@ -724,7 +724,6 @@ export default function TasksPage() {
       setDeleteDialogOpen(false)
       setTaskToDelete(null)
     } catch (error) {
-      console.error('Failed to delete task:', error)
       toast.error('Failed to delete task', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)

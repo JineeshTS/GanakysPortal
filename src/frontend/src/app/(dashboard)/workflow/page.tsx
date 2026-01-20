@@ -71,7 +71,6 @@ export default function WorkflowPage() {
       setWorkflowToDelete(null);
       showToast("success", "Workflow deleted successfully");
     } catch (error) {
-      console.error("Failed to delete workflow:", error);
       showToast("error", "Failed to delete workflow");
     } finally {
       setIsDeleting(false);

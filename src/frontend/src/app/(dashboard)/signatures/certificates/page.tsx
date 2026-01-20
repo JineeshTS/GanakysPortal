@@ -221,7 +221,6 @@ export default function CertificatesPage() {
       setCertToDelete(null);
       showToast("success", "Certificate deleted successfully");
     } catch (error) {
-      console.error("Failed to delete certificate:", error);
       showToast("error", "Failed to delete certificate");
     } finally {
       setIsDeleting(false);

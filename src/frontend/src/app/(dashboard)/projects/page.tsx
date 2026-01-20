@@ -609,7 +609,6 @@ export default function ProjectsPage() {
       setDeleteDialogOpen(false)
       setProjectToDelete(null)
     } catch (error) {
-      console.error('Failed to delete project:', error)
       toast.error('Failed to delete project', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)

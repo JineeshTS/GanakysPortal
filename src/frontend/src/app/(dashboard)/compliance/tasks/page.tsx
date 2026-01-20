@@ -259,7 +259,7 @@ export default function ComplianceTasksPage() {
           setTasks(result.items);
         }
       } catch (error) {
-        console.error("Failed to fetch compliance tasks:", error);
+        showToast("error", "Failed to fetch compliance tasks");
         // Keep using mock data on error
       } finally {
         setIsLoading(false);

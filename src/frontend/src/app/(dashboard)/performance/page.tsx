@@ -113,7 +113,6 @@ export default function PerformancePage() {
       setReviewToDelete(null)
       showToast('success', 'Review deleted successfully')
     } catch (error) {
-      console.error('Failed to delete review:', error)
       showToast('error', 'Failed to delete review')
     } finally {
       setIsDeletingReview(false)
@@ -135,7 +134,6 @@ export default function PerformancePage() {
       setGoalToDelete(null)
       showToast('success', 'Goal deleted successfully')
     } catch (error) {
-      console.error('Failed to delete goal:', error)
       showToast('error', 'Failed to delete goal')
     } finally {
       setIsDeletingGoal(false)

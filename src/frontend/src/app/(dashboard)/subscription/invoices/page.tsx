@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from "@/hooks/use-auth"
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -263,6 +264,8 @@ function InvoiceDetailDialog({
 }
 
 export default function InvoicesPage() {
+  const { fetchWithAuth } = useAuth()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -292,7 +295,7 @@ export default function InvoicesPage() {
         setInvoices(data)
       }
     } catch (err) {
-      console.error('Failed to fetch invoices:', err)
+      toast.error('Failed to fetch invoices', 'Please try again or contact support')
       setError('Failed to load invoices. Using demo data.')
       // Mock data
       setInvoices([

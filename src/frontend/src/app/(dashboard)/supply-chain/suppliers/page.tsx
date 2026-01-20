@@ -458,7 +458,6 @@ export default function SuppliersPage() {
       resetForm();
       showToast('success', 'Supplier created successfully');
     } catch (error) {
-      console.error('Failed to create supplier:', error);
       showToast('error', 'Failed to create supplier');
     } finally {
       setIsSubmitting(false);
@@ -510,7 +509,6 @@ export default function SuppliersPage() {
       resetForm();
       showToast('success', 'Supplier updated successfully');
     } catch (error) {
-      console.error('Failed to update supplier:', error);
       showToast('error', 'Failed to update supplier');
     } finally {
       setIsSubmitting(false);
@@ -529,7 +527,6 @@ export default function SuppliersPage() {
       setSelectedSupplier(null);
       showToast('success', 'Supplier deleted successfully');
     } catch (error) {
-      console.error('Failed to delete supplier:', error);
       showToast('error', 'Failed to delete supplier');
     } finally {
       setIsDeleting(false);

@@ -94,7 +94,6 @@ export default function ReportsPage() {
       setReportToDelete(null);
       showToast("success", "Report deleted successfully");
     } catch (error) {
-      console.error("Failed to delete report:", error);
       showToast("error", "Failed to delete report");
     } finally {
       setIsDeletingReport(false);
@@ -116,7 +115,6 @@ export default function ReportsPage() {
       setScheduleToDelete(null);
       showToast("success", "Schedule deleted successfully");
     } catch (error) {
-      console.error("Failed to delete schedule:", error);
       showToast("error", "Failed to delete schedule");
     } finally {
       setIsDeletingSchedule(false);

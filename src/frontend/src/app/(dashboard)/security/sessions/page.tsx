@@ -183,7 +183,6 @@ export default function SessionsPage() {
       setSelectedSession(null);
       showToast("success", "Session revoked successfully");
     } catch (error) {
-      console.error("Failed to revoke session:", error);
       showToast("error", "Failed to revoke session");
     } finally {
       setIsRevoking(false);
@@ -198,7 +197,6 @@ export default function SessionsPage() {
       setRevokeAllDialogOpen(false);
       showToast("success", "All other sessions revoked successfully");
     } catch (error) {
-      console.error("Failed to revoke all sessions:", error);
       showToast("error", "Failed to revoke all sessions");
     } finally {
       setIsRevokingAll(false);

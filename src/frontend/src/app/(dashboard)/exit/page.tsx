@@ -333,7 +333,6 @@ export default function ExitPage() {
       setExitCaseToDelete(null)
       showToast('success', 'Exit case deleted successfully')
     } catch (error) {
-      console.error('Failed to delete exit case:', error)
       showToast('error', 'Failed to delete exit case')
     } finally {
       setIsDeleting(false)

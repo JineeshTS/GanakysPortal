@@ -282,7 +282,6 @@ export default function OnboardingPage() {
       setSessionToDelete(null)
       showToast('success', 'Onboarding session deleted successfully')
     } catch (error) {
-      console.error('Failed to delete session:', error)
       showToast('error', 'Failed to delete onboarding session')
     } finally {
       setIsDeletingSession(false)
@@ -304,7 +303,6 @@ export default function OnboardingPage() {
       setTemplateToDelete(null)
       showToast('success', 'Template deleted successfully')
     } catch (error) {
-      console.error('Failed to delete template:', error)
       showToast('error', 'Failed to delete template')
     } finally {
       setIsDeletingTemplate(false)

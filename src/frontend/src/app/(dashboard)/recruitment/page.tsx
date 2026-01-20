@@ -351,7 +351,6 @@ export default function RecruitmentPage() {
       setJobToDelete(null)
       showToast('success', 'Job opening deleted successfully')
     } catch (error) {
-      console.error('Failed to delete job:', error)
       showToast('error', 'Failed to delete job opening')
     } finally {
       setIsDeletingJob(false)
@@ -373,7 +372,6 @@ export default function RecruitmentPage() {
       setCandidateToDelete(null)
       showToast('success', 'Candidate deleted successfully')
     } catch (error) {
-      console.error('Failed to delete candidate:', error)
       showToast('error', 'Failed to delete candidate')
     } finally {
       setIsDeletingCandidate(false)

@@ -125,6 +125,7 @@ export default function EmployeesPage() {
   const [error, setError] = React.useState<string | null>(null)
 
   const api = useApi<EmployeesListResponse>()
+  const importApi = useApi()
 
   // Fetch employees from API
   const fetchEmployees = React.useCallback(async () => {
@@ -302,7 +303,6 @@ export default function EmployeesPage() {
       setDeleteDialogOpen(false)
       setEmployeeToDelete(null)
     } catch (error) {
-      console.error('Failed to delete employee:', error)
       toast.error('Failed to delete employee', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)
@@ -389,8 +389,7 @@ export default function EmployeesPage() {
       `)
       printWindow.document.close()
     } catch (error) {
-      console.error('Failed to export PDF:', error)
-      alert('Failed to export PDF. Please try again.')
+      toast.error('Failed to export PDF', 'Please try again')
     }
   }
 
@@ -595,25 +594,22 @@ export default function EmployeesPage() {
               type="file"
               accept=".csv,.xlsx,.xls"
               className="hidden"
-              onChange={(e) => {
+              onChange={async (e) => {
                 const file = e.target.files?.[0]
                 if (file) {
                   const formData = new FormData()
                   formData.append('file', file)
-                  fetch('/api/v1/employees/import', {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'include'
-                  }).then(response => {
-                    if (response.ok) {
+                  try {
+                    const response = await importApi.postFormData('/employees/import', formData)
+                    if (response) {
                       alert('Employees imported successfully!')
                       fetchEmployees()
                     } else {
                       alert('Failed to import employees. Please check the file format.')
                     }
-                  }).catch(() => {
+                  } catch {
                     alert('Failed to import employees')
-                  })
+                  }
                   e.target.value = ''
                 }
               }}

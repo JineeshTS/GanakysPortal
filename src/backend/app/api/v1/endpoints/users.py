@@ -2,10 +2,13 @@
 User Management Endpoints
 CRUD operations for users with categories, types, and permissions
 """
+import logging
 from datetime import datetime, timedelta
 from typing import Annotated, List, Optional
 from uuid import UUID
 import secrets
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from pydantic import BaseModel, EmailStr, ConfigDict
@@ -202,7 +205,7 @@ async def list_users(
             cat_enum = UserCategory(category)
             query = query.where(User.category == cat_enum)
         except ValueError:
-            pass
+            logger.warning(f"Invalid user category filter value: {category}")
 
     # Filter by user_type
     if user_type:
@@ -210,7 +213,7 @@ async def list_users(
             type_enum = UserType(user_type)
             query = query.where(User.user_type == type_enum)
         except ValueError:
-            pass
+            logger.warning(f"Invalid user type filter value: {user_type}")
 
     # Filter by active status
     if is_active is not None:
@@ -747,7 +750,7 @@ async def list_permission_templates(
             cat_enum = UserCategory(category)
             query = query.where(PermissionTemplate.category == cat_enum)
         except ValueError:
-            pass
+            logger.warning(f"Invalid user category filter value for permission templates: {category}")
 
     result = await db.execute(query)
     templates = result.scalars().all()
@@ -893,7 +896,7 @@ async def apply_permission_template(
             try:
                 data_scope = DataScope(perms["data_scope"])
             except ValueError:
-                pass
+                logger.warning(f"Invalid data scope value in permission template: {perms['data_scope']}, defaulting to OWN")
 
         new_perm = UserModulePermission(
             user_id=user_id,

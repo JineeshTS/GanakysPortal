@@ -322,7 +322,6 @@ export default function WorkOrdersPage() {
       setItemToDelete(null);
       showToast('success', 'Work order deleted successfully');
     } catch (error) {
-      console.error('Failed to delete:', error);
       showToast('error', 'Failed to delete work order');
     } finally {
       setIsDeleting(false);
@@ -353,7 +352,6 @@ export default function WorkOrdersPage() {
       setSelectedWorkOrder(null);
       showToast('success', 'Operators assigned successfully');
     } catch (error) {
-      console.error('Failed to assign operators:', error);
       showToast('error', 'Failed to assign operators');
     }
   };
@@ -373,7 +371,6 @@ export default function WorkOrdersPage() {
       );
       showToast('success', `Work order status changed to ${newStatus.replace('_', ' ')}`);
     } catch (error) {
-      console.error('Failed to update status:', error);
       showToast('error', 'Failed to update work order status');
     }
   };

@@ -242,7 +242,6 @@ export default function BankingPage() {
       setDeleteDialogOpen(false)
       setAccountToDelete(null)
     } catch (error) {
-      console.error('Failed to delete bank account:', error)
       toast.error('Failed to delete bank account', 'Please try again or contact support')
     } finally {
       setIsDeleting(false)
@@ -275,7 +274,6 @@ export default function BankingPage() {
       getTransactions(`/banking/accounts/${selectedAccount.id}/transactions`)
       setReconcileDialogOpen(false)
     } catch (error) {
-      console.error('Failed to reconcile:', error)
       toast.error('Failed to reconcile transactions', 'Please try again or contact support')
     } finally {
       setIsReconciling(false)

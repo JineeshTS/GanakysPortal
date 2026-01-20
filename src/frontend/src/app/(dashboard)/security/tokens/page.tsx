@@ -191,7 +191,6 @@ export default function APITokensPage() {
       setTokenToDelete(null);
       showToast("success", "Token deleted successfully");
     } catch (error) {
-      console.error("Failed to delete token:", error);
       showToast("error", "Failed to delete token");
     } finally {
       setIsDeleting(false);
@@ -212,7 +211,6 @@ export default function APITokensPage() {
       setSelectedToken(null);
       showToast("success", "Token revoked successfully");
     } catch (error) {
-      console.error("Failed to revoke token:", error);
       showToast("error", "Failed to revoke token");
     } finally {
       setIsRevoking(false);

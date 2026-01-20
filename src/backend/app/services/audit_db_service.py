@@ -1,9 +1,12 @@
 """
 Audit Database Service - Async database operations for audit logging
 """
+import logging
 from datetime import datetime, date
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy import select, func, and_, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -68,7 +71,7 @@ class AuditDBService:
                 query = query.where(AuditLog.entity_id == entity_uuid)
                 count_query = count_query.where(AuditLog.entity_id == entity_uuid)
             except ValueError:
-                pass  # Invalid UUID, skip filter
+                logger.warning(f"Invalid entity UUID filter value: {entity_id}")
 
         if user_id:
             try:
@@ -76,7 +79,7 @@ class AuditDBService:
                 query = query.where(AuditLog.user_id == user_uuid)
                 count_query = count_query.where(AuditLog.user_id == user_uuid)
             except ValueError:
-                pass
+                logger.warning(f"Invalid user UUID filter value: {user_id}")
 
         if start_date:
             start_datetime = datetime.combine(start_date, datetime.min.time())

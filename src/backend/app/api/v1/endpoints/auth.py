@@ -136,8 +136,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
                 100000
             )
             return new_hash.hex() == hash_value
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Legacy password verification failed: {e}")
 
     return False
 
@@ -284,8 +284,8 @@ async def log_audit(
         # Try to rollback to avoid leaving transaction in bad state
         try:
             await db.rollback()
-        except Exception:
-            pass
+        except Exception as rollback_error:
+            logger.error(f"Failed to rollback after audit log failure: {rollback_error}")
         return False
 
 
@@ -795,8 +795,8 @@ async def reset_password(
     # Delete used token
     try:
         await r.delete(f"password_reset:{reset_data.token}")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to delete used password reset token from Redis: {e}")
 
     # Log password reset
     await log_audit(db, str(user.id), "password_reset_completed", "user",

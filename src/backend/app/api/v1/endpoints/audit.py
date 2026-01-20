@@ -2,9 +2,12 @@
 QA-005: Audit API Endpoints
 API endpoints for audit log access and compliance reporting
 """
+import logging
 from typing import Optional, List
 from datetime import datetime, date
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -425,7 +428,7 @@ async def get_security_events(
             query = query.where(SecurityAuditLog.severity == sev_enum)
             count_query = count_query.where(SecurityAuditLog.severity == sev_enum)
         except ValueError:
-            pass  # Invalid severity, skip filter
+            logger.warning(f"Invalid security severity filter value: {severity}")
 
     # Get total count
     count_result = await db.execute(count_query)

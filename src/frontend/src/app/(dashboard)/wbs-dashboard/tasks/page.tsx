@@ -403,7 +403,6 @@ export default function WBSTasksPage() {
         toast.error('Load Failed', error.detail || 'Failed to load tasks')
       }
     } catch (err) {
-      console.error('Failed to fetch tasks:', err)
       const message = err instanceof Error ? err.message : 'Failed to load tasks'
       toast.error('Load Failed', message)
     } finally {
@@ -426,7 +425,6 @@ export default function WBSTasksPage() {
         toast.error('Start Failed', error.detail || 'Failed to start task')
       }
     } catch (err) {
-      console.error('Failed to start task:', err)
       const message = err instanceof Error ? err.message : 'Failed to start task'
       toast.error('Start Failed', message)
     }
@@ -443,7 +441,6 @@ export default function WBSTasksPage() {
         toast.error('Complete Failed', error.detail || 'Failed to complete task')
       }
     } catch (err) {
-      console.error('Failed to complete task:', err)
       const message = err instanceof Error ? err.message : 'Failed to complete task'
       toast.error('Complete Failed', message)
     }
@@ -464,7 +461,6 @@ export default function WBSTasksPage() {
         toast.error('Update Failed', err.detail || 'Failed to update task status')
       }
     } catch (err) {
-      console.error('Failed to mark task as failed:', err)
       const message = err instanceof Error ? err.message : 'Failed to mark task as failed'
       toast.error('Update Failed', message)
     }

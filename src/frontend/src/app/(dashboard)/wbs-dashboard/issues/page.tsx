@@ -171,7 +171,6 @@ function CreateIssueDialog({ onCreated }: { onCreated: () => void }) {
       })
       onCreated()
     } catch (err) {
-      console.error('Failed to create issue:', err)
       const message = err instanceof Error ? err.message : 'Failed to create issue'
       toast.error('Create Failed', message)
     } finally {
@@ -329,7 +328,6 @@ export default function IssuesPage() {
       const issuesData = await api.get<WBSIssue[]>(`/wbs/issues?${params.toString()}`)
       setIssues(issuesData)
     } catch (err) {
-      console.error('Failed to fetch issues:', err)
       const message = err instanceof Error ? err.message : 'Failed to load issues'
       toast.error('Load Failed', message)
     } finally {
@@ -370,7 +368,6 @@ export default function IssuesPage() {
           ? { ...issue, status: previousStatus }
           : issue
       ))
-      console.error('Failed to update issue:', err)
       const message = err instanceof Error ? err.message : 'Failed to update issue status'
       toast.error('Update Failed', message)
     } finally {

@@ -455,11 +455,8 @@ export default function ContractsPage() {
   // Download contract document
   const handleDownloadDocument = async (contract: Contract) => {
     try {
-      const response = await fetch(`/api/v1/legal/contracts/${contract.id}/document`, {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const blob = await response.blob();
+      const blob = await api.getBlob(`/legal/contracts/${contract.id}/document`);
+      if (blob) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

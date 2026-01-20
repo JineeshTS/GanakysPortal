@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from "@/hooks/use-auth"
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -174,6 +175,7 @@ function DailyUsageChart({ data, label }: { data: DailyUsage[]; label: string })
 
 export default function UsagePage() {
   const { fetchWithAuth } = useAuth()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [usageSummary, setUsageSummary] = useState<UsageSummary | null>(null)
@@ -297,7 +299,7 @@ export default function UsagePage() {
       setDailyApiUsage(apiData)
       setDailyAiUsage(aiData)
     } catch (err) {
-      console.error('Failed to fetch usage:', err)
+      toast.error('Failed to fetch usage', 'Please try again or contact support')
       setError('Failed to load usage data.')
     } finally {
       setIsLoading(false)

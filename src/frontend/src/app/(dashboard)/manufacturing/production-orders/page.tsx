@@ -303,7 +303,6 @@ export default function ProductionOrdersPage() {
       setItemToDelete(null);
       showToast('success', 'Production order deleted successfully');
     } catch (error) {
-      console.error('Failed to delete:', error);
       showToast('error', 'Failed to delete production order');
     } finally {
       setIsDeleting(false);
@@ -345,7 +344,6 @@ export default function ProductionOrdersPage() {
       resetForm();
       showToast('success', 'Production order created successfully');
     } catch (error) {
-      console.error('Failed to create order:', error);
       showToast('error', 'Failed to create production order');
     }
   };
@@ -365,7 +363,6 @@ export default function ProductionOrdersPage() {
       );
       showToast('success', `Order status changed to ${newStatus.replace('_', ' ')}`);
     } catch (error) {
-      console.error('Failed to update status:', error);
       showToast('error', 'Failed to update order status');
     }
   };

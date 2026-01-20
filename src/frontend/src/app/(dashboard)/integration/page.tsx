@@ -133,7 +133,6 @@ export default function IntegrationPage() {
       setItemToDelete(null);
       showToast("success", `${itemToDelete.type === "connector" ? "Connector" : "Webhook"} deleted successfully`);
     } catch (error) {
-      console.error("Failed to delete:", error);
       showToast("error", `Failed to delete ${itemToDelete.type}`);
     } finally {
       setIsDeleting(false);

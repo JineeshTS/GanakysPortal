@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -148,6 +149,7 @@ export default function WBSPhasesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [phases, setPhases] = useState<WBSPhase[]>([])
   const { fetchWithAuth } = useAuth()
+  const { toast } = useToast()
 
   const fetchPhases = useCallback(async () => {
     setIsLoading(true)
@@ -159,7 +161,7 @@ export default function WBSPhasesPage() {
         setPhases(data)
       }
     } catch (err) {
-      console.error('Failed to fetch phases:', err)
+      toast.error('Failed to fetch phases', 'Please try again or contact support')
     } finally {
       setIsLoading(false)
     }

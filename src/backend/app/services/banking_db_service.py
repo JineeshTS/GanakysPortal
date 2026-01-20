@@ -1,10 +1,13 @@
 """
 Banking Database Service - Async database operations for banking
 """
+import logging
 from decimal import Decimal
 from datetime import date, datetime
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy import select, func, and_, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -86,7 +89,7 @@ class BankingDBService:
                 query = query.where(CompanyBankAccount.account_type == acc_type)
                 count_query = count_query.where(CompanyBankAccount.account_type == acc_type)
             except ValueError:
-                pass
+                logger.warning(f"Invalid bank account type filter value: {account_type}")
 
         if search:
             search_filter = or_(
@@ -334,7 +337,7 @@ class BankingDBService:
                 query = query.where(BankTransaction.transaction_type == txn_type)
                 count_query = count_query.where(BankTransaction.transaction_type == txn_type)
             except ValueError:
-                pass
+                logger.warning(f"Invalid transaction type filter value: {transaction_type}")
 
         if is_reconciled is not None:
             query = query.where(BankTransaction.is_reconciled == is_reconciled)
@@ -486,7 +489,7 @@ class BankingDBService:
                 query = query.where(PaymentBatch.batch_type == bt)
                 count_query = count_query.where(PaymentBatch.batch_type == bt)
             except ValueError:
-                pass
+                logger.warning(f"Invalid payment batch type filter value: {batch_type}")
 
         if status:
             try:
@@ -494,7 +497,7 @@ class BankingDBService:
                 query = query.where(PaymentBatch.status == st)
                 count_query = count_query.where(PaymentBatch.status == st)
             except ValueError:
-                pass
+                logger.warning(f"Invalid payment batch status filter value: {status}")
 
         if from_date:
             query = query.where(PaymentBatch.batch_date >= from_date)
@@ -712,7 +715,7 @@ class BankingDBService:
                     )
                 )
             except ValueError:
-                pass
+                logger.warning(f"Invalid period format for reconciliation query: {period}")
 
         query = query.order_by(desc(BankReconciliation.statement_date))
         result = await self.db.execute(query)

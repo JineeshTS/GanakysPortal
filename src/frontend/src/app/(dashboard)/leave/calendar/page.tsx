@@ -24,7 +24,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { formatDate, getFinancialYear, getMonthName } from '@/lib/format'
-import { useApi } from '@/hooks'
+import { useApi, useToast } from '@/hooks'
 import {
   Plus,
   Download,
@@ -121,6 +121,7 @@ export default function LeaveCalendarPage() {
   const [teamMembers, setTeamMembers] = React.useState<{id: string, name: string}[]>([])
 
   const isManager = true // Mock - would come from auth context
+  const { showToast } = useToast()
   const requestsApi = useApi<LeaveRequestApiResponse>()
   const holidaysApi = useApi()
 
@@ -175,7 +176,7 @@ export default function LeaveCalendarPage() {
           setHolidays(mappedHolidays)
         }
       } catch (error) {
-        console.error('Failed to fetch calendar data:', error)
+        showToast('error', 'Failed to fetch calendar data')
       } finally {
         setIsLoading(false)
       }

@@ -278,7 +278,6 @@ export default function SignatureRequestsPage() {
       setRequestToDelete(null);
       showToast("success", "Signature request deleted successfully");
     } catch (error) {
-      console.error("Failed to delete signature request:", error);
       showToast("error", "Failed to delete signature request");
     } finally {
       setIsDeleting(false);

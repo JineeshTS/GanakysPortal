@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAuth } from "@/hooks/use-auth"
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -240,6 +241,7 @@ function PlanCard({
 export default function SubscriptionPlansPage() {
   const router = useRouter()
   const { fetchWithAuth } = useAuth()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
@@ -256,7 +258,7 @@ export default function SubscriptionPlansPage() {
         setPlans(data)
       }
     } catch (err) {
-      console.error('Failed to fetch plans:', err)
+      toast.error('Failed to fetch plans', 'Please try again or contact support')
       setError('Failed to load plans. Using demo data.')
       // Mock data
       setPlans([

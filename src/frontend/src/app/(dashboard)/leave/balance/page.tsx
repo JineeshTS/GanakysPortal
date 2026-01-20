@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { formatDate, getFinancialYear } from '@/lib/format'
-import { useApi } from '@/hooks'
+import { useApi, useToast } from '@/hooks'
 import {
   Calendar,
   Sun,
@@ -54,6 +54,7 @@ const leaveTypeColors: Record<string, string> = {
 export default function LeaveBalancePage() {
   const [balances, setBalances] = React.useState<LeaveBalance[]>(mockLeaveBalances)
   const [isLoading, setIsLoading] = React.useState(true)
+  const { showToast } = useToast()
   const api = useApi()
 
   React.useEffect(() => {
@@ -77,7 +78,7 @@ export default function LeaveBalancePage() {
           setBalances(mappedBalances.length > 0 ? mappedBalances : mockLeaveBalances)
         }
       } catch (error) {
-        console.error('Failed to fetch leave balances:', error)
+        showToast('error', 'Failed to fetch leave balances')
       } finally {
         setIsLoading(false)
       }

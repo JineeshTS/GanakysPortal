@@ -2,10 +2,13 @@
 Bills/Purchase Invoice API Endpoints - BE-025, BE-026
 Vendor bills with TDS compliance for India
 """
+import logging
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Optional, List
 from uuid import UUID, uuid4
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -310,7 +313,7 @@ async def list_bills(
             query = query.where(Bill.status == status_enum)
             count_query = count_query.where(Bill.status == status_enum)
         except ValueError:
-            pass  # Invalid status, skip filter
+            logger.warning(f"Invalid bill status filter value: {status}")
 
     if vendor_id:
         query = query.where(Bill.vendor_id == vendor_id)
