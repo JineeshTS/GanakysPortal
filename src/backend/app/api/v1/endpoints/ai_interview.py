@@ -18,10 +18,14 @@ from app.core.config import settings
 
 router = APIRouter()
 
-# Initialize services
-ai_service = AIInterviewService()
+# Services are initialized per-request with db session
 video_service = VideoService()
 transcription_service = TranscriptionService()
+
+
+def get_ai_service(db: AsyncSession = Depends(get_db)) -> AIInterviewService:
+    """Dependency to get AI interview service with db session."""
+    return AIInterviewService(db)
 
 
 # ============================================================================
@@ -95,7 +99,8 @@ async def start_interview_session(
     request: StartInterviewRequest,
     background_tasks: BackgroundTasks,
     candidate: dict = Depends(get_current_candidate),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    ai_service: AIInterviewService = Depends(get_ai_service)
 ):
     """Start an AI interview session for an application."""
     candidate_id = candidate.get("candidate_id")
@@ -751,6 +756,7 @@ async def evaluate_response_background(
 
     async with async_session() as db:
         try:
+            ai_service = AIInterviewService(db)
             evaluation = await ai_service.evaluate_response(
                 question=question_text,
                 response=response_text,
@@ -828,6 +834,7 @@ async def evaluate_session_background(session_id: UUID, db_url: str):
             ]
 
             # Get session evaluation
+            ai_service = AIInterviewService(db)
             evaluation = await ai_service.evaluate_session(
                 job_title=job.title if job else "Unknown Position",
                 job_description=job.description if job else "",

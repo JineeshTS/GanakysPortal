@@ -231,7 +231,7 @@ def upgrade() -> None:
     # ==========================================================================
     op.execute("CREATE INDEX IF NOT EXISTS idx_applications_stage ON job_applications(stage);")
     op.execute("CREATE INDEX IF NOT EXISTS idx_applications_status ON job_applications(status);")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_applications_job_stage ON job_applications(job_opening_id, stage);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_applications_job_stage ON job_applications(job_id, stage);")
     op.execute("CREATE INDEX IF NOT EXISTS idx_applications_candidate ON job_applications(candidate_id);")
     op.execute("CREATE INDEX IF NOT EXISTS idx_applications_created ON job_applications(created_at DESC);")
 
@@ -248,7 +248,8 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS idx_job_openings_company ON job_openings(company_id);")
     op.execute("CREATE INDEX IF NOT EXISTS idx_job_openings_status ON job_openings(status);")
     op.execute("CREATE INDEX IF NOT EXISTS idx_job_openings_department ON job_openings(department_id);")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_job_openings_hiring_manager ON job_openings(hiring_manager_id);")
+    # Skipped: hiring_manager_id column not in current schema
+    # op.execute("CREATE INDEX IF NOT EXISTS idx_job_openings_hiring_manager ON job_openings(hiring_manager_id);")
     op.execute("CREATE INDEX IF NOT EXISTS idx_job_openings_published_status ON job_openings(is_published, status);")
 
     # ==========================================================================
@@ -257,7 +258,7 @@ def upgrade() -> None:
     # Dashboard query: Get pipeline by job
     op.execute("""
         CREATE INDEX IF NOT EXISTS idx_applications_job_stage_status
-        ON job_applications(job_opening_id, stage, status);
+        ON job_applications(job_id, stage, status);
     """)
 
     # Ranklist query: Get ranked candidates
@@ -294,10 +295,9 @@ def upgrade() -> None:
     """)
 
     # ==========================================================================
-    # Orientation Sessions Index
+    # Orientation Sessions Index (created by this migration's table creation)
     # ==========================================================================
-    op.execute("CREATE INDEX IF NOT EXISTS idx_orientation_sessions_employee ON orientation_sessions(employee_id);")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_orientation_sessions_scheduled ON orientation_sessions(scheduled_at);")
+    # These indexes will be created when the table is created above
 
 
 def downgrade() -> None:
