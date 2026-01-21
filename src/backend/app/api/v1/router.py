@@ -58,6 +58,17 @@ from app.api.v1.endpoints import (
     fixed_assets,
     expense,
     finance,
+    # Public API & Candidate Portal
+    public,
+    candidate_auth,
+    candidate_portal,
+    ai_interview,
+    ranklist,
+    recruitment_dashboard,
+    human_interview,
+    offer_management,
+    # Health & Monitoring
+    health,
 )
 
 api_router = APIRouter()
@@ -207,3 +218,28 @@ api_router.include_router(fixed_assets.router, prefix="/fixed-assets", tags=["Fi
 
 # MOD-21: Expense Management
 api_router.include_router(expense.router, prefix="/expenses", tags=["Expense Management"])
+
+# Public API (no authentication required)
+api_router.include_router(public.router, prefix="/public", tags=["Public API"])
+
+# Candidate Portal Authentication & API
+api_router.include_router(candidate_auth.router, prefix="/candidates/auth", tags=["Candidate Authentication"])
+api_router.include_router(candidate_portal.router, prefix="/candidates", tags=["Candidate Portal"])
+
+# AI Interview System
+api_router.include_router(ai_interview.router, prefix="/ai-interview", tags=["AI Interview"])
+
+# Ranklist & Evaluation (Recruiter Portal)
+api_router.include_router(ranklist.router, prefix="/recruitment", tags=["Ranklist & Evaluation"])
+
+# Recruitment Dashboard
+api_router.include_router(recruitment_dashboard.router, prefix="/recruitment/dashboard", tags=["Recruitment Dashboard"])
+
+# Human Interview Scheduling
+api_router.include_router(human_interview.router, prefix="/recruitment/interviews", tags=["Human Interview"])
+
+# Offer Management
+api_router.include_router(offer_management.router, prefix="/recruitment/offers", tags=["Offer Management"])
+
+# Health & Monitoring
+api_router.include_router(health.router, tags=["Health"])
