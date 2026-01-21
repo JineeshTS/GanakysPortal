@@ -113,9 +113,9 @@ async def start_interview_session(
     # Verify application belongs to candidate and is eligible for AI interview
     result = await db.execute(
         text("""
-            SELECT a.id, a.job_opening_id, a.status, j.title, j.description, j.skills_required
-            FROM applications a
-            JOIN job_openings j ON a.job_opening_id = j.id
+            SELECT a.id, a.job_id, a.status, j.title, j.description, j.skills_required
+            FROM job_applications a
+            JOIN job_openings j ON a.job_id = j.id
             WHERE a.id = :app_id AND a.candidate_id = :candidate_id
         """).bindparams(app_id=request.application_id, candidate_id=UUID(candidate_id))
     )
@@ -152,10 +152,13 @@ async def start_interview_session(
         "skills": application.skills_required or ""
     }
 
+    # Import SessionType enum
+    from app.services.recruitment.ai_interview_service import SessionType
+
     questions = await ai_service.generate_questions(
-        job_title=job_context["title"],
-        job_description=job_context["description"],
-        skills_required=job_context["skills"],
+        job_id=application.job_id,
+        candidate_id=UUID(candidate_id),
+        session_type=SessionType.SCREENING,
         num_questions=8  # Standard interview length
     )
 
@@ -815,8 +818,8 @@ async def evaluate_session_background(session_id: UUID, db_url: str):
                 text("""
                     SELECT j.title, j.description, j.skills_required
                     FROM ai_interview_sessions s
-                    JOIN applications a ON s.application_id = a.id
-                    JOIN job_openings j ON a.job_opening_id = j.id
+                    JOIN job_applications a ON s.application_id = a.id
+                    JOIN job_openings j ON a.job_id = j.id
                     WHERE s.id = :session_id
                 """).bindparams(session_id=session_id)
             )

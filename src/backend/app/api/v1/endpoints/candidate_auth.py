@@ -182,7 +182,9 @@ def select_candidate_user_by_id(user_id: UUID):
     """Build select query for candidate user by ID."""
     from sqlalchemy import text
     return text("""
-        SELECT id, email, password_hash, email_verified, is_active, candidate_id
+        SELECT candidate_users.id, candidate_users.email, candidate_users.password_hash,
+               candidate_users.email_verified, candidate_users.is_active,
+               candidate_profiles.candidate_id
         FROM candidate_users
         LEFT JOIN candidate_profiles ON candidate_users.id = candidate_profiles.user_id
         WHERE candidate_users.id = :user_id
