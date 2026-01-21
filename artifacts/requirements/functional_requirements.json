@@ -1,0 +1,343 @@
+{
+  "metadata": {
+    "agent_id": "REQ-004",
+    "agent_name": "Functional Requirements Extractor",
+    "source_file": "/var/ganaportal/artifacts/requirements/parsed_requirements.json",
+    "created_at": "2026-01-08T10:17:00Z",
+    "version": "1.0"
+  },
+  "modules": [
+    {
+      "id": 1,
+      "name": "Infrastructure & DevOps",
+      "functional_requirements": [
+        {"id": "FR-001-001", "description": "System shall be deployed on Hostinger VPS with 4GB RAM", "priority": "P0"},
+        {"id": "FR-001-002", "description": "System shall use Docker containers for service isolation", "priority": "P0"},
+        {"id": "FR-001-003", "description": "System shall implement CI/CD pipeline for automated deployments", "priority": "P1"},
+        {"id": "FR-001-004", "description": "System shall perform daily automated backups of database and files", "priority": "P0"},
+        {"id": "FR-001-005", "description": "System shall provide health monitoring endpoints", "priority": "P1"},
+        {"id": "FR-001-006", "description": "System shall use HTTPS with valid SSL certificate", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Authentication & Users",
+      "functional_requirements": [
+        {"id": "FR-002-001", "description": "System shall authenticate users via JWT tokens", "priority": "P0"},
+        {"id": "FR-002-002", "description": "System shall support 5 user roles: ADMIN, HR_MANAGER, ACCOUNTANT, EMPLOYEE, EXTERNAL_CA", "priority": "P0"},
+        {"id": "FR-002-003", "description": "System shall enforce role-based access control on all endpoints", "priority": "P0"},
+        {"id": "FR-002-004", "description": "System shall support password reset via email", "priority": "P0"},
+        {"id": "FR-002-005", "description": "System shall lock accounts after 5 failed login attempts", "priority": "P1"},
+        {"id": "FR-002-006", "description": "System shall log all authentication events for audit", "priority": "P0"},
+        {"id": "FR-002-007", "description": "System shall expire JWT tokens after 24 hours", "priority": "P1"},
+        {"id": "FR-002-008", "description": "System shall hash passwords using bcrypt with salt", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Employee Management (HRMS)",
+      "functional_requirements": [
+        {"id": "FR-003-001", "description": "System shall store employee personal information including name, DOB, gender, contact details", "priority": "P0"},
+        {"id": "FR-003-002", "description": "System shall maintain employee work history with designations and departments", "priority": "P0"},
+        {"id": "FR-003-003", "description": "System shall store employee statutory IDs (PAN, Aadhaar, UAN, ESI number)", "priority": "P0"},
+        {"id": "FR-003-004", "description": "System shall manage employee bank account details for salary credits", "priority": "P0"},
+        {"id": "FR-003-005", "description": "System shall track employee status (Active, Resigned, Terminated)", "priority": "P0"},
+        {"id": "FR-003-006", "description": "System shall maintain emergency contact information", "priority": "P1"},
+        {"id": "FR-003-007", "description": "System shall allow employees to update their own non-sensitive information", "priority": "P1"},
+        {"id": "FR-003-008", "description": "System shall generate employee ID automatically in format EMP-YYYY-XXXX", "priority": "P1"},
+        {"id": "FR-003-009", "description": "System shall maintain complete employment timeline with join date and exit date", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Enterprise Document Management (EDMS)",
+      "functional_requirements": [
+        {"id": "FR-004-001", "description": "System shall store documents with categorization (Personal, HR, Finance, Legal)", "priority": "P0"},
+        {"id": "FR-004-002", "description": "System shall support document versioning with history", "priority": "P1"},
+        {"id": "FR-004-003", "description": "System shall allow document tagging for easy retrieval", "priority": "P1"},
+        {"id": "FR-004-004", "description": "System shall support PDF, Excel, Word, and image file formats", "priority": "P0"},
+        {"id": "FR-004-005", "description": "System shall enforce document access control based on user role", "priority": "P0"},
+        {"id": "FR-004-006", "description": "System shall track document expiry dates and send reminders", "priority": "P1"},
+        {"id": "FR-004-007", "description": "System shall provide full-text search within documents", "priority": "P2"},
+        {"id": "FR-004-008", "description": "System shall generate document previews for quick viewing", "priority": "P2"}
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Employee Onboarding",
+      "functional_requirements": [
+        {"id": "FR-005-001", "description": "System shall create onboarding workflow with configurable task checklist", "priority": "P0"},
+        {"id": "FR-005-002", "description": "System shall assign tasks to specific users (HR, Manager, Employee)", "priority": "P0"},
+        {"id": "FR-005-003", "description": "System shall track task completion status and due dates", "priority": "P0"},
+        {"id": "FR-005-004", "description": "System shall send reminder notifications for pending tasks", "priority": "P1"},
+        {"id": "FR-005-005", "description": "System shall mark onboarding complete when all mandatory tasks done", "priority": "P0"},
+        {"id": "FR-005-006", "description": "System shall support document collection as part of onboarding", "priority": "P1"}
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Leave Management",
+      "functional_requirements": [
+        {"id": "FR-006-001", "description": "System shall support multiple leave types (Earned, Sick, Casual, LOP)", "priority": "P0"},
+        {"id": "FR-006-002", "description": "System shall configure leave policies with accrual rules", "priority": "P0"},
+        {"id": "FR-006-003", "description": "System shall calculate leave balances automatically", "priority": "P0"},
+        {"id": "FR-006-004", "description": "System shall support leave application workflow with approvals", "priority": "P0"},
+        {"id": "FR-006-005", "description": "System shall prevent leave application exceeding balance", "priority": "P0"},
+        {"id": "FR-006-006", "description": "System shall support half-day leave applications", "priority": "P1"},
+        {"id": "FR-006-007", "description": "System shall maintain leave history for reporting", "priority": "P0"},
+        {"id": "FR-006-008", "description": "System shall integrate leave data with payroll for LOP deductions", "priority": "P0"},
+        {"id": "FR-006-009", "description": "System shall display company holiday calendar", "priority": "P1"},
+        {"id": "FR-006-010", "description": "System shall send notifications for leave approval/rejection", "priority": "P1"}
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Timesheet Management",
+      "functional_requirements": [
+        {"id": "FR-007-001", "description": "System shall allow employees to log time against projects and tasks", "priority": "P0"},
+        {"id": "FR-007-002", "description": "System shall support weekly timesheet submission", "priority": "P0"},
+        {"id": "FR-007-003", "description": "System shall require manager approval for timesheets", "priority": "P0"},
+        {"id": "FR-007-004", "description": "System shall validate minimum 8 hours per working day", "priority": "P1"},
+        {"id": "FR-007-005", "description": "System shall track billable vs non-billable hours", "priority": "P0"},
+        {"id": "FR-007-006", "description": "System shall send reminders for timesheet submission", "priority": "P1"},
+        {"id": "FR-007-007", "description": "System shall generate timesheet reports by project and employee", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Payroll System",
+      "functional_requirements": [
+        {"id": "FR-008-001", "description": "System shall define salary structures with earnings and deductions", "priority": "P0"},
+        {"id": "FR-008-002", "description": "System shall calculate gross salary based on CTC breakdown", "priority": "P0"},
+        {"id": "FR-008-003", "description": "System shall calculate statutory deductions (PF, ESI, PT, TDS)", "priority": "P0"},
+        {"id": "FR-008-004", "description": "System shall generate monthly payroll with all calculations", "priority": "P0"},
+        {"id": "FR-008-005", "description": "System shall generate payslips in PDF format", "priority": "P0"},
+        {"id": "FR-008-006", "description": "System shall support salary revision with effective dates", "priority": "P0"},
+        {"id": "FR-008-007", "description": "System shall handle LOP deductions from leave data", "priority": "P0"},
+        {"id": "FR-008-008", "description": "System shall support reimbursements and ad-hoc payments", "priority": "P1"},
+        {"id": "FR-008-009", "description": "System shall maintain payroll history for each employee", "priority": "P0"},
+        {"id": "FR-008-010", "description": "System shall generate bank transfer file for salary payments", "priority": "P1"},
+        {"id": "FR-008-011", "description": "System shall calculate year-to-date earnings and deductions", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Statutory - PF",
+      "functional_requirements": [
+        {"id": "FR-009-001", "description": "System shall calculate employee PF at 12% of PF wages", "priority": "P0"},
+        {"id": "FR-009-002", "description": "System shall calculate employer PF with EPS (8.33%) and EPF split", "priority": "P0"},
+        {"id": "FR-009-003", "description": "System shall cap EPS contribution at Rs 1250 (Rs 15000 wage limit)", "priority": "P0"},
+        {"id": "FR-009-004", "description": "System shall calculate admin charges at 0.5%", "priority": "P0"},
+        {"id": "FR-009-005", "description": "System shall generate ECR (Electronic Challan cum Return) file", "priority": "P0"},
+        {"id": "FR-009-006", "description": "System shall track PF remittance due date (15th of following month)", "priority": "P0"},
+        {"id": "FR-009-007", "description": "System shall maintain UAN for each employee", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Statutory - ESI",
+      "functional_requirements": [
+        {"id": "FR-010-001", "description": "System shall calculate employee ESI at 0.75% of gross wages", "priority": "P0"},
+        {"id": "FR-010-002", "description": "System shall calculate employer ESI at 3.25% of gross wages", "priority": "P0"},
+        {"id": "FR-010-003", "description": "System shall apply ESI only for employees with wages <= Rs 21000", "priority": "P0"},
+        {"id": "FR-010-004", "description": "System shall generate ESI monthly contribution report", "priority": "P0"},
+        {"id": "FR-010-005", "description": "System shall track ESI remittance due date (15th of following month)", "priority": "P0"},
+        {"id": "FR-010-006", "description": "System shall maintain ESI number for each applicable employee", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Statutory - PT",
+      "functional_requirements": [
+        {"id": "FR-011-001", "description": "System shall calculate Karnataka PT at Rs 200/month", "priority": "P0"},
+        {"id": "FR-011-002", "description": "System shall apply Rs 300 for February (annual adjustment)", "priority": "P0"},
+        {"id": "FR-011-003", "description": "System shall apply PT only for salaries > Rs 15000", "priority": "P0"},
+        {"id": "FR-011-004", "description": "System shall generate PT monthly report", "priority": "P0"},
+        {"id": "FR-011-005", "description": "System shall track total annual PT at Rs 2500", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Statutory - TDS",
+      "functional_requirements": [
+        {"id": "FR-012-001", "description": "System shall calculate TDS using new tax regime slabs 2024-25", "priority": "P0"},
+        {"id": "FR-012-002", "description": "System shall apply standard deduction of Rs 75000", "priority": "P0"},
+        {"id": "FR-012-003", "description": "System shall calculate tax based on projected annual income", "priority": "P0"},
+        {"id": "FR-012-004", "description": "System shall apply 4% health and education cess on tax", "priority": "P0"},
+        {"id": "FR-012-005", "description": "System shall distribute annual TDS across 12 months", "priority": "P0"},
+        {"id": "FR-012-006", "description": "System shall generate Form 16 for each employee", "priority": "P0"},
+        {"id": "FR-012-007", "description": "System shall support tax computation statement", "priority": "P0"},
+        {"id": "FR-012-008", "description": "System shall recalculate TDS on salary revision", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Chart of Accounts & GL",
+      "functional_requirements": [
+        {"id": "FR-013-001", "description": "System shall maintain chart of accounts with hierarchical structure", "priority": "P0"},
+        {"id": "FR-013-002", "description": "System shall support account types: Asset, Liability, Equity, Income, Expense", "priority": "P0"},
+        {"id": "FR-013-003", "description": "System shall create journal entries with debit and credit", "priority": "P0"},
+        {"id": "FR-013-004", "description": "System shall enforce double-entry accounting (debits = credits)", "priority": "P0"},
+        {"id": "FR-013-005", "description": "System shall post transactions to general ledger automatically", "priority": "P0"},
+        {"id": "FR-013-006", "description": "System shall generate trial balance", "priority": "P0"},
+        {"id": "FR-013-007", "description": "System shall support fiscal year with period close", "priority": "P0"},
+        {"id": "FR-013-008", "description": "System shall prevent modifications to closed periods", "priority": "P0"},
+        {"id": "FR-013-009", "description": "System shall maintain audit trail for all GL entries", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Multi-Currency",
+      "functional_requirements": [
+        {"id": "FR-014-001", "description": "System shall support multiple currencies with INR as base", "priority": "P1"},
+        {"id": "FR-014-002", "description": "System shall maintain exchange rates with effective dates", "priority": "P1"},
+        {"id": "FR-014-003", "description": "System shall convert foreign currency transactions to INR", "priority": "P1"},
+        {"id": "FR-014-004", "description": "System shall calculate and post realized exchange gains/losses", "priority": "P2"},
+        {"id": "FR-014-005", "description": "System shall support USD, EUR, GBP currencies for invoicing", "priority": "P1"}
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Customers & AR",
+      "functional_requirements": [
+        {"id": "FR-015-001", "description": "System shall maintain customer master with contact and billing details", "priority": "P0"},
+        {"id": "FR-015-002", "description": "System shall create invoices with line items and taxes", "priority": "P0"},
+        {"id": "FR-015-003", "description": "System shall calculate GST on invoices (CGST+SGST or IGST)", "priority": "P0"},
+        {"id": "FR-015-004", "description": "System shall generate invoice PDF with company branding", "priority": "P0"},
+        {"id": "FR-015-005", "description": "System shall track invoice payment status (Pending, Partial, Paid)", "priority": "P0"},
+        {"id": "FR-015-006", "description": "System shall support credit notes for invoice adjustments", "priority": "P1"},
+        {"id": "FR-015-007", "description": "System shall track accounts receivable aging", "priority": "P0"},
+        {"id": "FR-015-008", "description": "System shall send payment reminders for overdue invoices", "priority": "P1"},
+        {"id": "FR-015-009", "description": "System shall record customer payments and match to invoices", "priority": "P0"},
+        {"id": "FR-015-010", "description": "System shall generate customer statement of account", "priority": "P1"}
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Vendors & AP",
+      "functional_requirements": [
+        {"id": "FR-016-001", "description": "System shall maintain vendor master with contact and banking details", "priority": "P0"},
+        {"id": "FR-016-002", "description": "System shall record vendor bills with line items and taxes", "priority": "P0"},
+        {"id": "FR-016-003", "description": "System shall verify GST on vendor bills", "priority": "P0"},
+        {"id": "FR-016-004", "description": "System shall track bill payment status (Pending, Partial, Paid)", "priority": "P0"},
+        {"id": "FR-016-005", "description": "System shall support debit notes for bill adjustments", "priority": "P1"},
+        {"id": "FR-016-006", "description": "System shall track accounts payable aging", "priority": "P0"},
+        {"id": "FR-016-007", "description": "System shall record vendor payments and match to bills", "priority": "P0"},
+        {"id": "FR-016-008", "description": "System shall calculate TDS on applicable vendor payments", "priority": "P0"},
+        {"id": "FR-016-009", "description": "System shall generate vendor payment summary", "priority": "P1"}
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Banking",
+      "functional_requirements": [
+        {"id": "FR-017-001", "description": "System shall maintain multiple bank accounts with details", "priority": "P0"},
+        {"id": "FR-017-002", "description": "System shall record bank transactions (deposits, withdrawals, transfers)", "priority": "P0"},
+        {"id": "FR-017-003", "description": "System shall import bank statements from Excel/CSV", "priority": "P0"},
+        {"id": "FR-017-004", "description": "System shall perform bank reconciliation with auto-matching", "priority": "P0"},
+        {"id": "FR-017-005", "description": "System shall track unreconciled transactions", "priority": "P0"},
+        {"id": "FR-017-006", "description": "System shall generate bank reconciliation report", "priority": "P0"},
+        {"id": "FR-017-007", "description": "System shall record cheque details and track clearance", "priority": "P1"},
+        {"id": "FR-017-008", "description": "System shall support payment modes (NEFT, RTGS, UPI, Cheque)", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 18,
+      "name": "GST Compliance",
+      "functional_requirements": [
+        {"id": "FR-018-001", "description": "System shall apply GST at 18% for IT services", "priority": "P0"},
+        {"id": "FR-018-002", "description": "System shall split GST into CGST (9%) and SGST (9%) for intra-state", "priority": "P0"},
+        {"id": "FR-018-003", "description": "System shall apply IGST (18%) for inter-state transactions", "priority": "P0"},
+        {"id": "FR-018-004", "description": "System shall generate GSTR-1 return (outward supplies)", "priority": "P0"},
+        {"id": "FR-018-005", "description": "System shall generate GSTR-3B return (summary return)", "priority": "P0"},
+        {"id": "FR-018-006", "description": "System shall track GSTR-1 due date (11th of following month)", "priority": "P0"},
+        {"id": "FR-018-007", "description": "System shall track GSTR-3B due date (20th of following month)", "priority": "P0"},
+        {"id": "FR-018-008", "description": "System shall calculate input tax credit (ITC) from vendor bills", "priority": "P0"},
+        {"id": "FR-018-009", "description": "System shall generate GST payment challan", "priority": "P1"},
+        {"id": "FR-018-010", "description": "System shall validate customer GSTIN format", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 19,
+      "name": "TDS on Vendors",
+      "functional_requirements": [
+        {"id": "FR-019-001", "description": "System shall configure TDS sections with rates (194C, 194J, etc.)", "priority": "P0"},
+        {"id": "FR-019-002", "description": "System shall calculate TDS on vendor payments based on section", "priority": "P0"},
+        {"id": "FR-019-003", "description": "System shall track TDS threshold limits per vendor", "priority": "P0"},
+        {"id": "FR-019-004", "description": "System shall generate Form 26Q (quarterly TDS return)", "priority": "P0"},
+        {"id": "FR-019-005", "description": "System shall issue TDS certificates (Form 16A) to vendors", "priority": "P1"},
+        {"id": "FR-019-006", "description": "System shall track TDS remittance due dates", "priority": "P0"},
+        {"id": "FR-019-007", "description": "System shall maintain vendor PAN for TDS compliance", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 20,
+      "name": "CRM",
+      "functional_requirements": [
+        {"id": "FR-020-001", "description": "System shall capture and manage leads with contact details", "priority": "P1"},
+        {"id": "FR-020-002", "description": "System shall track lead status (New, Contacted, Qualified, Lost)", "priority": "P1"},
+        {"id": "FR-020-003", "description": "System shall convert qualified leads to customers", "priority": "P1"},
+        {"id": "FR-020-004", "description": "System shall manage opportunities with value and probability", "priority": "P2"},
+        {"id": "FR-020-005", "description": "System shall log activities (calls, emails, meetings) against leads", "priority": "P2"},
+        {"id": "FR-020-006", "description": "System shall generate sales pipeline report", "priority": "P2"}
+      ]
+    },
+    {
+      "id": 21,
+      "name": "Projects",
+      "functional_requirements": [
+        {"id": "FR-021-001", "description": "System shall create projects with details and budget", "priority": "P0"},
+        {"id": "FR-021-002", "description": "System shall link projects to customers", "priority": "P0"},
+        {"id": "FR-021-003", "description": "System shall allocate employees to projects with roles", "priority": "P0"},
+        {"id": "FR-021-004", "description": "System shall track project status (Active, On Hold, Completed)", "priority": "P0"},
+        {"id": "FR-021-005", "description": "System shall create tasks within projects", "priority": "P1"},
+        {"id": "FR-021-006", "description": "System shall track actual vs budgeted hours from timesheets", "priority": "P0"},
+        {"id": "FR-021-007", "description": "System shall generate project profitability report", "priority": "P1"},
+        {"id": "FR-021-008", "description": "System shall support project milestones and deliverables", "priority": "P2"}
+      ]
+    },
+    {
+      "id": 22,
+      "name": "AI Services",
+      "functional_requirements": [
+        {"id": "FR-022-001", "description": "System shall implement AI fallback chain (Claude > Gemini > OpenAI > Together AI)", "priority": "P0"},
+        {"id": "FR-022-002", "description": "System shall classify AI confidence as High (>=95%), Medium (70-94%), Low (<70%)", "priority": "P0"},
+        {"id": "FR-022-003", "description": "System shall auto-execute high confidence AI suggestions", "priority": "P0"},
+        {"id": "FR-022-004", "description": "System shall queue medium confidence items for review", "priority": "P0"},
+        {"id": "FR-022-005", "description": "System shall flag low confidence items for manual handling", "priority": "P0"},
+        {"id": "FR-022-006", "description": "System shall parse documents using AI (invoices, bills, bank statements)", "priority": "P1"},
+        {"id": "FR-022-007", "description": "System shall provide AI-assisted data entry suggestions", "priority": "P1"},
+        {"id": "FR-022-008", "description": "System shall track AI usage and costs per provider", "priority": "P1"},
+        {"id": "FR-022-009", "description": "System shall implement request caching to reduce API calls", "priority": "P1"},
+        {"id": "FR-022-010", "description": "System shall log all AI interactions for audit and improvement", "priority": "P0"}
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Reports",
+      "functional_requirements": [
+        {"id": "FR-023-001", "description": "System shall generate Profit & Loss statement", "priority": "P0"},
+        {"id": "FR-023-002", "description": "System shall generate Balance Sheet", "priority": "P0"},
+        {"id": "FR-023-003", "description": "System shall generate Cash Flow statement", "priority": "P1"},
+        {"id": "FR-023-004", "description": "System shall generate Trial Balance", "priority": "P0"},
+        {"id": "FR-023-005", "description": "System shall generate Accounts Receivable aging report", "priority": "P0"},
+        {"id": "FR-023-006", "description": "System shall generate Accounts Payable aging report", "priority": "P0"},
+        {"id": "FR-023-007", "description": "System shall generate Employee payroll summary", "priority": "P0"},
+        {"id": "FR-023-008", "description": "System shall generate Leave balance report", "priority": "P0"},
+        {"id": "FR-023-009", "description": "System shall generate Timesheet utilization report", "priority": "P1"},
+        {"id": "FR-023-010", "description": "System shall generate GST summary report", "priority": "P0"},
+        {"id": "FR-023-011", "description": "System shall export reports to PDF and Excel formats", "priority": "P0"},
+        {"id": "FR-023-012", "description": "System shall support date range filters on all reports", "priority": "P0"}
+      ]
+    }
+  ],
+  "summary": {
+    "total_modules": 23,
+    "total_functional_requirements": 178,
+    "priority_breakdown": {
+      "P0_Critical": 118,
+      "P1_High": 47,
+      "P2_Medium": 13
+    }
+  }
+}

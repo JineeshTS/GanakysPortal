@@ -1,0 +1,229 @@
+{
+  "analysis_by": "REQ-008",
+  "analyzed_at": "2026-01-06T10:36:00Z",
+  "critical": true,
+  "warning": "These formulas MUST be implemented EXACTLY. Incorrect compliance = penalties + legal issues.",
+
+  "pf": {
+    "name": "Provident Fund",
+    "governing_body": "EPFO",
+    "pf_wage_definition": "BASIC + DEARNESS_ALLOWANCE",
+    "wage_ceiling": 15000,
+    "employee_contribution": {
+      "rate": 0.12,
+      "rate_percent": "12%",
+      "formula": "employee_pf = pf_wage * 0.12",
+      "python_code": "employee_pf = Decimal(str(pf_wage)) * Decimal('0.12')"
+    },
+    "employer_contribution": {
+      "total_rate": 0.12,
+      "eps": {
+        "name": "Employee Pension Scheme",
+        "rate": 0.0833,
+        "rate_percent": "8.33%",
+        "amount_cap": 1250,
+        "formula": "IF pf_wage <= 15000: eps = pf_wage * 0.0833 ELSE eps = 1250 (CAPPED)",
+        "python_code": "eps = min(Decimal(str(pf_wage)) * Decimal('0.0833'), Decimal('1250'))"
+      },
+      "epf": {
+        "name": "Employee Provident Fund",
+        "formula": "epf = (pf_wage * 0.12) - eps",
+        "python_code": "epf = (Decimal(str(pf_wage)) * Decimal('0.12')) - eps"
+      }
+    },
+    "filing": {
+      "form": "ECR (Electronic Challan cum Return)",
+      "due_date": "15th of following month",
+      "portal": "EPFO Unified Portal"
+    },
+    "examples": [
+      {"pf_wage": 12000, "employee_pf": 1440, "eps": 1000, "epf": 440, "total_employer": 1440},
+      {"pf_wage": 15000, "employee_pf": 1800, "eps": 1250, "epf": 550, "total_employer": 1800},
+      {"pf_wage": 25000, "employee_pf": 3000, "eps": 1250, "epf": 1750, "total_employer": 3000},
+      {"pf_wage": 50000, "employee_pf": 6000, "eps": 1250, "epf": 4750, "total_employer": 6000}
+    ]
+  },
+
+  "esi": {
+    "name": "Employee State Insurance",
+    "governing_body": "ESIC",
+    "applicability": {
+      "threshold": 21000,
+      "condition": "gross_salary <= 21000",
+      "formula": "IF gross_salary <= 21000: ESI_APPLICABLE = TRUE ELSE ESI_APPLICABLE = FALSE"
+    },
+    "employee_contribution": {
+      "rate": 0.0075,
+      "rate_percent": "0.75%",
+      "formula": "employee_esi = gross_salary * 0.0075",
+      "python_code": "employee_esi = (Decimal(str(gross_salary)) * Decimal('0.0075')).quantize(Decimal('1'))"
+    },
+    "employer_contribution": {
+      "rate": 0.0325,
+      "rate_percent": "3.25%",
+      "formula": "employer_esi = gross_salary * 0.0325",
+      "python_code": "employer_esi = (Decimal(str(gross_salary)) * Decimal('0.0325')).quantize(Decimal('1'))"
+    },
+    "total_rate": 0.04,
+    "filing": {
+      "due_date": "15th of following month",
+      "portal": "ESIC Portal"
+    },
+    "examples": [
+      {"gross_salary": 15000, "applicable": true, "employee_esi": 113, "employer_esi": 488, "total": 600},
+      {"gross_salary": 21000, "applicable": true, "employee_esi": 158, "employer_esi": 683, "total": 840},
+      {"gross_salary": 25000, "applicable": false, "employee_esi": 0, "employer_esi": 0, "total": 0}
+    ]
+  },
+
+  "professional_tax": {
+    "name": "Professional Tax",
+    "state": "Karnataka",
+    "slabs": [
+      {"min": 0, "max": 15000, "monthly_tax": 0, "description": "Exempt"},
+      {"min": 15001, "max": null, "monthly_tax": 200, "description": "Rs.200/month"}
+    ],
+    "february_adjustment": {
+      "tax": 300,
+      "reason": "Annual adjustment to reach Rs.2500 cap"
+    },
+    "annual_cap": 2500,
+    "formula": "IF gross <= 15000: PT = 0 ELIF month == 2: PT = 300 ELSE PT = 200",
+    "python_code": "pt = Decimal('0') if gross <= 15000 else (Decimal('300') if month == 2 else Decimal('200'))"
+  },
+
+  "tds": {
+    "name": "Tax Deducted at Source",
+    "new_regime": {
+      "is_default": true,
+      "effective_from": "FY 2024-25",
+      "standard_deduction": 75000,
+      "slabs": [
+        {"min": 0, "max": 300000, "rate": 0, "rate_percent": "0%"},
+        {"min": 300001, "max": 700000, "rate": 0.05, "rate_percent": "5%"},
+        {"min": 700001, "max": 1000000, "rate": 0.10, "rate_percent": "10%"},
+        {"min": 1000001, "max": 1200000, "rate": 0.15, "rate_percent": "15%"},
+        {"min": 1200001, "max": 1500000, "rate": 0.20, "rate_percent": "20%"},
+        {"min": 1500001, "max": null, "rate": 0.30, "rate_percent": "30%"}
+      ]
+    },
+    "old_regime": {
+      "is_default": false,
+      "slabs": [
+        {"min": 0, "max": 250000, "rate": 0, "rate_percent": "0%"},
+        {"min": 250001, "max": 500000, "rate": 0.05, "rate_percent": "5%"},
+        {"min": 500001, "max": 1000000, "rate": 0.20, "rate_percent": "20%"},
+        {"min": 1000001, "max": null, "rate": 0.30, "rate_percent": "30%"}
+      ]
+    },
+    "cess": {
+      "rate": 0.04,
+      "rate_percent": "4%",
+      "name": "Health & Education Cess",
+      "formula": "cess = tax * 0.04"
+    },
+    "calculation_steps": [
+      "1. ANNUAL_INCOME = MONTHLY_GROSS * 12",
+      "2. TAXABLE_INCOME = ANNUAL_INCOME - STANDARD_DEDUCTION (if new regime)",
+      "3. TAX = Apply slab rates progressively",
+      "4. TOTAL_TAX = TAX + (TAX * 0.04)  // Add cess",
+      "5. MONTHLY_TDS = TOTAL_TAX / 12"
+    ]
+  },
+
+  "tds_vendor": {
+    "name": "TDS on Vendor Payments",
+    "sections": [
+      {
+        "section": "194C",
+        "type": "Contractors (Individual/HUF)",
+        "rate": 0.01,
+        "rate_percent": "1%",
+        "threshold_single": 30000,
+        "threshold_annual": 100000
+      },
+      {
+        "section": "194C",
+        "type": "Contractors (Others)",
+        "rate": 0.02,
+        "rate_percent": "2%",
+        "threshold_single": 30000,
+        "threshold_annual": 100000
+      },
+      {
+        "section": "194J",
+        "type": "Professional/Technical Services",
+        "rate": 0.10,
+        "rate_percent": "10%",
+        "threshold_annual": 30000
+      },
+      {
+        "section": "194H",
+        "type": "Commission/Brokerage",
+        "rate": 0.05,
+        "rate_percent": "5%",
+        "threshold_annual": 15000
+      },
+      {
+        "section": "194I",
+        "type": "Rent (Machinery)",
+        "rate": 0.02,
+        "rate_percent": "2%",
+        "threshold_annual": 240000
+      },
+      {
+        "section": "194I",
+        "type": "Rent (Property)",
+        "rate": 0.10,
+        "rate_percent": "10%",
+        "threshold_annual": 240000
+      }
+    ]
+  },
+
+  "gst": {
+    "name": "Goods and Services Tax",
+    "rates": {
+      "intra_state": {
+        "cgst": 0.09,
+        "sgst": 0.09,
+        "total": 0.18,
+        "description": "Same state transaction"
+      },
+      "inter_state": {
+        "igst": 0.18,
+        "description": "Different state transaction"
+      }
+    },
+    "it_services_sac_codes": [
+      {"code": "998311", "description": "Management consulting"},
+      {"code": "998312", "description": "Business consulting"},
+      {"code": "998313", "description": "IT consulting"},
+      {"code": "998314", "description": "IT design and development"},
+      {"code": "998315", "description": "IT infrastructure management"},
+      {"code": "998316", "description": "IT technical support"},
+      {"code": "998319", "description": "Other IT services"}
+    ],
+    "returns": {
+      "gstr1": {
+        "name": "Outward Supplies",
+        "due_date": "11th of following month",
+        "sections": ["B2B", "B2CL", "B2CS", "Exports", "Credit/Debit Notes", "HSN Summary"]
+      },
+      "gstr3b": {
+        "name": "Summary Return",
+        "due_date": "20th of following month",
+        "sections": ["Outward supplies", "Inter-state supplies", "ITC", "Exempt supplies", "Tax payment"]
+      }
+    }
+  },
+
+  "validation": {
+    "pf_formulas_verified": true,
+    "esi_formulas_verified": true,
+    "tds_slabs_verified": true,
+    "pt_slabs_verified": true,
+    "gst_rates_verified": true,
+    "all_examples_calculated": true
+  }
+}

@@ -1,0 +1,1138 @@
+{
+  "wbs_agent": "WBS-005",
+  "agent_name": "Task Atomizer",
+  "generated_at": "2026-01-08T10:20:00Z",
+  "project": "GanaPortal",
+  "total_tasks": 180,
+  "task_size_range": "4-8 hours",
+  "tasks": [
+    {
+      "task_id": "1.1.1.1.1",
+      "story_id": "1.1.1.1",
+      "name": "Conduct stakeholder interviews",
+      "description": "Interview key stakeholders to gather requirements",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "1.1.1.1.2",
+      "story_id": "1.1.1.1",
+      "name": "Document functional requirements",
+      "description": "Write detailed functional requirements document",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "1.1.1.2.1",
+      "story_id": "1.1.1.2",
+      "name": "Define API specifications",
+      "description": "Document REST API endpoints and contracts",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "1.1.1.2.2",
+      "story_id": "1.1.1.2",
+      "name": "Document data models",
+      "description": "Create data model documentation",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "1.1.2.1.1",
+      "story_id": "1.1.2.1",
+      "name": "Design service boundaries",
+      "description": "Define microservice boundaries and responsibilities",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "1.1.2.1.2",
+      "story_id": "1.1.2.1",
+      "name": "Create architecture diagrams",
+      "description": "Draw system architecture diagrams",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "1.1.3.1.1",
+      "story_id": "1.1.3.1",
+      "name": "Design database ERD",
+      "description": "Create entity-relationship diagram",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "1.1.3.1.2",
+      "story_id": "1.1.3.1",
+      "name": "Plan database indexes",
+      "description": "Design index strategy for performance",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.1.1.1.1",
+      "story_id": "2.1.1.1",
+      "name": "Create VPC with Terraform",
+      "description": "Write Terraform code for VPC creation",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "2.1.1.1.2",
+      "story_id": "2.1.1.1",
+      "name": "Configure subnets and routing",
+      "description": "Set up public/private subnets and route tables",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.1.1.1.3",
+      "story_id": "2.1.1.1",
+      "name": "Configure security groups",
+      "description": "Define security group rules",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.1.2.1.1",
+      "story_id": "2.1.2.1",
+      "name": "Create EKS cluster",
+      "description": "Provision EKS cluster with Terraform",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "2.1.2.1.2",
+      "story_id": "2.1.2.1",
+      "name": "Configure node groups",
+      "description": "Set up worker node groups",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.1.2.1.3",
+      "story_id": "2.1.2.1",
+      "name": "Set up EKS RBAC",
+      "description": "Configure Kubernetes RBAC",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.1.3.1.1",
+      "story_id": "2.1.3.1",
+      "name": "Provision RDS instance",
+      "description": "Create PostgreSQL RDS with Terraform",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.1.3.1.2",
+      "story_id": "2.1.3.1",
+      "name": "Configure RDS backups",
+      "description": "Set up automated backups and snapshots",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.2.1.1.1",
+      "story_id": "2.2.1.1",
+      "name": "Create build workflow",
+      "description": "Write GitHub Actions build workflow",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.2.1.1.2",
+      "story_id": "2.2.1.1",
+      "name": "Configure test automation",
+      "description": "Set up automated test runs in CI",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.2.1.2.1",
+      "story_id": "2.2.1.2",
+      "name": "Create deployment workflow",
+      "description": "Write GitHub Actions deploy workflow",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "2.2.1.2.2",
+      "story_id": "2.2.1.2",
+      "name": "Configure environment promotion",
+      "description": "Set up dev/staging/prod promotion",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.2.1.2.3",
+      "story_id": "2.2.1.2",
+      "name": "Implement rollback mechanism",
+      "description": "Add rollback capability to deployments",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.2.2.1.1",
+      "story_id": "2.2.2.1",
+      "name": "Create backend Dockerfiles",
+      "description": "Write optimized Dockerfiles for backend services",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.2.2.1.2",
+      "story_id": "2.2.2.1",
+      "name": "Create frontend Dockerfile",
+      "description": "Write Dockerfile for frontend application",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "2.2.3.1.1",
+      "story_id": "2.2.3.1",
+      "name": "Deploy Prometheus",
+      "description": "Install and configure Prometheus on EKS",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "2.2.3.1.2",
+      "story_id": "2.2.3.1",
+      "name": "Deploy Grafana",
+      "description": "Install Grafana and create dashboards",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "2.2.3.1.3",
+      "story_id": "2.2.3.1",
+      "name": "Configure alerting",
+      "description": "Set up alert rules and notifications",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.1.1.1.1",
+      "story_id": "3.1.1.1",
+      "name": "Implement JWT signing",
+      "description": "Create JWT token signing service",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.1.1.1.2",
+      "story_id": "3.1.1.1",
+      "name": "Implement refresh tokens",
+      "description": "Add refresh token functionality",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.1.1.2.1",
+      "story_id": "3.1.1.2",
+      "name": "Create auth middleware",
+      "description": "Build authentication middleware",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.1.1.2.2",
+      "story_id": "3.1.1.2",
+      "name": "Handle token expiration",
+      "description": "Implement token expiration handling",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.1.2.1.1",
+      "story_id": "3.1.2.1",
+      "name": "Implement Google OAuth flow",
+      "description": "Build Google OAuth authentication",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "3.1.2.1.2",
+      "story_id": "3.1.2.1",
+      "name": "Handle Google user linking",
+      "description": "Link Google accounts to users",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.1.2.2.1",
+      "story_id": "3.1.2.2",
+      "name": "Implement Microsoft OAuth flow",
+      "description": "Build Microsoft OAuth authentication",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "3.1.2.2.2",
+      "story_id": "3.1.2.2",
+      "name": "Handle Microsoft user linking",
+      "description": "Link Microsoft accounts to users",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.1.3.1.1",
+      "story_id": "3.1.3.1",
+      "name": "Define permission structure",
+      "description": "Design permission hierarchy",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.1.3.1.2",
+      "story_id": "3.1.3.1",
+      "name": "Implement permission checks",
+      "description": "Build permission verification logic",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "3.1.3.1.3",
+      "story_id": "3.1.3.1",
+      "name": "Create permission decorator",
+      "description": "Build decorator for route protection",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.1.3.2.1",
+      "story_id": "3.1.3.2",
+      "name": "Build role assignment API",
+      "description": "Create API for role management",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.1.3.2.2",
+      "story_id": "3.1.3.2",
+      "name": "Implement role inheritance",
+      "description": "Build role inheritance logic",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.2.1.1.1",
+      "story_id": "3.2.1.1",
+      "name": "Deploy Kong gateway",
+      "description": "Install Kong on Kubernetes",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "3.2.1.1.2",
+      "story_id": "3.2.1.1",
+      "name": "Configure API routes",
+      "description": "Set up service routes in Kong",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.2.1.1.3",
+      "story_id": "3.2.1.1",
+      "name": "Configure rate limiting",
+      "description": "Set up rate limiting policies",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.2.2.1.1",
+      "story_id": "3.2.2.1",
+      "name": "Create User model",
+      "description": "Define User database model",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.2.2.1.2",
+      "story_id": "3.2.2.1",
+      "name": "Create User migration",
+      "description": "Write database migration for User",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.2.2.2.1",
+      "story_id": "3.2.2.2",
+      "name": "Create Organization model",
+      "description": "Define Organization database model",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.2.2.2.2",
+      "story_id": "3.2.2.2",
+      "name": "Implement tenant isolation",
+      "description": "Add tenant filtering to queries",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "3.2.3.1.1",
+      "story_id": "3.2.3.1",
+      "name": "Generate OpenAPI spec",
+      "description": "Auto-generate OpenAPI documentation",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "3.2.3.1.2",
+      "story_id": "3.2.3.1",
+      "name": "Set up Swagger UI",
+      "description": "Deploy Swagger UI for API docs",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.1.1.1.1",
+      "story_id": "4.1.1.1",
+      "name": "Initialize React with Vite",
+      "description": "Create React project using Vite",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.1.1.1.2",
+      "story_id": "4.1.1.1",
+      "name": "Configure TypeScript",
+      "description": "Set up TypeScript configuration",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.1.1.1.3",
+      "story_id": "4.1.1.1",
+      "name": "Set up ESLint and Prettier",
+      "description": "Configure linting and formatting",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.1.2.1.1",
+      "story_id": "4.1.2.1",
+      "name": "Configure Redux store",
+      "description": "Set up Redux store with toolkit",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.1.2.1.2",
+      "story_id": "4.1.2.1",
+      "name": "Add Redux middleware",
+      "description": "Configure Redux middleware",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.1.2.2.1",
+      "story_id": "4.1.2.2",
+      "name": "Create auth Redux slice",
+      "description": "Build authentication state slice",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.1.2.2.2",
+      "story_id": "4.1.2.2",
+      "name": "Implement token persistence",
+      "description": "Add token storage and retrieval",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.1.3.1.1",
+      "story_id": "4.1.3.1",
+      "name": "Configure React Router",
+      "description": "Set up routing configuration",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.1.3.1.2",
+      "story_id": "4.1.3.1",
+      "name": "Create route definitions",
+      "description": "Define all application routes",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.1.3.2.1",
+      "story_id": "4.1.3.2",
+      "name": "Create ProtectedRoute component",
+      "description": "Build auth-protected route wrapper",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.1.3.2.2",
+      "story_id": "4.1.3.2",
+      "name": "Implement role-based routing",
+      "description": "Add role checks to routes",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.2.1.1.1",
+      "story_id": "4.2.1.1",
+      "name": "Create Button component",
+      "description": "Build reusable button component",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.2.1.1.2",
+      "story_id": "4.2.1.1",
+      "name": "Add button variants",
+      "description": "Implement button style variants",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.2.1.2.1",
+      "story_id": "4.2.1.2",
+      "name": "Create Input component",
+      "description": "Build form input component",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.2.1.2.2",
+      "story_id": "4.2.1.2",
+      "name": "Create Select component",
+      "description": "Build dropdown select component",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.2.1.2.3",
+      "story_id": "4.2.1.2",
+      "name": "Create form validation",
+      "description": "Implement form validation logic",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "4.2.2.1.1",
+      "story_id": "4.2.2.1",
+      "name": "Create NavBar component",
+      "description": "Build top navigation bar",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "4.2.2.1.2",
+      "story_id": "4.2.2.1",
+      "name": "Create UserMenu component",
+      "description": "Build user dropdown menu",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.2.2.2.1",
+      "story_id": "4.2.2.2",
+      "name": "Create Sidebar component",
+      "description": "Build collapsible sidebar",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "4.2.2.2.2",
+      "story_id": "4.2.2.2",
+      "name": "Create SidebarItem component",
+      "description": "Build sidebar navigation items",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.2.3.1.1",
+      "story_id": "4.2.3.1",
+      "name": "Create ThemeProvider",
+      "description": "Build theme context provider",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.2.3.1.2",
+      "story_id": "4.2.3.1",
+      "name": "Define theme tokens",
+      "description": "Create design token definitions",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "4.2.3.1.3",
+      "story_id": "4.2.3.1",
+      "name": "Implement dark mode",
+      "description": "Add dark mode theme support",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.1.1.1.1",
+      "story_id": "5.1.1.1",
+      "name": "Create profile endpoints",
+      "description": "Build GET/PUT profile API",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.1.1.1.2",
+      "story_id": "5.1.1.1",
+      "name": "Implement avatar upload",
+      "description": "Add avatar upload functionality",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.1.1.2.1",
+      "story_id": "5.1.1.2",
+      "name": "Create ProfilePage component",
+      "description": "Build user profile page",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.1.1.2.2",
+      "story_id": "5.1.1.2",
+      "name": "Create ProfileEditForm",
+      "description": "Build profile editing form",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.1.2.1.1",
+      "story_id": "5.1.2.1",
+      "name": "Create role CRUD endpoints",
+      "description": "Build role management API",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.1.2.1.2",
+      "story_id": "5.1.2.1",
+      "name": "Create permission assignment API",
+      "description": "Build permission-to-role API",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.1.2.2.1",
+      "story_id": "5.1.2.2",
+      "name": "Create RoleListPage",
+      "description": "Build role listing page",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.1.2.2.2",
+      "story_id": "5.1.2.2",
+      "name": "Create RoleEditForm",
+      "description": "Build role editing form",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.1.2.2.3",
+      "story_id": "5.1.2.2",
+      "name": "Create PermissionMatrix",
+      "description": "Build permission matrix component",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "5.1.3.1.1",
+      "story_id": "5.1.3.1",
+      "name": "Create team CRUD endpoints",
+      "description": "Build team management API",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.1.3.1.2",
+      "story_id": "5.1.3.1",
+      "name": "Create team membership API",
+      "description": "Build member management API",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.1.3.2.1",
+      "story_id": "5.1.3.2",
+      "name": "Create TeamListPage",
+      "description": "Build team listing page",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.1.3.2.2",
+      "story_id": "5.1.3.2",
+      "name": "Create TeamMemberManager",
+      "description": "Build team member management UI",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.2.1.1.1",
+      "story_id": "5.2.1.1",
+      "name": "Create org CRUD endpoints",
+      "description": "Build organization API",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.2.1.1.2",
+      "story_id": "5.2.1.1",
+      "name": "Create org invitation API",
+      "description": "Build user invitation system",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.2.1.2.1",
+      "story_id": "5.2.1.2",
+      "name": "Create OrgDashboard",
+      "description": "Build organization dashboard",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.2.1.2.2",
+      "story_id": "5.2.1.2",
+      "name": "Create OrgMemberManager",
+      "description": "Build org member management UI",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.2.2.1.1",
+      "story_id": "5.2.2.1",
+      "name": "Create tenant middleware",
+      "description": "Build tenant context middleware",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.2.2.1.2",
+      "story_id": "5.2.2.1",
+      "name": "Implement query scoping",
+      "description": "Add automatic tenant filtering",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.2.3.1.1",
+      "story_id": "5.2.3.1",
+      "name": "Create settings endpoints",
+      "description": "Build org settings API",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.2.3.1.2",
+      "story_id": "5.2.3.1",
+      "name": "Implement branding API",
+      "description": "Add branding configuration API",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.2.3.2.1",
+      "story_id": "5.2.3.2",
+      "name": "Create OrgSettingsPage",
+      "description": "Build settings page UI",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.2.3.2.2",
+      "story_id": "5.2.3.2",
+      "name": "Create BrandingForm",
+      "description": "Build branding configuration form",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.3.1.1.1",
+      "story_id": "5.3.1.1",
+      "name": "Create project CRUD endpoints",
+      "description": "Build project management API",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.3.1.1.2",
+      "story_id": "5.3.1.1",
+      "name": "Create project member API",
+      "description": "Build project membership API",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.3.1.2.1",
+      "story_id": "5.3.1.2",
+      "name": "Create ProjectListPage",
+      "description": "Build project listing page",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.3.1.2.2",
+      "story_id": "5.3.1.2",
+      "name": "Create ProjectDetailPage",
+      "description": "Build project detail view",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.3.1.2.3",
+      "story_id": "5.3.1.2",
+      "name": "Create ProjectForm",
+      "description": "Build project create/edit form",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.3.2.1.1",
+      "story_id": "5.3.2.1",
+      "name": "Create task CRUD endpoints",
+      "description": "Build task management API",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.3.2.1.2",
+      "story_id": "5.3.2.1",
+      "name": "Create task assignment API",
+      "description": "Build task assignment endpoints",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.3.2.1.3",
+      "story_id": "5.3.2.1",
+      "name": "Implement status transitions",
+      "description": "Build task status workflow",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.3.2.2.1",
+      "story_id": "5.3.2.2",
+      "name": "Create TaskListView",
+      "description": "Build task list component",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.3.2.2.2",
+      "story_id": "5.3.2.2",
+      "name": "Create TaskDetailPanel",
+      "description": "Build task detail side panel",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "5.3.2.2.3",
+      "story_id": "5.3.2.2",
+      "name": "Create QuickEditTask",
+      "description": "Build inline task editing",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.3.3.1.1",
+      "story_id": "5.3.3.1",
+      "name": "Create KanbanBoard component",
+      "description": "Build main Kanban board",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "5.3.3.1.2",
+      "story_id": "5.3.3.1",
+      "name": "Implement drag and drop",
+      "description": "Add DnD functionality",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "5.3.3.1.3",
+      "story_id": "5.3.3.1",
+      "name": "Create KanbanCard component",
+      "description": "Build task cards for board",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "5.3.3.1.4",
+      "story_id": "5.3.3.1",
+      "name": "Implement swimlanes",
+      "description": "Add swimlane support",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.1.1.1.1",
+      "story_id": "6.1.1.1",
+      "name": "Create workflow canvas",
+      "description": "Build visual workflow canvas",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "6.1.1.1.2",
+      "story_id": "6.1.1.1",
+      "name": "Create node components",
+      "description": "Build workflow node types",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "6.1.1.1.3",
+      "story_id": "6.1.1.1",
+      "name": "Implement node connections",
+      "description": "Build connection logic",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.1.1.1.4",
+      "story_id": "6.1.1.1",
+      "name": "Create node property panel",
+      "description": "Build node configuration panel",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.1.2.1.1",
+      "story_id": "6.1.2.1",
+      "name": "Create workflow parser",
+      "description": "Build workflow definition parser",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "6.1.2.1.2",
+      "story_id": "6.1.2.1",
+      "name": "Implement step executor",
+      "description": "Build workflow step execution",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "6.1.2.1.3",
+      "story_id": "6.1.2.1",
+      "name": "Implement condition logic",
+      "description": "Add conditional branching",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.1.2.1.4",
+      "story_id": "6.1.2.1",
+      "name": "Create workflow scheduler",
+      "description": "Build workflow scheduling",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.1.3.1.1",
+      "story_id": "6.1.3.1",
+      "name": "Create template library",
+      "description": "Build workflow template storage",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.1.3.1.2",
+      "story_id": "6.1.3.1",
+      "name": "Create default templates",
+      "description": "Build common workflow templates",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.1.3.1.3",
+      "story_id": "6.1.3.1",
+      "name": "Create template browser UI",
+      "description": "Build template selection UI",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.2.1.1.1",
+      "story_id": "6.2.1.1",
+      "name": "Create upload endpoints",
+      "description": "Build file upload API",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.2.1.1.2",
+      "story_id": "6.2.1.1",
+      "name": "Implement S3 integration",
+      "description": "Add S3 file storage",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.2.1.1.3",
+      "story_id": "6.2.1.1",
+      "name": "Create presigned URLs",
+      "description": "Implement presigned URL generation",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.2.1.2.1",
+      "story_id": "6.2.1.2",
+      "name": "Create FileUploader component",
+      "description": "Build file upload UI",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.2.1.2.2",
+      "story_id": "6.2.1.2",
+      "name": "Add progress tracking",
+      "description": "Implement upload progress",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.2.2.1.1",
+      "story_id": "6.2.2.1",
+      "name": "Create version model",
+      "description": "Build document version model",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.2.2.1.2",
+      "story_id": "6.2.2.1",
+      "name": "Create version API",
+      "description": "Build versioning endpoints",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.2.2.1.3",
+      "story_id": "6.2.2.1",
+      "name": "Create VersionHistory UI",
+      "description": "Build version history view",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.2.3.1.1",
+      "story_id": "6.2.3.1",
+      "name": "Create PDFViewer component",
+      "description": "Build PDF preview",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.2.3.1.2",
+      "story_id": "6.2.3.1",
+      "name": "Create ImageViewer component",
+      "description": "Build image preview",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.2.3.1.3",
+      "story_id": "6.2.3.1",
+      "name": "Create OfficeViewer component",
+      "description": "Build Office doc preview",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.3.1.1.1",
+      "story_id": "6.3.1.1",
+      "name": "Create DashboardBuilder",
+      "description": "Build dashboard builder UI",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "6.3.1.1.2",
+      "story_id": "6.3.1.1",
+      "name": "Create widget library",
+      "description": "Build dashboard widgets",
+      "estimated_hours": 8
+    },
+    {
+      "task_id": "6.3.1.1.3",
+      "story_id": "6.3.1.1",
+      "name": "Implement widget DnD",
+      "description": "Add widget drag and drop",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.3.1.1.4",
+      "story_id": "6.3.1.1",
+      "name": "Create layout persistence",
+      "description": "Save dashboard layouts",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.3.2.1.1",
+      "story_id": "6.3.2.1",
+      "name": "Create report templates",
+      "description": "Build report template system",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "6.3.2.1.2",
+      "story_id": "6.3.2.1",
+      "name": "Create data filter UI",
+      "description": "Build report filtering",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.3.2.1.3",
+      "story_id": "6.3.2.1",
+      "name": "Implement PDF export",
+      "description": "Add PDF report export",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.3.2.1.4",
+      "story_id": "6.3.2.1",
+      "name": "Implement Excel export",
+      "description": "Add Excel report export",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.3.3.1.1",
+      "story_id": "6.3.3.1",
+      "name": "Create LineChart component",
+      "description": "Build line chart",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.3.3.1.2",
+      "story_id": "6.3.3.1",
+      "name": "Create BarChart component",
+      "description": "Build bar chart",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.3.3.1.3",
+      "story_id": "6.3.3.1",
+      "name": "Create PieChart component",
+      "description": "Build pie chart",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "6.3.3.1.4",
+      "story_id": "6.3.3.1",
+      "name": "Add chart interactivity",
+      "description": "Add tooltips and interactions",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "7.1.1.1.1",
+      "story_id": "7.1.1.1",
+      "name": "Implement Slack OAuth",
+      "description": "Build Slack authentication",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "7.1.1.1.2",
+      "story_id": "7.1.1.1",
+      "name": "Create channel selector",
+      "description": "Build channel selection UI",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "7.1.1.1.3",
+      "story_id": "7.1.1.1",
+      "name": "Implement message sending",
+      "description": "Build Slack message API",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "7.1.2.1.1",
+      "story_id": "7.1.2.1",
+      "name": "Implement Google Calendar",
+      "description": "Build Google Calendar sync",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "7.1.2.1.2",
+      "story_id": "7.1.2.1",
+      "name": "Implement Outlook Calendar",
+      "description": "Build Outlook Calendar sync",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "7.1.2.1.3",
+      "story_id": "7.1.2.1",
+      "name": "Create calendar UI",
+      "description": "Build calendar integration UI",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "7.1.3.1.1",
+      "story_id": "7.1.3.1",
+      "name": "Create webhook endpoints",
+      "description": "Build webhook management API",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "7.1.3.1.2",
+      "story_id": "7.1.3.1",
+      "name": "Implement event triggers",
+      "description": "Build event-to-webhook dispatch",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "7.1.3.1.3",
+      "story_id": "7.1.3.1",
+      "name": "Add retry logic",
+      "description": "Implement webhook retries",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "7.2.1.1.1",
+      "story_id": "7.2.1.1",
+      "name": "Create email templates",
+      "description": "Build email template system",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "7.2.1.1.2",
+      "story_id": "7.2.1.1",
+      "name": "Integrate AWS SES",
+      "description": "Set up SES integration",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "7.2.1.1.3",
+      "story_id": "7.2.1.1",
+      "name": "Create preference settings",
+      "description": "Build email preference UI",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "7.2.2.1.1",
+      "story_id": "7.2.2.1",
+      "name": "Implement web push",
+      "description": "Build browser push notifications",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "7.2.2.1.2",
+      "story_id": "7.2.2.1",
+      "name": "Create notification center",
+      "description": "Build in-app notification center",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "7.2.2.1.3",
+      "story_id": "7.2.2.1",
+      "name": "Implement mobile push",
+      "description": "Add FCM push support",
+      "estimated_hours": 4
+    },
+    {
+      "task_id": "7.2.3.1.1",
+      "story_id": "7.2.3.1",
+      "name": "Set up WebSocket server",
+      "description": "Create WebSocket infrastructure",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "7.2.3.1.2",
+      "story_id": "7.2.3.1",
+      "name": "Implement event broadcasting",
+      "description": "Build real-time event system",
+      "estimated_hours": 6
+    },
+    {
+      "task_id": "7.2.3.1.3",
+      "story_id": "7.2.3.1",
+      "name": "Add reconnection logic",
+      "description": "Handle connection recovery",
+      "estimated_hours": 4
+    }
+  ],
+  "status": "completed"
+}

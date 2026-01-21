@@ -1,0 +1,74 @@
+{
+  "metadata": {
+    "agents": ["BE-006", "BE-007", "BE-008", "BE-009", "BE-010"],
+    "category": "User & Employee Management",
+    "created_at": "2026-01-08T11:01:00Z"
+  },
+  "BE-006_user_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/user.py",
+      "schema": "app/schemas/user.py",
+      "service": "app/services/user_service.py",
+      "route": "app/api/v1/endpoints/users.py"
+    },
+    "endpoints": [
+      "GET /users - List users",
+      "POST /users - Create user",
+      "GET /users/{id} - Get user",
+      "PUT /users/{id} - Update user",
+      "DELETE /users/{id} - Delete user",
+      "PUT /users/{id}/role - Change role"
+    ]
+  },
+  "BE-007_employee_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/employee.py",
+      "schema": "app/schemas/employee.py",
+      "service": "app/services/employee_service.py",
+      "route": "app/api/v1/endpoints/employees.py"
+    },
+    "endpoints": [
+      "GET /employees - List employees",
+      "POST /employees - Create employee",
+      "GET /employees/{id} - Get employee",
+      "PUT /employees/{id} - Update employee",
+      "GET /employees/{id}/statutory - Get statutory info",
+      "PUT /employees/{id}/statutory - Update statutory info"
+    ]
+  },
+  "BE-008_department_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/company.py (Department class)",
+      "schema": "app/schemas/department.py",
+      "service": "app/services/department_service.py",
+      "route": "app/api/v1/endpoints/departments.py"
+    }
+  },
+  "BE-009_designation_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/company.py (Designation class)",
+      "schema": "app/schemas/designation.py",
+      "service": "app/services/designation_service.py",
+      "route": "app/api/v1/endpoints/designations.py"
+    }
+  },
+  "BE-010_onboarding_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/employee.py (OnboardingWorkflow, OnboardingTask)",
+      "schema": "app/schemas/onboarding.py",
+      "service": "app/services/onboarding_service.py",
+      "route": "app/api/v1/endpoints/onboarding.py"
+    },
+    "endpoints": [
+      "POST /onboarding - Create workflow",
+      "GET /onboarding/{id} - Get workflow",
+      "GET /onboarding/{id}/tasks - Get tasks",
+      "PUT /onboarding/{id}/tasks/{taskId} - Update task"
+    ]
+  }
+}

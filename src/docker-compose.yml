@@ -1,0 +1,183 @@
+# GanaPortal - Docker Compose Configuration
+# Development environment
+version: '3.9'
+
+services:
+  # PostgreSQL 16 Database
+  db:
+    image: postgres:16-alpine
+    container_name: ganaportal-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ganaportal_user
+      POSTGRES_PASSWORD: R2PgyCXcUCYspJg46Btanfttu3HZ0Yw5
+      POSTGRES_DB: ganaportal
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ganaportal_user -d ganaportal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ganaportal-network
+
+  # Redis 7 Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ganaportal-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ganaportal-network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ganaportal-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://ganaportal_user:R2PgyCXcUCYspJg46Btanfttu3HZ0Yw5@db:5432/ganaportal
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - ENCRYPTION_KEY=v9iYC7SvWKKGTYW9rIm4gletTJM03YpaUZzqpqyyC38=
+      - ENCRYPTION_KEY_VERSION=1
+    volumes:
+      - ./backend:/app
+      - backend_data:/var/data/ganaportal
+    ports:
+      - "8002:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ganaportal-network
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: ganaportal-frontend
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=/api/v1
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - ganaportal-network
+
+  # Celery Worker (Background Tasks)
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ganaportal-celery-worker
+    restart: unless-stopped
+    command: celery -A app.celery_app worker -l info -Q default,ai,reports,high_priority,low_priority,emails
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://ganaportal_user:R2PgyCXcUCYspJg46Btanfttu3HZ0Yw5@db:5432/ganaportal
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/3
+      - CELERY_RESULT_BACKEND=redis://redis:6379/4
+    volumes:
+      - ./backend:/app
+      - backend_data:/var/data/ganaportal
+    depends_on:
+      - backend
+      - redis
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - ganaportal-network
+
+  # Celery Beat (Scheduled Tasks)
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ganaportal-celery-beat
+    restart: unless-stopped
+    command: celery -A app.celery_app beat -l info
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/3
+      - CELERY_RESULT_BACKEND=redis://redis:6379/4
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - celery-worker
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /app/celerybeat-schedule || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - ganaportal-network
+
+  # Nginx Reverse Proxy (for production-like testing)
+  nginx:
+    image: nginx:alpine
+    container_name: ganaportal-nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - ganaportal-network
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_data:
+    driver: local
+
+networks:
+  ganaportal-network:
+    driver: bridge

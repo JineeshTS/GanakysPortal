@@ -1,0 +1,78 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-006",
+    "agent_name": "Frontend Architect",
+    "created_at": "2026-01-08T10:50:00Z",
+    "version": "1.0"
+  },
+  "technology_stack": {
+    "framework": "Next.js 14.1.x",
+    "language": "TypeScript 5.3.x",
+    "styling": "Tailwind CSS 3.4.x",
+    "ui_components": "Radix UI primitives",
+    "icons": "Lucide React",
+    "forms": "React Hook Form + Zod",
+    "state": "Zustand + React Query v5",
+    "charts": "Recharts",
+    "tables": "TanStack Table v8"
+  },
+  "project_structure": {
+    "src/app": "Next.js App Router pages",
+    "src/components": "Reusable UI components",
+    "src/lib": "Utilities, API client, helpers",
+    "src/hooks": "Custom React hooks",
+    "src/stores": "Zustand state stores",
+    "src/types": "TypeScript type definitions",
+    "src/styles": "Global styles and Tailwind config"
+  },
+  "routing_structure": {
+    "(auth)": ["login", "forgot-password", "reset-password"],
+    "(dashboard)": {
+      "": "Dashboard home",
+      "employees": ["list", "[id]", "new"],
+      "onboarding": ["list", "[id]"],
+      "leave": ["applications", "policies", "calendar"],
+      "timesheet": ["list", "weekly"],
+      "payroll": ["runs", "payslips", "components"],
+      "statutory": ["pf", "esi", "pt", "tds", "form16"],
+      "accounting": ["coa", "journal", "ledger"],
+      "customers": ["list", "[id]", "invoices"],
+      "vendors": ["list", "[id]", "bills"],
+      "banking": ["accounts", "reconciliation"],
+      "gst": ["returns", "reconciliation"],
+      "crm": ["leads", "pipeline"],
+      "projects": ["list", "[id]"],
+      "documents": ["list"],
+      "reports": ["financial", "hr", "payroll"],
+      "settings": ["company", "users", "ai"]
+    }
+  },
+  "component_patterns": {
+    "naming": "PascalCase for components, kebab-case for files",
+    "structure": {"component.tsx": "Component logic", "component.types.ts": "TypeScript interfaces", "component.test.tsx": "Unit tests"},
+    "props": "Interface with explicit types, destructured in function signature"
+  },
+  "state_management": {
+    "server_state": "React Query for API data fetching, caching, and synchronization",
+    "client_state": "Zustand for UI state (sidebar, modals, filters)",
+    "form_state": "React Hook Form with Zod validation schemas"
+  },
+  "api_integration": {
+    "client": "Axios with interceptors",
+    "base_url": "process.env.NEXT_PUBLIC_API_URL",
+    "auth": "JWT token in Authorization header",
+    "error_handling": "Global error boundary + toast notifications"
+  },
+  "design_system": {
+    "colors": {"primary": "blue-600", "success": "green-600", "warning": "amber-500", "error": "red-600"},
+    "typography": {"font": "Inter", "sizes": ["xs", "sm", "base", "lg", "xl", "2xl"]},
+    "spacing": "Tailwind default scale (4px base)",
+    "breakpoints": {"sm": "640px", "md": "768px", "lg": "1024px", "xl": "1280px"}
+  },
+  "performance": {
+    "code_splitting": "Automatic with Next.js App Router",
+    "image_optimization": "Next/Image component",
+    "lazy_loading": "React.lazy for heavy components",
+    "caching": "React Query stale-while-revalidate"
+  }
+}

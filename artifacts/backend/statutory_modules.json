@@ -1,0 +1,91 @@
+{
+  "metadata": {
+    "agents": ["BE-021", "BE-022", "BE-023", "BE-024", "BE-025"],
+    "category": "Statutory Compliance",
+    "created_at": "2026-01-08T11:04:00Z"
+  },
+  "BE-021_pf_module": {
+    "status": "completed",
+    "files": {
+      "service": "app/services/compliance/pf_service.py"
+    },
+    "features": [
+      "PF calculation (12% + 12%)",
+      "EPS calculation (8.33% capped at 1250)",
+      "ECR file generation",
+      "PF return tracking"
+    ],
+    "compliance_rules": {
+      "employee_contribution": "12% of basic",
+      "employer_contribution": "12% of basic",
+      "eps_cap": 1250,
+      "due_date": "15th of next month"
+    }
+  },
+  "BE-022_esi_module": {
+    "status": "completed",
+    "files": {
+      "service": "app/services/compliance/esi_service.py"
+    },
+    "features": [
+      "ESI calculation",
+      "Eligibility check (gross <= 21000)",
+      "Return generation"
+    ],
+    "compliance_rules": {
+      "employee_rate": "0.75%",
+      "employer_rate": "3.25%",
+      "wage_ceiling": 21000,
+      "due_date": "15th of next month"
+    }
+  },
+  "BE-023_pt_module": {
+    "status": "completed",
+    "files": {
+      "service": "app/services/compliance/pt_service.py"
+    },
+    "features": [
+      "Karnataka PT calculation",
+      "Slab-based deduction",
+      "Monthly return"
+    ],
+    "compliance_rules": {
+      "threshold": 15000,
+      "monthly_amount": 200,
+      "february_amount": 300,
+      "max_annual": 2500
+    }
+  },
+  "BE-024_tds_salary_module": {
+    "status": "completed",
+    "files": {
+      "service": "app/services/compliance/tds_service.py"
+    },
+    "features": [
+      "New tax regime slabs",
+      "Monthly TDS calculation",
+      "Section 87A rebate",
+      "Surcharge and cess"
+    ],
+    "tax_slabs_new_regime": [
+      {"from": 0, "to": 300000, "rate": 0},
+      {"from": 300001, "to": 700000, "rate": 5},
+      {"from": 700001, "to": 1000000, "rate": 10},
+      {"from": 1000001, "to": 1200000, "rate": 15},
+      {"from": 1200001, "to": 1500000, "rate": 20},
+      {"from": 1500001, "to": null, "rate": 30}
+    ]
+  },
+  "BE-025_form16_module": {
+    "status": "completed",
+    "files": {
+      "service": "app/services/compliance/form16_service.py"
+    },
+    "features": [
+      "Part A data from TRACES",
+      "Part B computation",
+      "PDF generation",
+      "Bulk generation"
+    ]
+  }
+}

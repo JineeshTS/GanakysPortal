@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-014",
+    "agent_name": "Documentation Architect",
+    "created_at": "2026-01-08T10:58:00Z",
+    "version": "1.0"
+  },
+  "documentation_types": {
+    "api_docs": {"format": "OpenAPI 3.1", "tool": "FastAPI auto-generated", "path": "/docs"},
+    "code_docs": {"format": "Docstrings", "style": "Google style"},
+    "architecture": {"format": "Markdown + Mermaid diagrams", "location": "/docs/architecture/"},
+    "user_guide": {"format": "Markdown", "location": "/docs/user-guide/"},
+    "developer_guide": {"format": "Markdown", "location": "/docs/developer/"}
+  },
+  "api_documentation": {
+    "interactive": "/docs (Swagger UI)",
+    "alternative": "/redoc (ReDoc)",
+    "sections": ["Authentication", "Employees", "Payroll", "Accounting", "Reports", "AI Services"]
+  },
+  "architecture_diagrams": {
+    "system_context": "C4 Level 1 - External systems",
+    "container": "C4 Level 2 - Services and databases",
+    "component": "C4 Level 3 - Internal modules",
+    "sequence": "Key workflows (payroll, invoicing, leave)"
+  },
+  "code_documentation": {
+    "modules": "README.md in each module directory",
+    "functions": "Docstrings with Args, Returns, Raises",
+    "types": "TypeScript interfaces with JSDoc comments"
+  },
+  "runbooks": {
+    "deployment": "Step-by-step deployment guide",
+    "troubleshooting": "Common issues and solutions",
+    "recovery": "Database restore, rollback procedures"
+  }
+}

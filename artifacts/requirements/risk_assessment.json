@@ -1,0 +1,775 @@
+{
+  "metadata": {
+    "agent_id": "REQ-011",
+    "agent_name": "Risk Assessor",
+    "version": "1.0.0",
+    "created_at": "2026-01-08T00:00:00Z",
+    "last_updated": "2026-01-08T00:00:00Z",
+    "assessment_scope": "GanaPortal HRMS Implementation"
+  },
+  "risk_categories": {
+    "technical_risks": {
+      "category_weight": 0.35,
+      "risks": [
+        {
+          "id": "TR-001",
+          "title": "System Scalability Limitations",
+          "description": "System may not handle projected growth in users and data volume",
+          "likelihood": "Medium",
+          "impact": "High",
+          "risk_score": 12,
+          "triggers": [
+            "Rapid employee onboarding",
+            "Multi-tenant growth",
+            "Peak payroll processing periods"
+          ],
+          "consequences": [
+            "System slowdowns during critical operations",
+            "Payroll processing delays",
+            "User experience degradation"
+          ],
+          "mitigation": {
+            "strategy": "Proactive capacity planning and elastic infrastructure",
+            "actions": [
+              "Implement auto-scaling for compute resources",
+              "Use read replicas for database",
+              "Implement caching layer (Redis)",
+              "Design for horizontal scaling from day one",
+              "Load testing with 3x projected capacity"
+            ],
+            "owner": "Infrastructure Team",
+            "timeline": "Pre-launch",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "TR-002",
+          "title": "Third-Party API Dependencies",
+          "description": "Critical dependency on external APIs (AI providers, payment gateways, SMS)",
+          "likelihood": "Medium",
+          "impact": "High",
+          "risk_score": 12,
+          "triggers": [
+            "API provider outages",
+            "Rate limit exhaustion",
+            "API version deprecation"
+          ],
+          "consequences": [
+            "Feature unavailability",
+            "Delayed notifications",
+            "Failed payment processing"
+          ],
+          "mitigation": {
+            "strategy": "Multi-provider redundancy and graceful degradation",
+            "actions": [
+              "Implement circuit breaker pattern for all external calls",
+              "Configure fallback providers (Claude -> Gemini -> GPT-4)",
+              "Queue critical operations for retry",
+              "Monitor API health proactively",
+              "Maintain SLA agreements with providers"
+            ],
+            "owner": "Integration Team",
+            "timeline": "Phase 1",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "TR-003",
+          "title": "Data Migration Failures",
+          "description": "Risk of data loss or corruption during migration from legacy systems",
+          "likelihood": "Medium",
+          "impact": "Critical",
+          "risk_score": 16,
+          "triggers": [
+            "Complex legacy data structures",
+            "Incomplete mapping",
+            "Transformation errors"
+          ],
+          "consequences": [
+            "Incorrect employee records",
+            "Wrong salary calculations",
+            "Compliance violations"
+          ],
+          "mitigation": {
+            "strategy": "Comprehensive migration framework with validation",
+            "actions": [
+              "Create detailed data mapping documentation",
+              "Implement automated validation scripts",
+              "Run parallel operations during transition",
+              "Maintain rollback capability",
+              "Multiple dry-run migrations before cutover"
+            ],
+            "owner": "Data Team",
+            "timeline": "Pre-migration",
+            "residual_risk": "Medium"
+          }
+        },
+        {
+          "id": "TR-004",
+          "title": "Integration Complexity",
+          "description": "Difficulty integrating with diverse client systems and legacy software",
+          "likelihood": "High",
+          "impact": "Medium",
+          "risk_score": 12,
+          "triggers": [
+            "Non-standard client systems",
+            "Undocumented APIs",
+            "Version incompatibilities"
+          ],
+          "consequences": [
+            "Extended implementation timelines",
+            "Data synchronization issues",
+            "Client dissatisfaction"
+          ],
+          "mitigation": {
+            "strategy": "Flexible integration architecture with standard protocols",
+            "actions": [
+              "Build comprehensive REST API with OpenAPI documentation",
+              "Support multiple data formats (JSON, XML, CSV)",
+              "Create pre-built connectors for common systems",
+              "Implement integration testing framework",
+              "Provide webhook support for real-time sync"
+            ],
+            "owner": "Integration Team",
+            "timeline": "Phase 1-2",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "TR-005",
+          "title": "Performance Degradation",
+          "description": "System performance issues affecting user experience and processing",
+          "likelihood": "Medium",
+          "impact": "Medium",
+          "risk_score": 9,
+          "triggers": [
+            "Inefficient queries",
+            "Memory leaks",
+            "Concurrent user spikes"
+          ],
+          "consequences": [
+            "Slow page loads",
+            "Timeout errors",
+            "User frustration"
+          ],
+          "mitigation": {
+            "strategy": "Performance-first development and monitoring",
+            "actions": [
+              "Implement APM tools (New Relic/Datadog)",
+              "Set performance budgets for all operations",
+              "Regular performance testing and optimization",
+              "Database query optimization and indexing",
+              "CDN for static assets"
+            ],
+            "owner": "Development Team",
+            "timeline": "Ongoing",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "TR-006",
+          "title": "Technology Obsolescence",
+          "description": "Risk of chosen technologies becoming outdated or unsupported",
+          "likelihood": "Low",
+          "impact": "Medium",
+          "risk_score": 6,
+          "triggers": [
+            "Framework end-of-life",
+            "Security vulnerabilities in dependencies",
+            "Skill availability issues"
+          ],
+          "consequences": [
+            "Security exposure",
+            "Maintenance difficulties",
+            "Hiring challenges"
+          ],
+          "mitigation": {
+            "strategy": "Technology governance and continuous modernization",
+            "actions": [
+              "Choose mature, well-supported technologies",
+              "Maintain dependency update schedule",
+              "Implement automated security scanning",
+              "Plan for periodic technology refresh",
+              "Document all technical decisions"
+            ],
+            "owner": "Architecture Team",
+            "timeline": "Ongoing",
+            "residual_risk": "Low"
+          }
+        }
+      ]
+    },
+    "compliance_risks": {
+      "category_weight": 0.30,
+      "risks": [
+        {
+          "id": "CR-001",
+          "title": "Statutory Compliance Violations",
+          "description": "Failure to comply with PF, ESI, TDS, PT, and other statutory requirements",
+          "likelihood": "Medium",
+          "impact": "Critical",
+          "risk_score": 16,
+          "triggers": [
+            "Incorrect calculation formulas",
+            "Missed filing deadlines",
+            "Regulatory changes not implemented"
+          ],
+          "consequences": [
+            "Penalties and fines",
+            "Legal action against clients",
+            "Reputation damage",
+            "License revocation risk"
+          ],
+          "mitigation": {
+            "strategy": "Compliance automation with expert validation",
+            "actions": [
+              "Implement rule-based compliance engine",
+              "Automated due date tracking and alerts",
+              "Regular compliance audits by experts",
+              "Maintain regulatory update subscription",
+              "Build compliance dashboard for monitoring"
+            ],
+            "owner": "Compliance Team",
+            "timeline": "Phase 1",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "CR-002",
+          "title": "Data Privacy Violations (DPDP Act)",
+          "description": "Non-compliance with India's Digital Personal Data Protection Act",
+          "likelihood": "Medium",
+          "impact": "Critical",
+          "risk_score": 16,
+          "triggers": [
+            "Unauthorized data access",
+            "Inadequate consent management",
+            "Cross-border data transfer issues"
+          ],
+          "consequences": [
+            "Heavy penalties (up to Rs 250 crore)",
+            "Business restrictions",
+            "Reputation damage"
+          ],
+          "mitigation": {
+            "strategy": "Privacy by design implementation",
+            "actions": [
+              "Implement consent management system",
+              "Data minimization in collection and storage",
+              "Right to erasure implementation",
+              "Data localization for sensitive data",
+              "Regular privacy impact assessments",
+              "Appoint Data Protection Officer"
+            ],
+            "owner": "Privacy Team",
+            "timeline": "Phase 1",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "CR-003",
+          "title": "Tax Calculation Errors",
+          "description": "Incorrect TDS calculations leading to tax compliance issues",
+          "likelihood": "Medium",
+          "impact": "High",
+          "risk_score": 12,
+          "triggers": [
+            "Complex tax rules",
+            "Multiple regime handling",
+            "Mid-year employee changes"
+          ],
+          "consequences": [
+            "Under/over deduction of taxes",
+            "Employee financial impact",
+            "Employer penalties"
+          ],
+          "mitigation": {
+            "strategy": "Multi-layer tax calculation validation",
+            "actions": [
+              "Implement comprehensive tax calculation engine",
+              "Automated testing with known scenarios",
+              "Parallel run with manual calculations",
+              "CA firm review of tax logic",
+              "Year-end reconciliation tools"
+            ],
+            "owner": "Payroll Team",
+            "timeline": "Phase 1",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "CR-004",
+          "title": "Audit Trail Inadequacy",
+          "description": "Insufficient audit trails for regulatory and internal audit requirements",
+          "likelihood": "Low",
+          "impact": "High",
+          "risk_score": 8,
+          "triggers": [
+            "Incomplete logging",
+            "Log tampering",
+            "Retention policy gaps"
+          ],
+          "consequences": [
+            "Audit failures",
+            "Compliance violations",
+            "Dispute resolution difficulties"
+          ],
+          "mitigation": {
+            "strategy": "Comprehensive immutable audit logging",
+            "actions": [
+              "Log all data modifications with before/after values",
+              "Implement tamper-proof log storage",
+              "Define retention policies per data type",
+              "Build audit report generation tools",
+              "Regular audit log reviews"
+            ],
+            "owner": "Development Team",
+            "timeline": "Phase 1",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "CR-005",
+          "title": "Labor Law Non-Compliance",
+          "description": "Violations of labor code requirements (attendance, leave, wages)",
+          "likelihood": "Medium",
+          "impact": "Medium",
+          "risk_score": 9,
+          "triggers": [
+            "Overtime violations",
+            "Leave entitlement errors",
+            "Minimum wage issues"
+          ],
+          "consequences": [
+            "Labor inspector penalties",
+            "Employee disputes",
+            "Legal proceedings"
+          ],
+          "mitigation": {
+            "strategy": "Labor law compliance automation",
+            "actions": [
+              "Configure labor law rules by state",
+              "Automated overtime limit monitoring",
+              "Leave balance enforcement",
+              "Minimum wage validation in payroll",
+              "Compliance reporting for inspections"
+            ],
+            "owner": "Compliance Team",
+            "timeline": "Phase 1-2",
+            "residual_risk": "Low"
+          }
+        }
+      ]
+    },
+    "security_risks": {
+      "category_weight": 0.35,
+      "risks": [
+        {
+          "id": "SR-001",
+          "title": "Data Breach",
+          "description": "Unauthorized access to sensitive employee and financial data",
+          "likelihood": "Medium",
+          "impact": "Critical",
+          "risk_score": 16,
+          "triggers": [
+            "Cyber attacks",
+            "Insider threats",
+            "Credential compromise"
+          ],
+          "consequences": [
+            "Financial loss",
+            "Regulatory penalties",
+            "Reputation damage",
+            "Legal liability"
+          ],
+          "mitigation": {
+            "strategy": "Defense in depth security architecture",
+            "actions": [
+              "Implement encryption at rest (AES-256) and in transit (TLS 1.3)",
+              "Zero-trust network architecture",
+              "Multi-factor authentication mandatory",
+              "Regular penetration testing",
+              "Security awareness training",
+              "Implement DLP solutions",
+              "24x7 security monitoring (SIEM)"
+            ],
+            "owner": "Security Team",
+            "timeline": "Pre-launch",
+            "residual_risk": "Medium"
+          }
+        },
+        {
+          "id": "SR-002",
+          "title": "Authentication Vulnerabilities",
+          "description": "Weak authentication mechanisms leading to unauthorized access",
+          "likelihood": "Medium",
+          "impact": "High",
+          "risk_score": 12,
+          "triggers": [
+            "Password attacks",
+            "Session hijacking",
+            "Token theft"
+          ],
+          "consequences": [
+            "Account takeover",
+            "Data theft",
+            "Fraudulent transactions"
+          ],
+          "mitigation": {
+            "strategy": "Strong authentication framework",
+            "actions": [
+              "Implement OAuth 2.0 with JWT",
+              "Enforce strong password policy",
+              "MFA for all admin and sensitive operations",
+              "Session management with automatic timeout",
+              "IP-based access restrictions",
+              "Anomaly detection for login patterns"
+            ],
+            "owner": "Security Team",
+            "timeline": "Phase 1",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "SR-003",
+          "title": "API Security Vulnerabilities",
+          "description": "Security weaknesses in API endpoints exposing data or functionality",
+          "likelihood": "Medium",
+          "impact": "High",
+          "risk_score": 12,
+          "triggers": [
+            "Injection attacks",
+            "Broken access control",
+            "Rate limiting bypass"
+          ],
+          "consequences": [
+            "Data exposure",
+            "System compromise",
+            "Service disruption"
+          ],
+          "mitigation": {
+            "strategy": "API security best practices implementation",
+            "actions": [
+              "Input validation and sanitization",
+              "Implement rate limiting and throttling",
+              "API authentication and authorization",
+              "Regular API security testing",
+              "API gateway with WAF",
+              "OWASP API Security Top 10 compliance"
+            ],
+            "owner": "Development Team",
+            "timeline": "Phase 1",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "SR-004",
+          "title": "Insider Threat",
+          "description": "Malicious or negligent actions by internal users",
+          "likelihood": "Low",
+          "impact": "High",
+          "risk_score": 8,
+          "triggers": [
+            "Disgruntled employees",
+            "Social engineering",
+            "Excessive privileges"
+          ],
+          "consequences": [
+            "Data theft",
+            "System sabotage",
+            "Financial fraud"
+          ],
+          "mitigation": {
+            "strategy": "Least privilege and monitoring",
+            "actions": [
+              "Role-based access control (RBAC)",
+              "Principle of least privilege",
+              "Regular access reviews",
+              "User activity monitoring",
+              "Segregation of duties",
+              "Background verification for sensitive roles"
+            ],
+            "owner": "Security Team",
+            "timeline": "Phase 1",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "SR-005",
+          "title": "Ransomware Attack",
+          "description": "Ransomware infection leading to data encryption and service disruption",
+          "likelihood": "Medium",
+          "impact": "Critical",
+          "risk_score": 16,
+          "triggers": [
+            "Phishing emails",
+            "Unpatched vulnerabilities",
+            "Compromised third-party software"
+          ],
+          "consequences": [
+            "Complete service outage",
+            "Data loss",
+            "Ransom payment demand",
+            "Extended recovery time"
+          ],
+          "mitigation": {
+            "strategy": "Ransomware prevention and recovery preparedness",
+            "actions": [
+              "Regular offline backups",
+              "Network segmentation",
+              "Endpoint detection and response (EDR)",
+              "Email security gateway",
+              "Patch management program",
+              "Incident response plan with ransomware playbook",
+              "Cyber insurance coverage"
+            ],
+            "owner": "Security Team",
+            "timeline": "Pre-launch",
+            "residual_risk": "Medium"
+          }
+        },
+        {
+          "id": "SR-006",
+          "title": "Third-Party Security Risks",
+          "description": "Security vulnerabilities introduced through third-party components and vendors",
+          "likelihood": "Medium",
+          "impact": "Medium",
+          "risk_score": 9,
+          "triggers": [
+            "Vulnerable dependencies",
+            "Compromised vendor systems",
+            "Supply chain attacks"
+          ],
+          "consequences": [
+            "Indirect system compromise",
+            "Data exposure through vendors",
+            "Compliance violations"
+          ],
+          "mitigation": {
+            "strategy": "Third-party risk management program",
+            "actions": [
+              "Vendor security assessments",
+              "SCA tools for dependency scanning",
+              "Software composition analysis in CI/CD",
+              "Vendor access restrictions",
+              "Contract security requirements",
+              "Regular vendor security reviews"
+            ],
+            "owner": "Security Team",
+            "timeline": "Ongoing",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "SR-007",
+          "title": "Denial of Service (DoS/DDoS)",
+          "description": "Service unavailability due to denial of service attacks",
+          "likelihood": "Medium",
+          "impact": "Medium",
+          "risk_score": 9,
+          "triggers": [
+            "Targeted attacks",
+            "Botnet attacks",
+            "Application layer attacks"
+          ],
+          "consequences": [
+            "Service disruption",
+            "Lost productivity",
+            "Reputation damage"
+          ],
+          "mitigation": {
+            "strategy": "DDoS protection and resilience",
+            "actions": [
+              "CDN with DDoS protection (Cloudflare/AWS Shield)",
+              "Rate limiting at all layers",
+              "Auto-scaling infrastructure",
+              "Geographic distribution",
+              "DDoS response procedures"
+            ],
+            "owner": "Infrastructure Team",
+            "timeline": "Pre-launch",
+            "residual_risk": "Low"
+          }
+        }
+      ]
+    },
+    "operational_risks": {
+      "category_weight": 0.20,
+      "risks": [
+        {
+          "id": "OR-001",
+          "title": "Business Continuity Failure",
+          "description": "Inability to maintain operations during disruptions",
+          "likelihood": "Low",
+          "impact": "Critical",
+          "risk_score": 12,
+          "triggers": [
+            "Natural disasters",
+            "Infrastructure failures",
+            "Pandemic situations"
+          ],
+          "consequences": [
+            "Extended service outage",
+            "Missed payroll processing",
+            "Compliance deadlines missed"
+          ],
+          "mitigation": {
+            "strategy": "Comprehensive BCP/DR implementation",
+            "actions": [
+              "Multi-region deployment",
+              "Regular backup testing",
+              "Documented recovery procedures",
+              "RPO < 1 hour, RTO < 4 hours",
+              "Annual DR drills",
+              "Business continuity insurance"
+            ],
+            "owner": "Operations Team",
+            "timeline": "Pre-launch",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "OR-002",
+          "title": "Key Personnel Dependency",
+          "description": "Over-reliance on specific individuals for critical knowledge",
+          "likelihood": "Medium",
+          "impact": "Medium",
+          "risk_score": 9,
+          "triggers": [
+            "Resignations",
+            "Extended leave",
+            "Unavailability during emergencies"
+          ],
+          "consequences": [
+            "Knowledge loss",
+            "Delayed issue resolution",
+            "Process disruption"
+          ],
+          "mitigation": {
+            "strategy": "Knowledge distribution and documentation",
+            "actions": [
+              "Comprehensive technical documentation",
+              "Cross-training programs",
+              "Pair programming practices",
+              "Knowledge base maintenance",
+              "Succession planning for key roles"
+            ],
+            "owner": "HR Team",
+            "timeline": "Ongoing",
+            "residual_risk": "Low"
+          }
+        },
+        {
+          "id": "OR-003",
+          "title": "Support Escalation Failures",
+          "description": "Inability to resolve critical issues within acceptable timeframes",
+          "likelihood": "Medium",
+          "impact": "Medium",
+          "risk_score": 9,
+          "triggers": [
+            "Complex issues",
+            "Inadequate support staffing",
+            "Missing runbooks"
+          ],
+          "consequences": [
+            "Extended customer impact",
+            "SLA breaches",
+            "Customer churn"
+          ],
+          "mitigation": {
+            "strategy": "Tiered support with clear escalation paths",
+            "actions": [
+              "Define clear escalation matrix",
+              "Create comprehensive runbooks",
+              "Implement on-call rotation",
+              "Regular support training",
+              "Monitor resolution times and optimize"
+            ],
+            "owner": "Support Team",
+            "timeline": "Pre-launch",
+            "residual_risk": "Low"
+          }
+        }
+      ]
+    }
+  },
+  "risk_matrix": {
+    "likelihood_scale": {
+      "very_low": {"value": 1, "description": "Rare (< 5% probability)"},
+      "low": {"value": 2, "description": "Unlikely (5-20% probability)"},
+      "medium": {"value": 3, "description": "Possible (20-50% probability)"},
+      "high": {"value": 4, "description": "Likely (50-80% probability)"},
+      "very_high": {"value": 5, "description": "Almost certain (> 80% probability)"}
+    },
+    "impact_scale": {
+      "negligible": {"value": 1, "description": "Minimal impact, easily recoverable"},
+      "minor": {"value": 2, "description": "Limited impact, recoverable within hours"},
+      "moderate": {"value": 3, "description": "Significant impact, recoverable within days"},
+      "major": {"value": 4, "description": "Major impact, extended recovery required"},
+      "critical": {"value": 5, "description": "Catastrophic, may threaten business viability"}
+    },
+    "risk_levels": {
+      "low": {"range": "1-6", "color": "green", "action": "Monitor"},
+      "medium": {"range": "7-12", "color": "yellow", "action": "Mitigate"},
+      "high": {"range": "13-19", "color": "orange", "action": "Urgent action required"},
+      "critical": {"range": "20-25", "color": "red", "action": "Immediate action required"}
+    }
+  },
+  "risk_summary": {
+    "total_risks_identified": 21,
+    "by_category": {
+      "technical": 6,
+      "compliance": 5,
+      "security": 7,
+      "operational": 3
+    },
+    "by_severity": {
+      "critical": 5,
+      "high": 8,
+      "medium": 6,
+      "low": 2
+    },
+    "top_risks": [
+      "SR-001: Data Breach",
+      "CR-001: Statutory Compliance Violations",
+      "CR-002: Data Privacy Violations",
+      "SR-005: Ransomware Attack",
+      "TR-003: Data Migration Failures"
+    ]
+  },
+  "monitoring_framework": {
+    "key_risk_indicators": [
+      {
+        "indicator": "Security incident count",
+        "threshold": "> 0 critical incidents/month",
+        "frequency": "Real-time"
+      },
+      {
+        "indicator": "System availability",
+        "threshold": "< 99.9%",
+        "frequency": "Real-time"
+      },
+      {
+        "indicator": "Compliance due date adherence",
+        "threshold": "< 100%",
+        "frequency": "Daily"
+      },
+      {
+        "indicator": "API error rate",
+        "threshold": "> 1%",
+        "frequency": "Real-time"
+      },
+      {
+        "indicator": "Payroll processing success rate",
+        "threshold": "< 99.99%",
+        "frequency": "Per run"
+      }
+    ],
+    "review_schedule": {
+      "risk_register": "Monthly",
+      "risk_assessment": "Quarterly",
+      "control_effectiveness": "Quarterly",
+      "board_reporting": "Quarterly"
+    }
+  }
+}

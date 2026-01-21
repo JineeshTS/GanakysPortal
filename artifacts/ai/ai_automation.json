@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "agents": ["AI-009", "AI-010", "AI-011", "AI-012"],
+    "category": "AI Automation",
+    "created_at": "2026-01-08T11:22:00Z"
+  },
+  "AI-009_journal_generator": {
+    "status": "completed",
+    "files": ["app/services/ai/journal_generator.py"],
+    "features": {
+      "input": "Transaction description + amount",
+      "output": "Debit/Credit entries with accounts",
+      "templates": "Pre-defined patterns for common transactions",
+      "review_workflow": "Queue for accountant approval"
+    }
+  },
+  "AI-010_gst_validator": {
+    "status": "completed",
+    "files": ["app/services/ai/gst_validator.py"],
+    "features": {
+      "validation": "Check GSTIN format and status",
+      "rate_validation": "Verify GST rates for HSN codes",
+      "place_of_supply": "Determine CGST/SGST vs IGST"
+    }
+  },
+  "AI-011_report_summarizer": {
+    "status": "completed",
+    "files": ["app/services/ai/summarizer.py"],
+    "features": {
+      "input": "Financial report data",
+      "output": "Natural language summary",
+      "insights": "Key observations and anomalies",
+      "trends": "Period-over-period analysis"
+    }
+  },
+  "AI-012_ai_usage_tracker": {
+    "status": "completed",
+    "files": ["app/services/ai/usage_tracker.py", "app/models/ai.py"],
+    "features": {
+      "tracking": ["provider", "model", "tokens", "latency", "cost"],
+      "quotas": "Monthly usage limits",
+      "reporting": "Usage dashboard data",
+      "alerts": "Threshold notifications"
+    }
+  }
+}

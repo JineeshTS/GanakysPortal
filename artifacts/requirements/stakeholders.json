@@ -1,0 +1,127 @@
+{
+  "analysis_by": "REQ-002",
+  "analyzed_at": "2026-01-06T10:36:00Z",
+  "internal_stakeholders": [
+    {
+      "role": "admin",
+      "title": "Company Administrator / Owner",
+      "user_count": 1,
+      "needs": [
+        "Complete visibility into all operations",
+        "Automated compliance management",
+        "AI-powered insights and anomaly detection",
+        "Minimal manual data entry",
+        "Accurate statutory filings"
+      ],
+      "pain_points": [
+        "Manual bookkeeping is time-consuming",
+        "Compliance deadlines are easy to miss",
+        "Reconciliation takes hours",
+        "Multiple systems don't talk to each other"
+      ],
+      "key_features": [
+        "Dashboard with KPIs",
+        "AI daily briefing",
+        "One-click statutory filing",
+        "95% auto-bookkeeping"
+      ],
+      "priority": "HIGHEST"
+    },
+    {
+      "role": "hr",
+      "title": "HR Manager",
+      "user_count": 1,
+      "needs": [
+        "Efficient employee onboarding",
+        "Easy leave and attendance tracking",
+        "Accurate payroll processing",
+        "Document management"
+      ],
+      "pain_points": [
+        "Manual document collection is tedious",
+        "Payroll calculations are error-prone",
+        "Leave tracking across team is difficult"
+      ],
+      "key_features": [
+        "8-step onboarding wizard",
+        "AI document extraction",
+        "Automated payroll",
+        "Leave calendar"
+      ],
+      "priority": "HIGH"
+    },
+    {
+      "role": "accountant",
+      "title": "Accountant",
+      "user_count": 1,
+      "needs": [
+        "Accurate books of accounts",
+        "Easy invoice and bill entry",
+        "Automated GST returns",
+        "Bank reconciliation"
+      ],
+      "pain_points": [
+        "Manual data entry from bills",
+        "GST return preparation is complex",
+        "Bank reconciliation is tedious"
+      ],
+      "key_features": [
+        "AI bill extraction",
+        "Auto GSTR-1/3B generation",
+        "AI bank reconciliation"
+      ],
+      "priority": "HIGH"
+    },
+    {
+      "role": "employee",
+      "title": "Regular Employee",
+      "user_count": 5,
+      "needs": [
+        "View payslips and tax info",
+        "Apply for leave easily",
+        "Submit timesheets",
+        "Access documents"
+      ],
+      "pain_points": [
+        "Can't find old payslips",
+        "Leave balance unclear",
+        "Timesheet entry is boring"
+      ],
+      "key_features": [
+        "Self-service portal",
+        "Mobile-friendly interface",
+        "AI timesheet suggestions"
+      ],
+      "priority": "MEDIUM"
+    }
+  ],
+  "external_stakeholders": [
+    {
+      "role": "external_ca",
+      "title": "Chartered Accountant (External)",
+      "user_count": 1,
+      "needs": [
+        "Verify AI-processed entries",
+        "Access audit trail",
+        "Review compliance filings",
+        "Approve/reject entries"
+      ],
+      "pain_points": [
+        "No visibility into client books",
+        "Manual verification is slow",
+        "Cannot track what AI did"
+      ],
+      "key_features": [
+        "Verification queue",
+        "Audit trail access",
+        "Approve/reject interface"
+      ],
+      "priority": "MEDIUM"
+    }
+  ],
+  "total_users": {
+    "initial": 5,
+    "year_2": 15,
+    "year_3": 50
+  }
+}

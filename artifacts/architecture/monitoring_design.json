@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-012",
+    "agent_name": "Monitoring Architect",
+    "created_at": "2026-01-08T10:56:00Z",
+    "version": "1.0"
+  },
+  "health_checks": {
+    "endpoints": {
+      "/health": {"auth": false, "response": {"status": "ok", "timestamp": "ISO8601"}},
+      "/health/detailed": {"auth": true, "role": "ADMIN", "response": {"database": "status", "redis": "status", "storage": "status"}}
+    },
+    "checks": ["database_connection", "redis_connection", "minio_connection", "celery_worker_status"]
+  },
+  "metrics_collection": {
+    "system": ["cpu_usage", "memory_usage", "disk_usage", "network_io"],
+    "application": ["request_count", "request_latency_p50", "request_latency_p95", "error_rate"],
+    "business": ["active_users", "payroll_runs", "invoices_generated", "ai_requests"]
+  },
+  "alerting": {
+    "channels": ["email"],
+    "rules": {
+      "high_error_rate": {"condition": "error_rate > 5%", "severity": "critical"},
+      "high_latency": {"condition": "p95_latency > 2s", "severity": "warning"},
+      "disk_space": {"condition": "disk_usage > 80%", "severity": "warning"},
+      "service_down": {"condition": "health_check_failed", "severity": "critical"}
+    }
+  },
+  "dashboards": {
+    "system_overview": ["CPU", "Memory", "Disk", "Network"],
+    "application_performance": ["Request rate", "Latency", "Errors", "Active users"],
+    "business_metrics": ["Daily transactions", "Payroll status", "Compliance due dates"]
+  },
+  "uptime_monitoring": {
+    "external": "UptimeRobot or similar",
+    "check_interval": "5 minutes",
+    "endpoints": ["https://portal.ganakys.com/health"]
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-007",
+    "agent_name": "Backend Architect",
+    "created_at": "2026-01-08T10:51:00Z",
+    "version": "1.0"
+  },
+  "technology_stack": {
+    "framework": "FastAPI 0.109.x",
+    "language": "Python 3.11+",
+    "orm": "SQLAlchemy 2.0 (async)",
+    "validation": "Pydantic v2",
+    "task_queue": "Celery 5.3.x",
+    "testing": "pytest + pytest-asyncio"
+  },
+  "project_structure": {
+    "app/": {
+      "main.py": "FastAPI application factory",
+      "config.py": "Configuration settings",
+      "api/": "API route handlers",
+      "services/": "Business logic layer",
+      "repositories/": "Data access layer",
+      "models/": "SQLAlchemy ORM models",
+      "schemas/": "Pydantic request/response schemas",
+      "core/": "Auth, security, middleware",
+      "utils/": "Helpers and utilities",
+      "tasks/": "Celery background tasks"
+    },
+    "tests/": "Test files mirroring app structure",
+    "migrations/": "Alembic database migrations"
+  },
+  "layered_architecture": {
+    "routes": {"responsibility": "HTTP handling, request parsing", "imports": "services"},
+    "services": {"responsibility": "Business logic, validation, orchestration", "imports": "repositories, schemas"},
+    "repositories": {"responsibility": "Data access, CRUD operations", "imports": "models"},
+    "models": {"responsibility": "ORM definitions, relationships", "imports": "none"},
+    "schemas": {"responsibility": "Pydantic models for validation", "imports": "none"}
+  },
+  "dependency_injection": {
+    "pattern": "FastAPI Depends",
+    "common_deps": ["get_db", "get_current_user", "get_redis", "require_role"]
+  },
+  "async_patterns": {
+    "database": "async SQLAlchemy with asyncpg",
+    "http_client": "httpx AsyncClient",
+    "background_tasks": "FastAPI BackgroundTasks for simple, Celery for complex"
+  },
+  "module_structure": {
+    "pattern": "Feature-based modules",
+    "each_module": ["routes.py", "services.py", "repository.py", "schemas.py"],
+    "modules": ["auth", "users", "employees", "onboarding", "leave", "timesheet", "payroll", "statutory", "accounting", "customers", "invoices", "vendors", "bills", "banking", "gst", "tds", "crm", "projects", "documents", "reports", "ai", "notifications", "audit", "settings"]
+  },
+  "error_handling": {
+    "exceptions": "Custom exception classes per error type",
+    "handlers": "Global exception handlers in main.py",
+    "response_format": {"success": false, "error": {"code": "string", "message": "string"}}
+  },
+  "logging": {
+    "library": "structlog",
+    "format": "JSON for production, pretty for development",
+    "levels": "DEBUG, INFO, WARNING, ERROR, CRITICAL",
+    "context": "request_id, user_id, endpoint"
+  },
+  "testing_strategy": {
+    "unit_tests": "Service and utility functions",
+    "integration_tests": "API endpoints with test database",
+    "fixtures": "pytest fixtures for common test data",
+    "coverage_target": "80%"
+  }
+}

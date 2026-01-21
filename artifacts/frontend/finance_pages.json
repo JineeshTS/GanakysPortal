@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "agents": ["FE-027", "FE-028", "FE-029", "FE-030"],
+    "category": "Finance Pages",
+    "created_at": "2026-01-08T11:16:00Z"
+  },
+  "FE-027_bills_page": {
+    "status": "completed",
+    "files": ["src/app/(dashboard)/bills/page.tsx"],
+    "features": ["Bill list", "Create bill", "TDS deduction", "Approval workflow"]
+  },
+  "FE-028_banking_pages": {
+    "status": "completed",
+    "files": ["src/app/(dashboard)/banking/page.tsx"],
+    "features": ["Account list", "Transaction view", "Import statement", "Balance chart"]
+  },
+  "FE-029_reconciliation_page": {
+    "status": "completed",
+    "files": ["src/app/(dashboard)/banking/reconciliation/page.tsx"],
+    "features": ["Unmatched items", "Match action", "Create from bank", "Reconcile button"]
+  },
+  "FE-030_payments_page": {
+    "status": "completed",
+    "files": ["src/app/(dashboard)/payments/page.tsx"],
+    "features": ["Payment list", "Record payment", "Invoice matching"]
+  }
+}

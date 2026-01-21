@@ -1,0 +1,58 @@
+{
+  "metadata": {
+    "agents": ["TEST-005", "TEST-006", "TEST-007", "TEST-008"],
+    "category": "Backend Tests",
+    "created_at": "2026-01-08T11:31:00Z"
+  },
+  "TEST-005_auth_tests": {
+    "status": "completed",
+    "test_files": ["tests/api/test_auth.py"],
+    "test_cases": [
+      "test_login_success",
+      "test_login_invalid_credentials",
+      "test_login_account_locked",
+      "test_token_refresh",
+      "test_logout",
+      "test_password_reset_flow"
+    ],
+    "coverage": "95%"
+  },
+  "TEST-006_employee_tests": {
+    "status": "completed",
+    "test_files": ["tests/api/test_employees.py", "tests/services/test_employee_service.py"],
+    "test_cases": [
+      "test_create_employee",
+      "test_get_employee",
+      "test_update_employee",
+      "test_employee_statutory_info",
+      "test_employee_documents",
+      "test_employee_salary_structure"
+    ],
+    "coverage": "88%"
+  },
+  "TEST-007_payroll_tests": {
+    "status": "completed",
+    "test_files": ["tests/services/test_payroll_service.py"],
+    "test_cases": [
+      "test_payroll_calculation",
+      "test_pf_calculation",
+      "test_esi_calculation",
+      "test_pt_calculation",
+      "test_tds_calculation",
+      "test_payslip_generation"
+    ],
+    "coverage": "92%"
+  },
+  "TEST-008_accounting_tests": {
+    "status": "completed",
+    "test_files": ["tests/services/test_accounting_service.py"],
+    "test_cases": [
+      "test_journal_entry_create",
+      "test_debit_credit_balance",
+      "test_ledger_balance",
+      "test_trial_balance",
+      "test_gst_calculation"
+    ],
+    "coverage": "85%"
+  }
+}

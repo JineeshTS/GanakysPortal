@@ -1,0 +1,241 @@
+# DEP-001: GanaPortal Production Docker Compose
+# Production deployment for portal.ganakys.com
+
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # Backend API Service
+  # ==========================================================================
+  backend:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.backend
+    container_name: ganaportal-backend
+    restart: always
+    ports:
+      - "127.0.0.1:8002:8000"
+    networks:
+      - ganaportal-network
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+    env_file:
+      - ../env/.env.production
+    volumes:
+      - uploads:/app/uploads
+      - logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==========================================================================
+  # Frontend Web Service
+  # ==========================================================================
+  frontend:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.frontend
+      args:
+        - NEXT_PUBLIC_API_URL=/api/v1
+        - NEXT_PUBLIC_APP_ENV=production
+    container_name: ganaportal-frontend
+    restart: always
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - ganaportal-network
+    depends_on:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================================================
+  # PostgreSQL Database
+  # ==========================================================================
+  db:
+    image: postgres:16-alpine
+    container_name: ganaportal-db
+    restart: always
+    networks:
+      - ganaportal-network
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ganaportal_db}
+      POSTGRES_USER: ${DB_USER:-ganaportal}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ganaportal} -d ${DB_NAME:-ganaportal_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # Redis Cache
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: ganaportal-redis
+    restart: always
+    networks:
+      - ganaportal-network
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redisdata:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "redis-cli", "--pass", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # Nginx Reverse Proxy + SSL (DISABLED - Using host nginx)
+  # ==========================================================================
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: ganaportal-nginx
+  #   restart: always
+  #   networks:
+  #     - ganaportal-network
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ../nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+  #     - ../nginx/ssl:/etc/nginx/ssl:ro
+  #     - /etc/letsencrypt:/etc/letsencrypt:ro
+  #     - logs:/var/log/nginx
+  #   depends_on:
+  #     - backend
+  #     - frontend
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.5'
+  #         memory: 256M
+
+  # ==========================================================================
+  # Celery Worker (Background Tasks)
+  # ==========================================================================
+  celery-worker:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.backend
+    container_name: ganaportal-celery
+    restart: always
+    networks:
+      - ganaportal-network
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+    init: true
+    env_file:
+      - ../env/.env.production
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/3
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/4
+    depends_on:
+      - db
+      - redis
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # ==========================================================================
+  # Celery Beat (Scheduled Tasks)
+  # ==========================================================================
+  celery-beat:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.backend
+    container_name: ganaportal-celery-beat
+    restart: always
+    networks:
+      - ganaportal-network
+    command: celery -A app.celery_app beat --loglevel=info
+    init: true
+    env_file:
+      - ../env/.env.production
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/3
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/4
+    depends_on:
+      - db
+      - redis
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery.*beat' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+networks:
+  ganaportal-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+  uploads:
+    driver: local
+  logs:
+    driver: local

@@ -1,0 +1,641 @@
+{
+  "metadata": {
+    "agent_id": "REQ-008",
+    "agent_name": "India Compliance Analyst",
+    "version": "1.0.0",
+    "created_at": "2026-01-08T00:00:00Z",
+    "last_updated": "2026-01-08T00:00:00Z",
+    "jurisdiction": "India",
+    "applicable_states": ["Karnataka"]
+  },
+  "provident_fund": {
+    "authority": "Employees' Provident Fund Organisation (EPFO)",
+    "act": "Employees' Provident Funds and Miscellaneous Provisions Act, 1952",
+    "applicability": {
+      "establishment_threshold": 20,
+      "wage_ceiling": 15000
+    },
+    "contribution_rates": {
+      "employee": {
+        "epf": {
+          "rate": 12.0,
+          "description": "12% of basic + DA",
+          "calculation_basis": "Basic salary + Dearness Allowance"
+        }
+      },
+      "employer": {
+        "epf": {
+          "rate": 3.67,
+          "description": "3.67% towards EPF account",
+          "calculation_basis": "Basic salary + Dearness Allowance"
+        },
+        "eps": {
+          "rate": 8.33,
+          "description": "8.33% towards Pension Scheme",
+          "calculation_basis": "Basic salary + Dearness Allowance",
+          "cap": {
+            "amount": 1250,
+            "description": "Maximum EPS contribution capped at Rs 1250/month (based on 15000 wage ceiling)"
+          }
+        },
+        "edli": {
+          "rate": 0.5,
+          "description": "0.5% towards EDLI",
+          "cap": 75
+        },
+        "admin_charges": {
+          "epf_admin": 0.5,
+          "edli_admin": 0.0
+        }
+      }
+    },
+    "due_dates": {
+      "contribution_payment": {
+        "day": 15,
+        "description": "15th of following month"
+      },
+      "return_filing": {
+        "monthly": "ECR by 15th of following month",
+        "annual": "Form 3A/6A by April 30th"
+      }
+    },
+    "forms": {
+      "registration": "Form 5A",
+      "monthly_return": "ECR (Electronic Challan cum Return)",
+      "annual_return": "Form 3A, Form 6A",
+      "transfer": "Form 13",
+      "withdrawal": "Form 19, Form 10C, Form 31"
+    },
+    "penalties": {
+      "late_payment": "12% per annum simple interest",
+      "non_compliance": "Damages up to 100% of arrears"
+    }
+  },
+  "employee_state_insurance": {
+    "authority": "Employees' State Insurance Corporation (ESIC)",
+    "act": "Employees' State Insurance Act, 1948",
+    "applicability": {
+      "establishment_threshold": 10,
+      "wage_ceiling": 21000,
+      "description": "Applicable to employees with monthly wages up to Rs 21,000"
+    },
+    "contribution_rates": {
+      "employee": {
+        "rate": 0.75,
+        "description": "0.75% of gross wages"
+      },
+      "employer": {
+        "rate": 3.25,
+        "description": "3.25% of gross wages"
+      },
+      "total": {
+        "rate": 4.0,
+        "description": "Total ESI contribution"
+      }
+    },
+    "due_dates": {
+      "contribution_payment": {
+        "day": 15,
+        "description": "15th of following month"
+      },
+      "return_filing": {
+        "half_yearly": "April 11th and November 11th"
+      }
+    },
+    "contribution_periods": {
+      "first": {
+        "start": "April 1",
+        "end": "September 30",
+        "benefit_period": "January to June (next year)"
+      },
+      "second": {
+        "start": "October 1",
+        "end": "March 31",
+        "benefit_period": "July to December"
+      }
+    },
+    "benefits": [
+      "Medical benefit",
+      "Sickness benefit",
+      "Maternity benefit",
+      "Disablement benefit",
+      "Dependents benefit",
+      "Funeral expenses",
+      "Unemployment allowance"
+    ],
+    "forms": {
+      "registration": "Form 01",
+      "employee_registration": "Form 1",
+      "return": "Form 5"
+    },
+    "penalties": {
+      "late_payment": "12% per annum simple interest",
+      "non_compliance": "Imprisonment up to 2 years or fine"
+    }
+  },
+  "professional_tax": {
+    "state": "Karnataka",
+    "authority": "Commercial Tax Department, Karnataka",
+    "act": "Karnataka Tax on Professions, Trades, Callings and Employments Act, 1976",
+    "slabs": [
+      {
+        "from": 0,
+        "to": 15000,
+        "monthly_tax": 0,
+        "description": "No PT for salary up to Rs 15,000"
+      },
+      {
+        "from": 15001,
+        "to": null,
+        "monthly_tax": 200,
+        "february_tax": 300,
+        "description": "Rs 200/month (Rs 300 in February) for salary above Rs 15,000"
+      }
+    ],
+    "annual_maximum": 2500,
+    "calculation_rules": {
+      "threshold": 15000,
+      "regular_months": {
+        "tax": 200,
+        "months": ["January", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+      },
+      "february": {
+        "tax": 300,
+        "description": "Higher tax in February for annual reconciliation"
+      }
+    },
+    "due_dates": {
+      "monthly": {
+        "day": 20,
+        "description": "20th of following month"
+      },
+      "annual_return": {
+        "date": "April 30",
+        "form": "Form 5"
+      }
+    },
+    "registration": {
+      "threshold": "Within 30 days of becoming liable",
+      "form": "Form 1"
+    },
+    "penalties": {
+      "late_payment": "1.25% per month",
+      "non_registration": "Rs 1,000 to Rs 5,000"
+    }
+  },
+  "tds_salary": {
+    "section": "192",
+    "description": "Tax Deducted at Source on Salary",
+    "financial_year": "2025-26",
+    "new_tax_regime": {
+      "description": "Default regime from FY 2023-24",
+      "slabs": [
+        {
+          "from": 0,
+          "to": 300000,
+          "rate": 0,
+          "description": "Income up to Rs 3 Lakh - No tax"
+        },
+        {
+          "from": 300001,
+          "to": 700000,
+          "rate": 5,
+          "description": "Rs 3L to Rs 7L - 5%"
+        },
+        {
+          "from": 700001,
+          "to": 1000000,
+          "rate": 10,
+          "description": "Rs 7L to Rs 10L - 10%"
+        },
+        {
+          "from": 1000001,
+          "to": 1200000,
+          "rate": 15,
+          "description": "Rs 10L to Rs 12L - 15%"
+        },
+        {
+          "from": 1200001,
+          "to": 1500000,
+          "rate": 20,
+          "description": "Rs 12L to Rs 15L - 20%"
+        },
+        {
+          "from": 1500001,
+          "to": null,
+          "rate": 30,
+          "description": "Above Rs 15L - 30%"
+        }
+      ],
+      "rebate_87a": {
+        "threshold": 700000,
+        "max_rebate": 25000,
+        "description": "Full rebate for income up to Rs 7 Lakh"
+      },
+      "standard_deduction": 50000
+    },
+    "old_tax_regime": {
+      "description": "Optional regime with deductions",
+      "slabs": [
+        {
+          "from": 0,
+          "to": 250000,
+          "rate": 0
+        },
+        {
+          "from": 250001,
+          "to": 500000,
+          "rate": 5
+        },
+        {
+          "from": 500001,
+          "to": 1000000,
+          "rate": 20
+        },
+        {
+          "from": 1000001,
+          "to": null,
+          "rate": 30
+        }
+      ],
+      "deductions_allowed": [
+        "80C - Rs 1.5 Lakh",
+        "80D - Health Insurance",
+        "80E - Education Loan Interest",
+        "24(b) - Home Loan Interest Rs 2 Lakh",
+        "HRA Exemption"
+      ]
+    },
+    "surcharge": {
+      "slabs": [
+        {
+          "from": 5000000,
+          "to": 10000000,
+          "rate": 10
+        },
+        {
+          "from": 10000001,
+          "to": 20000000,
+          "rate": 15
+        },
+        {
+          "from": 20000001,
+          "to": 50000000,
+          "rate": 25
+        },
+        {
+          "from": 50000001,
+          "to": null,
+          "rate": 37
+        }
+      ]
+    },
+    "health_education_cess": {
+      "rate": 4,
+      "description": "4% on tax + surcharge"
+    },
+    "due_dates": {
+      "deposit": {
+        "government": "Same day",
+        "others": "7th of following month"
+      },
+      "quarterly_return": {
+        "q1": "July 31",
+        "q2": "October 31",
+        "q3": "January 31",
+        "q4": "May 31",
+        "form": "24Q"
+      },
+      "form_16": {
+        "due_date": "June 15",
+        "description": "Annual TDS certificate to employees"
+      }
+    }
+  },
+  "gst": {
+    "authority": "Central Board of Indirect Taxes and Customs (CBIC)",
+    "act": "Central Goods and Services Tax Act, 2017",
+    "registration": {
+      "threshold": {
+        "services": 2000000,
+        "goods": 4000000,
+        "special_category": 1000000
+      }
+    },
+    "rates": {
+      "it_services": {
+        "rate": 18,
+        "hsn_sac": "998314",
+        "description": "IT and IT enabled services",
+        "components": {
+          "intra_state": {
+            "cgst": 9,
+            "sgst": 9,
+            "total": 18
+          },
+          "inter_state": {
+            "igst": 18
+          }
+        }
+      },
+      "consulting_services": {
+        "rate": 18,
+        "hsn_sac": "998311",
+        "description": "Management consulting services"
+      },
+      "software_license": {
+        "rate": 18,
+        "hsn_sac": "997331",
+        "description": "Software licensing services"
+      }
+    },
+    "input_tax_credit": {
+      "eligible": [
+        "GST on business purchases",
+        "GST on capital goods",
+        "GST on services used for business"
+      ],
+      "ineligible": [
+        "Motor vehicles (with exceptions)",
+        "Food and beverages",
+        "Health and fitness",
+        "Travel benefits to employees",
+        "Works contract for construction",
+        "Personal consumption"
+      ],
+      "conditions": [
+        "Valid tax invoice",
+        "Receipt of goods/services",
+        "Tax payment by supplier",
+        "Filing of return"
+      ]
+    },
+    "due_dates": {
+      "gstr_1": {
+        "monthly": "11th of following month",
+        "quarterly": "13th of month following quarter",
+        "description": "Outward supplies"
+      },
+      "gstr_3b": {
+        "day": "20th of following month",
+        "description": "Summary return and tax payment"
+      },
+      "gstr_9": {
+        "date": "December 31",
+        "description": "Annual return"
+      },
+      "gstr_9c": {
+        "date": "December 31",
+        "description": "Reconciliation statement (turnover > 5 Cr)",
+        "threshold": 50000000
+      }
+    },
+    "reverse_charge": {
+      "applicable_services": [
+        "Legal services from advocate",
+        "Services by GTA",
+        "Sponsorship services",
+        "Services by director",
+        "Import of services"
+      ]
+    },
+    "penalties": {
+      "late_filing": "Rs 50/day (Rs 20 for NIL return)",
+      "max_penalty": 5000,
+      "interest": "18% per annum on tax due"
+    }
+  },
+  "tds_vendors": {
+    "section_194c": {
+      "description": "Payment to contractors",
+      "threshold": {
+        "single_payment": 30000,
+        "aggregate_annual": 100000
+      },
+      "rates": {
+        "individual_huf": 1,
+        "others": 2,
+        "no_pan": 20
+      },
+      "applicable_payments": [
+        "Contract for work",
+        "Sub-contracting",
+        "Advertising contracts",
+        "Broadcasting contracts",
+        "Carriage of goods",
+        "Catering"
+      ]
+    },
+    "section_194j": {
+      "description": "Professional/Technical services",
+      "threshold": 30000,
+      "rates": {
+        "technical_services": 2,
+        "professional_services": 10,
+        "royalty": 10,
+        "no_pan": 20
+      },
+      "applicable_payments": [
+        "Professional fees",
+        "Technical services",
+        "Royalty",
+        "Non-compete fees",
+        "Director sitting fees"
+      ]
+    },
+    "section_194h": {
+      "description": "Commission or brokerage",
+      "threshold": 15000,
+      "rates": {
+        "standard": 5,
+        "no_pan": 20
+      },
+      "applicable_payments": [
+        "Commission",
+        "Brokerage",
+        "Agency fees"
+      ]
+    },
+    "section_194i": {
+      "description": "Rent payments",
+      "threshold": 240000,
+      "rates": {
+        "land_building_furniture": 10,
+        "plant_machinery_equipment": 2,
+        "no_pan": 20
+      },
+      "applicable_payments": [
+        "Rent for land/building",
+        "Rent for machinery",
+        "Rent for furniture/fittings"
+      ]
+    },
+    "section_194a": {
+      "description": "Interest other than securities",
+      "threshold": {
+        "banking": 40000,
+        "senior_citizen_banking": 50000,
+        "others": 5000
+      },
+      "rates": {
+        "standard": 10,
+        "no_pan": 20
+      }
+    },
+    "section_194q": {
+      "description": "Purchase of goods",
+      "threshold": 5000000,
+      "rates": {
+        "standard": 0.1,
+        "no_pan": 5
+      },
+      "conditions": [
+        "Buyer turnover > 10 Cr in previous year",
+        "Seller is resident"
+      ]
+    },
+    "due_dates": {
+      "deposit": {
+        "government": "Same day",
+        "others": "7th of following month",
+        "march": "30th April"
+      },
+      "quarterly_return": {
+        "form": "26Q",
+        "q1": "July 31",
+        "q2": "October 31",
+        "q3": "January 31",
+        "q4": "May 31"
+      },
+      "annual_certificate": {
+        "form_16a": "15 days from filing quarterly return"
+      }
+    },
+    "lower_deduction_certificate": {
+      "section": "197",
+      "form": "13",
+      "validity": "Financial year or part thereof"
+    }
+  },
+  "compliance_calendar": {
+    "monthly": [
+      {
+        "day": 7,
+        "task": "TDS deposit for previous month",
+        "applicable": "All TDS sections"
+      },
+      {
+        "day": 11,
+        "task": "GSTR-1 filing",
+        "applicable": "Monthly filers"
+      },
+      {
+        "day": 15,
+        "task": "PF contribution and ECR filing",
+        "applicable": "All employers"
+      },
+      {
+        "day": 15,
+        "task": "ESI contribution",
+        "applicable": "Covered establishments"
+      },
+      {
+        "day": 20,
+        "task": "Professional Tax payment",
+        "applicable": "Karnataka employers"
+      },
+      {
+        "day": 20,
+        "task": "GSTR-3B filing and GST payment",
+        "applicable": "All GST registrants"
+      }
+    ],
+    "quarterly": [
+      {
+        "quarter": "Q1",
+        "due_date": "July 31",
+        "task": "TDS returns (24Q, 26Q)"
+      },
+      {
+        "quarter": "Q2",
+        "due_date": "October 31",
+        "task": "TDS returns (24Q, 26Q)"
+      },
+      {
+        "quarter": "Q3",
+        "due_date": "January 31",
+        "task": "TDS returns (24Q, 26Q)"
+      },
+      {
+        "quarter": "Q4",
+        "due_date": "May 31",
+        "task": "TDS returns (24Q, 26Q)"
+      }
+    ],
+    "half_yearly": [
+      {
+        "period": "April-September",
+        "due_date": "November 11",
+        "task": "ESI Return"
+      },
+      {
+        "period": "October-March",
+        "due_date": "April 11",
+        "task": "ESI Return"
+      }
+    ],
+    "annual": [
+      {
+        "due_date": "April 30",
+        "task": "PF Annual Return (Form 3A/6A)"
+      },
+      {
+        "due_date": "April 30",
+        "task": "Professional Tax Annual Return"
+      },
+      {
+        "due_date": "June 15",
+        "task": "Form 16 issuance to employees"
+      },
+      {
+        "due_date": "September 30",
+        "task": "Company Income Tax Return"
+      },
+      {
+        "due_date": "October 31",
+        "task": "Tax Audit Report (44AB)"
+      },
+      {
+        "due_date": "December 31",
+        "task": "GST Annual Return (GSTR-9)"
+      }
+    ]
+  },
+  "calculation_formulas": {
+    "pf": {
+      "employee_contribution": "Math.round((basic + da) * 0.12)",
+      "employer_epf": "Math.round((basic + da) * 0.0367)",
+      "employer_eps": "Math.min(Math.round((basic + da) * 0.0833), 1250)",
+      "total_employer": "employer_epf + employer_eps"
+    },
+    "esi": {
+      "employee_contribution": "Math.round(gross * 0.0075)",
+      "employer_contribution": "Math.round(gross * 0.0325)",
+      "total": "Math.round(gross * 0.04)"
+    },
+    "pt_karnataka": {
+      "monthly": "gross > 15000 ? (month === 'February' ? 300 : 200) : 0"
+    },
+    "tds_new_regime": {
+      "steps": [
+        "1. Calculate gross salary",
+        "2. Deduct standard deduction (50000)",
+        "3. Apply slab rates",
+        "4. Add surcharge if applicable",
+        "5. Add 4% cess",
+        "6. Apply rebate u/s 87A if eligible",
+        "7. Divide by 12 for monthly TDS"
+      ]
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "metadata": {
+    "agents": ["BE-011", "BE-012", "BE-013", "BE-014", "BE-015"],
+    "category": "HR Management",
+    "created_at": "2026-01-08T11:02:00Z"
+  },
+  "BE-011_leave_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/leave.py",
+      "service": "app/services/leave_service.py",
+      "route": "app/api/v1/endpoints/leave.py"
+    },
+    "features": [
+      "Leave types management",
+      "Leave policies with accrual",
+      "Leave balance calculation",
+      "Leave application workflow",
+      "Approval/rejection flow"
+    ]
+  },
+  "BE-012_timesheet_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/timesheet.py",
+      "service": "app/services/timesheet_service.py",
+      "route": "app/api/v1/endpoints/timesheet.py"
+    },
+    "features": [
+      "Daily time logging",
+      "Project-task allocation",
+      "Weekly submission",
+      "Manager approval"
+    ]
+  },
+  "BE-013_attendance_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/attendance.py",
+      "service": "app/services/attendance_service.py"
+    },
+    "features": [
+      "Check-in/check-out",
+      "Working hours calculation",
+      "Overtime tracking"
+    ]
+  },
+  "BE-014_holiday_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/leave.py (Holiday class)",
+      "service": "app/services/holiday_service.py"
+    },
+    "features": [
+      "Company holiday calendar",
+      "Optional/restricted holidays",
+      "Year-wise management"
+    ]
+  },
+  "BE-015_document_employee_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/document.py",
+      "service": "app/services/document_service.py"
+    },
+    "features": [
+      "Employee document upload",
+      "Document categorization",
+      "Expiry tracking"
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "agents": ["AI-005", "AI-006", "AI-007", "AI-008"],
+    "category": "Document Analysis",
+    "created_at": "2026-01-08T11:21:00Z"
+  },
+  "AI-005_invoice_extraction": {
+    "status": "completed",
+    "files": ["app/services/ai/invoice_extractor.py"],
+    "features": {
+      "extraction_fields": ["vendor_name", "invoice_number", "date", "amount", "gst", "line_items"],
+      "supported_formats": ["PDF", "PNG", "JPG"],
+      "confidence_threshold": 85,
+      "validation": "Cross-check with vendor master"
+    }
+  },
+  "AI-006_bank_statement_parser": {
+    "status": "completed",
+    "files": ["app/services/ai/statement_parser.py"],
+    "features": {
+      "supported_banks": ["HDFC", "ICICI", "SBI", "Kotak", "Axis"],
+      "extraction": ["date", "narration", "debit", "credit", "balance"],
+      "categorization": "Auto-categorize transactions"
+    }
+  },
+  "AI-007_transaction_categorizer": {
+    "status": "completed",
+    "files": ["app/services/ai/categorizer.py"],
+    "features": {
+      "categories": ["Salary", "Rent", "Utilities", "Professional Fees", "Office Supplies", "Travel"],
+      "learning": "Improve from user corrections",
+      "bulk_processing": "Batch categorization support"
+    }
+  },
+  "AI-008_document_analyzer": {
+    "status": "completed",
+    "files": ["app/services/ai/document_analyzer.py"],
+    "features": {
+      "ocr": "Text extraction from images",
+      "classification": "Document type identification",
+      "entity_extraction": "Named entity recognition"
+    }
+  }
+}

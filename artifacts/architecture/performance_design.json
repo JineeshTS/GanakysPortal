@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-009",
+    "agent_name": "Performance Architect",
+    "created_at": "2026-01-08T10:53:00Z",
+    "version": "1.0"
+  },
+  "performance_targets": {
+    "api_response_p95": "< 500ms",
+    "page_load_time": "< 3 seconds",
+    "time_to_interactive": "< 5 seconds",
+    "concurrent_users": "50",
+    "throughput": "100 requests/second"
+  },
+  "database_optimization": {
+    "connection_pooling": {"min_size": 5, "max_size": 20, "overflow": 10},
+    "query_optimization": ["Use EXPLAIN ANALYZE", "Add indexes for frequent queries", "Avoid N+1 queries"],
+    "indexes": {
+      "primary": "All tables have UUID primary keys",
+      "foreign_keys": "All relationships indexed",
+      "search": "GIN indexes for full-text search",
+      "composite": "Multi-column indexes for common filters"
+    },
+    "pagination": {"default_limit": 20, "max_limit": 100, "use_keyset": "For large datasets"}
+  },
+  "caching_strategy": {
+    "layers": ["Browser cache", "CDN (future)", "Redis cache", "Database cache"],
+    "redis_patterns": {
+      "session": {"ttl": "24 hours", "key": "session:{user_id}"},
+      "user_permissions": {"ttl": "1 hour", "key": "perms:{user_id}"},
+      "config": {"ttl": "1 hour", "key": "config:{key}"},
+      "rate_limit": {"ttl": "1 minute", "key": "rate:{ip}:{endpoint}"}
+    },
+    "invalidation": "Event-driven invalidation on data changes"
+  },
+  "frontend_optimization": {
+    "code_splitting": "Route-based automatic splitting",
+    "lazy_loading": "Components below fold, images",
+    "bundle_size": {"target": "< 200KB initial JS", "analysis": "webpack-bundle-analyzer"},
+    "image_optimization": "Next/Image with WebP, responsive sizes"
+  },
+  "api_optimization": {
+    "compression": "gzip/brotli for responses > 1KB",
+    "pagination": "Cursor-based for large lists",
+    "field_selection": "?fields=id,name for partial responses",
+    "batch_endpoints": "Bulk operations for imports"
+  },
+  "background_processing": {
+    "celery_queues": {"default": "General tasks", "high": "Time-sensitive", "low": "Reports, exports"},
+    "task_timeouts": {"default": "5 minutes", "report": "30 minutes"},
+    "retry_policy": {"max_retries": 3, "backoff": "exponential"}
+  }
+}

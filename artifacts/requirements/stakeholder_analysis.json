@@ -1,0 +1,281 @@
+{
+  "metadata": {
+    "agent_id": "REQ-002",
+    "agent_name": "Stakeholder Analyzer",
+    "source_file": "/var/ganaportal/artifacts/requirements/parsed_requirements.json",
+    "created_at": "2026-01-08T10:15:00Z",
+    "version": "1.0"
+  },
+  "stakeholder_groups": [
+    {
+      "id": "admin_founder",
+      "role": "ADMIN",
+      "name": "Admin/Founder",
+      "description": "Company owner/founder with full system access and decision-making authority",
+      "user_count_estimate": "1-2",
+      "needs": [
+        "Complete visibility into all business operations",
+        "Real-time dashboards showing company health metrics",
+        "Ability to approve high-value transactions and sensitive changes",
+        "Access to comprehensive financial reports and analytics",
+        "Control over user permissions and system configuration",
+        "Quick access to compliance status and statutory filings",
+        "AI-assisted insights for strategic decision making",
+        "Audit trails for all critical operations"
+      ],
+      "pain_points": [
+        "Time spent manually tracking multiple spreadsheets and documents",
+        "Lack of real-time visibility into cash flow and finances",
+        "Difficulty ensuring statutory compliance deadlines are met",
+        "No single source of truth for employee and financial data",
+        "Manual effort in reconciling bank statements",
+        "Risk of non-compliance penalties due to missed deadlines",
+        "Difficulty scaling operations as company grows"
+      ],
+      "success_criteria": [
+        "90% reduction in time spent on administrative tasks",
+        "Zero compliance deadline misses with automated reminders",
+        "Real-time visibility into all departments within 3 clicks",
+        "AI confidence score >= 95% for auto-executed transactions",
+        "Complete audit trail accessible within 5 seconds",
+        "Monthly close completed within 2 business days",
+        "All statutory reports generated automatically with 100% accuracy"
+      ],
+      "primary_modules": [
+        "Dashboard & Analytics",
+        "Reports",
+        "Payroll System",
+        "Banking",
+        "GST Compliance",
+        "Settings & Configuration"
+      ],
+      "access_level": "Full system access",
+      "approval_authority": ["All transactions", "User management", "System configuration", "Statutory filings"]
+    },
+    {
+      "id": "hr_manager",
+      "role": "HR_MANAGER",
+      "name": "HR Manager",
+      "description": "Human Resources manager responsible for employee lifecycle and HR operations",
+      "user_count_estimate": "1-2",
+      "needs": [
+        "Centralized employee database with all documents",
+        "Streamlined onboarding workflow with task tracking",
+        "Leave management with balance tracking and approvals",
+        "Attendance and timesheet monitoring",
+        "Payroll input preparation and verification",
+        "Employee performance and project allocation tracking",
+        "Self-service portal for employee requests",
+        "Statutory compliance (PF, ESI, PT) management"
+      ],
+      "pain_points": [
+        "Manual tracking of employee documents across multiple folders",
+        "No automated leave balance calculations",
+        "Difficulty tracking onboarding task completion",
+        "Manual data entry for payroll inputs",
+        "Chasing employees for timesheet submissions",
+        "Risk of PF/ESI calculation errors",
+        "No visibility into document expiry dates"
+      ],
+      "success_criteria": [
+        "Onboarding completed in 2 days with automated checklist",
+        "Leave balance auto-calculated with 100% accuracy",
+        "95% timesheet submission rate before deadline",
+        "Zero manual data entry for standard payroll runs",
+        "All employee documents accessible within 10 seconds",
+        "PF/ESI contributions calculated automatically per statutory rules",
+        "Employee queries resolved within 24 hours via self-service"
+      ],
+      "primary_modules": [
+        "Employee Management (HRMS)",
+        "Employee Onboarding",
+        "Leave Management",
+        "Timesheet Management",
+        "Enterprise Document Management (EDMS)",
+        "Statutory - PF",
+        "Statutory - ESI",
+        "Statutory - PT"
+      ],
+      "access_level": "HR operations and employee data",
+      "approval_authority": ["Leave requests", "Timesheet approvals", "Onboarding tasks", "Employee profile updates"]
+    },
+    {
+      "id": "accountant",
+      "role": "ACCOUNTANT",
+      "name": "Accountant",
+      "description": "Finance/Accounts team member responsible for financial operations and compliance",
+      "user_count_estimate": "1-2",
+      "needs": [
+        "Complete chart of accounts with proper hierarchy",
+        "Invoice generation and accounts receivable tracking",
+        "Bill processing and accounts payable management",
+        "Bank reconciliation with transaction matching",
+        "GST compliance with automated GSTR filing",
+        "TDS calculations and quarterly returns",
+        "Multi-currency support for international transactions",
+        "Financial reports (P&L, Balance Sheet, Cash Flow)"
+      ],
+      "pain_points": [
+        "Manual invoice creation and tracking in spreadsheets",
+        "Time-consuming bank reconciliation process",
+        "Complex GST calculations with multiple tax types",
+        "TDS tracking across multiple vendors",
+        "Month-end close delays due to pending entries",
+        "Difficulty matching payments to invoices",
+        "Manual calculation of currency conversions"
+      ],
+      "success_criteria": [
+        "Invoice generation in under 2 minutes",
+        "Bank reconciliation completed 80% automatically",
+        "GST calculations 100% accurate per compliance rules",
+        "GSTR-1 and GSTR-3B auto-generated before due dates",
+        "TDS returns generated automatically with all vendor data",
+        "Month-end close within 3 business days",
+        "Currency conversions using real-time exchange rates"
+      ],
+      "primary_modules": [
+        "Chart of Accounts & GL",
+        "Customers & AR",
+        "Vendors & AP",
+        "Banking",
+        "GST Compliance",
+        "TDS on Vendors",
+        "Multi-Currency",
+        "Reports"
+      ],
+      "access_level": "Financial operations and accounting data",
+      "approval_authority": ["Payment approvals up to limit", "Journal entries", "Vendor bills", "Bank transactions"]
+    },
+    {
+      "id": "employee",
+      "role": "EMPLOYEE",
+      "name": "Employee",
+      "description": "Regular employee with self-service access for personal HR and timesheet functions",
+      "user_count_estimate": "5-50",
+      "needs": [
+        "Self-service access to personal information and documents",
+        "Easy leave application and balance checking",
+        "Timesheet submission for project work",
+        "View payslips and tax computation",
+        "Download Form 16 and other tax documents",
+        "View assigned projects and tasks",
+        "Update personal information and bank details",
+        "View company policies and announcements"
+      ],
+      "pain_points": [
+        "No visibility into leave balances",
+        "Manual timesheet tracking in spreadsheets",
+        "Chasing HR for payslips and documents",
+        "No self-service for common requests",
+        "Difficulty finding company policies",
+        "No mobile-friendly access for quick updates",
+        "Lack of transparency in salary breakup"
+      ],
+      "success_criteria": [
+        "Leave balance visible on dashboard",
+        "Leave application submitted in under 30 seconds",
+        "Timesheet submitted in under 5 minutes",
+        "Payslips accessible within 2 clicks",
+        "Form 16 downloaded immediately",
+        "Personal info updated without HR intervention",
+        "95% of common queries answered via self-service"
+      ],
+      "primary_modules": [
+        "Employee Portal (Self-Service)",
+        "Leave Management",
+        "Timesheet Management",
+        "Payroll (View Only)",
+        "Documents (Personal)"
+      ],
+      "access_level": "Personal data and self-service operations",
+      "approval_authority": ["Own leave requests", "Own timesheet submission", "Own profile updates"]
+    },
+    {
+      "id": "external_ca",
+      "role": "EXTERNAL_CA",
+      "name": "External Chartered Accountant",
+      "description": "External CA for verification, audit, and statutory compliance review",
+      "user_count_estimate": "1",
+      "needs": [
+        "Read-only access to financial statements",
+        "Verification of GST calculations and filings",
+        "Review of TDS compliance and returns",
+        "Access to trial balance and ledger reports",
+        "Audit trail visibility for all transactions",
+        "PF/ESI compliance verification",
+        "Bank reconciliation review",
+        "Document verification for statutory filings"
+      ],
+      "pain_points": [
+        "Waiting for client to prepare and share reports",
+        "Incomplete or inconsistent data across systems",
+        "Manual verification of statutory calculations",
+        "No direct access to source documents",
+        "Time spent on data collection vs analysis",
+        "Difficulty tracing transaction audit trails"
+      ],
+      "success_criteria": [
+        "Direct portal access without client intervention",
+        "All reports exportable in standard formats (PDF, Excel)",
+        "Audit trail complete with user, timestamp, and changes",
+        "Statutory calculations auto-verified against rules",
+        "All source documents linked to transactions",
+        "Verification completed 50% faster than manual process"
+      ],
+      "primary_modules": [
+        "Reports (Read-Only)",
+        "Chart of Accounts & GL (Read-Only)",
+        "GST Compliance (Read-Only)",
+        "TDS on Vendors (Read-Only)",
+        "Statutory Reports (Read-Only)",
+        "Documents (Verification)"
+      ],
+      "access_level": "Read-only access to financial and statutory data",
+      "approval_authority": ["Verification sign-off", "Compliance certification"]
+    }
+  ],
+  "communication_matrix": {
+    "admin_founder": {
+      "reports_to": null,
+      "reports_from": ["hr_manager", "accountant"],
+      "collaborates_with": ["external_ca"],
+      "notification_channels": ["dashboard", "email", "sms"],
+      "meeting_frequency": "Weekly review with team"
+    },
+    "hr_manager": {
+      "reports_to": "admin_founder",
+      "reports_from": ["employee"],
+      "collaborates_with": ["accountant"],
+      "notification_channels": ["dashboard", "email"],
+      "meeting_frequency": "Daily standup, Weekly HR sync"
+    },
+    "accountant": {
+      "reports_to": "admin_founder",
+      "reports_from": [],
+      "collaborates_with": ["hr_manager", "external_ca"],
+      "notification_channels": ["dashboard", "email"],
+      "meeting_frequency": "Weekly accounts review"
+    },
+    "employee": {
+      "reports_to": "hr_manager",
+      "reports_from": [],
+      "collaborates_with": [],
+      "notification_channels": ["dashboard", "email"],
+      "meeting_frequency": "As needed"
+    },
+    "external_ca": {
+      "reports_to": "admin_founder",
+      "reports_from": [],
+      "collaborates_with": ["accountant"],
+      "notification_channels": ["email"],
+      "meeting_frequency": "Monthly/Quarterly review"
+    }
+  },
+  "summary": {
+    "total_stakeholder_groups": 5,
+    "total_estimated_users": "9-57",
+    "primary_decision_maker": "admin_founder",
+    "primary_users": ["hr_manager", "accountant", "employee"],
+    "external_stakeholder": "external_ca"
+  }
+}

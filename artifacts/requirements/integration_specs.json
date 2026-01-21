@@ -1,0 +1,567 @@
+{
+  "metadata": {
+    "agent_id": "REQ-009",
+    "agent_name": "Integration Analyst",
+    "version": "1.0.0",
+    "created_at": "2026-01-08T00:00:00Z",
+    "last_updated": "2026-01-08T00:00:00Z"
+  },
+  "ai_integrations": {
+    "claude": {
+      "provider": "Anthropic",
+      "name": "Claude",
+      "purpose": "Primary AI for document analysis, compliance checks, and intelligent assistance",
+      "api": {
+        "base_url": "https://api.anthropic.com/v1",
+        "authentication": "API Key (x-api-key header)",
+        "models": [
+          {
+            "id": "claude-opus-4-5-20251101",
+            "name": "Claude Opus 4.5",
+            "context_window": 200000,
+            "use_cases": ["Complex analysis", "Document processing", "Compliance review"]
+          },
+          {
+            "id": "claude-sonnet-4-20250514",
+            "name": "Claude Sonnet 4",
+            "context_window": 200000,
+            "use_cases": ["General queries", "Code generation", "Chat assistance"]
+          },
+          {
+            "id": "claude-haiku-3-5-20241022",
+            "name": "Claude Haiku 3.5",
+            "context_window": 200000,
+            "use_cases": ["Quick responses", "Simple queries", "High-volume tasks"]
+          }
+        ],
+        "endpoints": {
+          "messages": "/messages",
+          "token_count": "/messages/count_tokens"
+        },
+        "rate_limits": {
+          "requests_per_minute": 1000,
+          "tokens_per_minute": 100000
+        }
+      },
+      "features": [
+        "Multi-turn conversations",
+        "Document analysis (PDF, images)",
+        "Code interpretation",
+        "Tool use / Function calling",
+        "Vision capabilities"
+      ],
+      "integration_points": [
+        {
+          "module": "Document Analysis",
+          "use_case": "Extract data from invoices, receipts, contracts",
+          "model": "claude-opus-4-5-20251101"
+        },
+        {
+          "module": "Compliance Check",
+          "use_case": "Validate statutory compliance, identify gaps",
+          "model": "claude-sonnet-4-20250514"
+        },
+        {
+          "module": "Chat Assistant",
+          "use_case": "Answer employee HR queries",
+          "model": "claude-haiku-3-5-20241022"
+        },
+        {
+          "module": "Payroll Audit",
+          "use_case": "Analyze payroll data for anomalies",
+          "model": "claude-sonnet-4-20250514"
+        }
+      ],
+      "error_handling": {
+        "retry_strategy": "exponential_backoff",
+        "max_retries": 3,
+        "fallback": "gemini"
+      }
+    },
+    "gemini": {
+      "provider": "Google",
+      "name": "Gemini",
+      "purpose": "Secondary AI for multimodal tasks and fallback",
+      "api": {
+        "base_url": "https://generativelanguage.googleapis.com/v1",
+        "authentication": "API Key (query parameter or header)",
+        "models": [
+          {
+            "id": "gemini-2.0-flash-exp",
+            "name": "Gemini 2.0 Flash",
+            "context_window": 1000000,
+            "use_cases": ["Multimodal analysis", "Document processing", "Fast responses"]
+          },
+          {
+            "id": "gemini-1.5-pro",
+            "name": "Gemini 1.5 Pro",
+            "context_window": 2000000,
+            "use_cases": ["Long document analysis", "Complex reasoning"]
+          }
+        ],
+        "endpoints": {
+          "generate": "/models/{model}:generateContent",
+          "stream": "/models/{model}:streamGenerateContent",
+          "embed": "/models/text-embedding-004:embedContent"
+        },
+        "rate_limits": {
+          "requests_per_minute": 60,
+          "tokens_per_minute": 4000000
+        }
+      },
+      "features": [
+        "Multimodal input (text, images, audio, video)",
+        "Long context processing",
+        "Grounding with Google Search",
+        "Code execution"
+      ],
+      "integration_points": [
+        {
+          "module": "OCR Enhancement",
+          "use_case": "Process complex documents with mixed formats",
+          "model": "gemini-2.0-flash-exp"
+        },
+        {
+          "module": "Bulk Document Analysis",
+          "use_case": "Process large batches of documents",
+          "model": "gemini-1.5-pro"
+        }
+      ],
+      "error_handling": {
+        "retry_strategy": "exponential_backoff",
+        "max_retries": 3,
+        "fallback": "gpt4"
+      }
+    },
+    "gpt4": {
+      "provider": "OpenAI",
+      "name": "GPT-4",
+      "purpose": "Alternative AI for specialized tasks and redundancy",
+      "api": {
+        "base_url": "https://api.openai.com/v1",
+        "authentication": "Bearer Token (Authorization header)",
+        "models": [
+          {
+            "id": "gpt-4o",
+            "name": "GPT-4o",
+            "context_window": 128000,
+            "use_cases": ["General purpose", "Multimodal"]
+          },
+          {
+            "id": "gpt-4-turbo",
+            "name": "GPT-4 Turbo",
+            "context_window": 128000,
+            "use_cases": ["Complex analysis", "Code generation"]
+          },
+          {
+            "id": "gpt-4o-mini",
+            "name": "GPT-4o Mini",
+            "context_window": 128000,
+            "use_cases": ["Quick tasks", "Cost-effective processing"]
+          }
+        ],
+        "endpoints": {
+          "chat": "/chat/completions",
+          "embeddings": "/embeddings",
+          "files": "/files",
+          "assistants": "/assistants"
+        },
+        "rate_limits": {
+          "requests_per_minute": 500,
+          "tokens_per_minute": 30000
+        }
+      },
+      "features": [
+        "Function calling",
+        "Vision capabilities",
+        "JSON mode",
+        "Parallel function calls",
+        "Assistants API"
+      ],
+      "integration_points": [
+        {
+          "module": "Structured Data Extraction",
+          "use_case": "Extract structured data using JSON mode",
+          "model": "gpt-4o"
+        },
+        {
+          "module": "Fallback Processing",
+          "use_case": "Process when other providers unavailable",
+          "model": "gpt-4o-mini"
+        }
+      ],
+      "error_handling": {
+        "retry_strategy": "exponential_backoff",
+        "max_retries": 3,
+        "fallback": "together_ai"
+      }
+    },
+    "together_ai": {
+      "provider": "Together AI",
+      "name": "Together AI",
+      "purpose": "Cost-effective AI for high-volume, simpler tasks",
+      "api": {
+        "base_url": "https://api.together.xyz/v1",
+        "authentication": "Bearer Token (Authorization header)",
+        "models": [
+          {
+            "id": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+            "name": "Llama 3.3 70B",
+            "context_window": 128000,
+            "use_cases": ["General tasks", "Cost-effective processing"]
+          },
+          {
+            "id": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "name": "Mixtral 8x7B",
+            "context_window": 32000,
+            "use_cases": ["Quick responses", "Simple queries"]
+          },
+          {
+            "id": "Qwen/Qwen2.5-72B-Instruct-Turbo",
+            "name": "Qwen 2.5 72B",
+            "context_window": 128000,
+            "use_cases": ["Multilingual support", "Code tasks"]
+          }
+        ],
+        "endpoints": {
+          "chat": "/chat/completions",
+          "embeddings": "/embeddings",
+          "inference": "/inference"
+        },
+        "rate_limits": {
+          "requests_per_minute": 600,
+          "tokens_per_minute": 1000000
+        }
+      },
+      "features": [
+        "OpenAI-compatible API",
+        "Fast inference",
+        "Cost-effective",
+        "Wide model selection"
+      ],
+      "integration_points": [
+        {
+          "module": "Bulk Processing",
+          "use_case": "High-volume simple tasks",
+          "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+        },
+        {
+          "module": "Quick Responses",
+          "use_case": "Simple employee queries",
+          "model": "mistralai/Mixtral-8x7B-Instruct-v0.1"
+        }
+      ],
+      "error_handling": {
+        "retry_strategy": "exponential_backoff",
+        "max_retries": 3,
+        "fallback": null
+      }
+    }
+  },
+  "email_integration": {
+    "aws_ses": {
+      "provider": "Amazon Web Services",
+      "service": "Simple Email Service (SES)",
+      "purpose": "Transactional and bulk email delivery",
+      "api": {
+        "base_url": "https://email.{region}.amazonaws.com",
+        "regions": ["ap-south-1", "us-east-1", "eu-west-1"],
+        "authentication": {
+          "type": "AWS Signature V4",
+          "credentials": ["access_key_id", "secret_access_key"]
+        },
+        "sdk": "AWS SDK (boto3 for Python, @aws-sdk/client-ses for Node.js)",
+        "protocols": ["HTTPS API", "SMTP"]
+      },
+      "endpoints": {
+        "send_email": "SendEmail",
+        "send_raw_email": "SendRawEmail",
+        "send_templated_email": "SendTemplatedEmail",
+        "send_bulk_templated_email": "SendBulkTemplatedEmail",
+        "create_template": "CreateTemplate",
+        "verify_identity": "VerifyEmailIdentity"
+      },
+      "features": [
+        "Transactional emails",
+        "Bulk email campaigns",
+        "Email templates",
+        "Attachments support",
+        "Bounce/complaint handling",
+        "Email tracking (open, click)",
+        "Dedicated IPs",
+        "DKIM signing"
+      ],
+      "configuration": {
+        "region": "ap-south-1",
+        "sending_quota": {
+          "daily_limit": 50000,
+          "per_second": 14
+        },
+        "configuration_set": "ganaportal-production",
+        "bounce_topic": "arn:aws:sns:ap-south-1:ACCOUNT:ses-bounces",
+        "complaint_topic": "arn:aws:sns:ap-south-1:ACCOUNT:ses-complaints"
+      },
+      "email_types": [
+        {
+          "type": "payslip",
+          "template": "payslip_notification",
+          "priority": "high"
+        },
+        {
+          "type": "leave_approval",
+          "template": "leave_status",
+          "priority": "high"
+        },
+        {
+          "type": "expense_status",
+          "template": "expense_notification",
+          "priority": "medium"
+        },
+        {
+          "type": "compliance_alert",
+          "template": "compliance_reminder",
+          "priority": "high"
+        },
+        {
+          "type": "password_reset",
+          "template": "security_notification",
+          "priority": "critical"
+        },
+        {
+          "type": "welcome_email",
+          "template": "onboarding",
+          "priority": "medium"
+        }
+      ],
+      "rate_limits": {
+        "send_rate": "14 emails/second",
+        "daily_quota": "50,000 emails",
+        "recipients_per_message": 50
+      },
+      "error_handling": {
+        "bounce_types": ["Permanent", "Transient"],
+        "complaint_handling": "auto_unsubscribe",
+        "retry_strategy": "exponential_backoff",
+        "max_retries": 3
+      }
+    }
+  },
+  "sms_integration": {
+    "msg91": {
+      "provider": "MSG91",
+      "purpose": "Transactional SMS and OTP delivery",
+      "api": {
+        "base_url": "https://control.msg91.com",
+        "authentication": "authkey (query parameter or header)",
+        "version": "v5"
+      },
+      "endpoints": {
+        "send_sms": "/api/v5/flow/",
+        "send_otp": "/api/v5/otp",
+        "verify_otp": "/api/v5/otp/verify",
+        "resend_otp": "/api/v5/otp/retry",
+        "get_balance": "/api/balance.php"
+      },
+      "features": [
+        "Transactional SMS",
+        "OTP service",
+        "DLT compliance (India)",
+        "Template-based messaging",
+        "Unicode support",
+        "Delivery reports",
+        "Webhook callbacks"
+      ],
+      "configuration": {
+        "sender_id": "GANAPT",
+        "route": 4,
+        "country_code": "91",
+        "dlt_entity_id": "XXXXXXXXXX",
+        "dlt_template_ids": {
+          "otp": "YYYYYYYYYYY",
+          "payslip": "ZZZZZZZZZZZ",
+          "leave": "AAAAAAAAAAA"
+        }
+      },
+      "sms_types": [
+        {
+          "type": "otp",
+          "template": "OTP for GanaPortal: {{otp}}. Valid for 10 minutes.",
+          "priority": "critical",
+          "expiry_seconds": 600
+        },
+        {
+          "type": "payslip_notification",
+          "template": "Your payslip for {{month}} is ready. Login to GanaPortal to view.",
+          "priority": "high"
+        },
+        {
+          "type": "leave_approval",
+          "template": "Your leave request for {{dates}} has been {{status}}.",
+          "priority": "high"
+        },
+        {
+          "type": "attendance_alert",
+          "template": "Reminder: Please mark your attendance for today.",
+          "priority": "medium"
+        },
+        {
+          "type": "compliance_reminder",
+          "template": "Compliance deadline: {{task}} due on {{date}}.",
+          "priority": "high"
+        }
+      ],
+      "rate_limits": {
+        "per_second": 100,
+        "per_day": 100000
+      },
+      "otp_configuration": {
+        "length": 6,
+        "expiry_minutes": 10,
+        "retry_count": 3,
+        "retry_type": "text",
+        "invisible_otp": false
+      },
+      "error_handling": {
+        "retry_strategy": "immediate_retry",
+        "max_retries": 2,
+        "fallback_channel": "email"
+      },
+      "webhook": {
+        "delivery_report_url": "/api/webhooks/msg91/delivery",
+        "events": ["DELIVERED", "FAILED", "REJECTED", "EXPIRED"]
+      }
+    }
+  },
+  "exchange_rate_integration": {
+    "rbi": {
+      "provider": "Reserve Bank of India",
+      "purpose": "Official exchange rates for foreign transactions",
+      "api": {
+        "base_url": "https://www.rbi.org.in",
+        "data_sources": [
+          {
+            "type": "Reference Rate",
+            "url": "/scripts/ReferenceRateArchive.aspx",
+            "currencies": ["USD", "EUR", "GBP", "JPY"],
+            "frequency": "Daily (except holidays)"
+          },
+          {
+            "type": "FBIL Rate",
+            "url": "https://www.fbil.org.in",
+            "description": "Financial Benchmarks India Limited rates"
+          }
+        ],
+        "authentication": "None (public data)"
+      },
+      "data_format": {
+        "reference_rate": {
+          "fields": ["date", "currency", "rate"],
+          "base_currency": "INR",
+          "update_time": "1:30 PM IST"
+        }
+      },
+      "supported_currencies": [
+        {
+          "code": "USD",
+          "name": "US Dollar",
+          "primary": true
+        },
+        {
+          "code": "EUR",
+          "name": "Euro",
+          "primary": true
+        },
+        {
+          "code": "GBP",
+          "name": "British Pound",
+          "primary": true
+        },
+        {
+          "code": "JPY",
+          "name": "Japanese Yen",
+          "primary": true
+        }
+      ],
+      "use_cases": [
+        {
+          "module": "Foreign Expense Reimbursement",
+          "description": "Convert foreign currency expenses to INR"
+        },
+        {
+          "module": "International Payroll",
+          "description": "Calculate salary for employees in foreign locations"
+        },
+        {
+          "module": "Vendor Payments",
+          "description": "Process international vendor invoices"
+        }
+      ],
+      "caching": {
+        "strategy": "daily_refresh",
+        "cache_duration_hours": 24,
+        "fallback": "previous_day_rate"
+      },
+      "alternative_sources": [
+        {
+          "provider": "Open Exchange Rates",
+          "url": "https://openexchangerates.org/api",
+          "purpose": "Backup for non-primary currencies"
+        },
+        {
+          "provider": "Fixer.io",
+          "url": "https://api.fixer.io",
+          "purpose": "Additional currency coverage"
+        }
+      ]
+    }
+  },
+  "integration_patterns": {
+    "circuit_breaker": {
+      "enabled": true,
+      "failure_threshold": 5,
+      "reset_timeout_seconds": 60,
+      "half_open_requests": 3
+    },
+    "retry_policy": {
+      "max_attempts": 3,
+      "initial_delay_ms": 1000,
+      "max_delay_ms": 30000,
+      "multiplier": 2,
+      "jitter": true
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "strategy": "token_bucket",
+      "burst_allowance": 1.5
+    },
+    "timeout_policy": {
+      "connect_timeout_ms": 5000,
+      "read_timeout_ms": 30000,
+      "write_timeout_ms": 30000
+    },
+    "health_check": {
+      "interval_seconds": 60,
+      "timeout_seconds": 10,
+      "unhealthy_threshold": 3
+    }
+  },
+  "security": {
+    "api_key_management": {
+      "storage": "AWS Secrets Manager / HashiCorp Vault",
+      "rotation_policy": "90 days",
+      "access_audit": true
+    },
+    "data_encryption": {
+      "in_transit": "TLS 1.3",
+      "at_rest": "AES-256"
+    },
+    "request_signing": {
+      "enabled": true,
+      "algorithm": "HMAC-SHA256"
+    },
+    "ip_whitelisting": {
+      "enabled": true,
+      "update_frequency": "on_change"
+    }
+  }
+}

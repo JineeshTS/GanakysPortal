@@ -1,0 +1,252 @@
+{
+  "metadata": {
+    "agent_id": "REQ-007",
+    "agent_name": "Acceptance Criteria Writer",
+    "source_file": "/var/ganaportal/artifacts/requirements/parsed_requirements.json",
+    "created_at": "2026-01-08T10:20:00Z",
+    "version": "1.0"
+  },
+  "acceptance_criteria": {
+    "module_01_infrastructure": {
+      "module_id": 1,
+      "module_name": "Infrastructure & DevOps",
+      "criteria": [
+        {"id": "AC-001-001", "story_ref": "US-001-001", "given": "the system is deployed on Hostinger VPS", "when": "a user accesses portal.ganakys.com", "then": "the login page loads within 3 seconds"},
+        {"id": "AC-001-002", "story_ref": "US-001-001", "given": "the system uses HTTPS", "when": "any request is made", "then": "all traffic is encrypted with TLS 1.2+"},
+        {"id": "AC-001-003", "story_ref": "US-001-002", "given": "the backup job is configured", "when": "the scheduled time (2 AM IST) is reached", "then": "database and files are backed up to remote storage"},
+        {"id": "AC-001-004", "story_ref": "US-001-003", "given": "the admin accesses /health endpoint", "when": "the system is running", "then": "status JSON with database, redis, and disk health is returned"}
+      ]
+    },
+    "module_02_authentication": {
+      "module_id": 2,
+      "module_name": "Authentication & Users",
+      "criteria": [
+        {"id": "AC-002-001", "story_ref": "US-002-001", "given": "valid email and password", "when": "user submits login form", "then": "JWT token is returned and user is redirected to dashboard"},
+        {"id": "AC-002-002", "story_ref": "US-002-001", "given": "invalid credentials", "when": "user submits login form", "then": "error message 'Invalid email or password' is shown"},
+        {"id": "AC-002-003", "story_ref": "US-002-002", "given": "valid email address", "when": "user requests password reset", "then": "reset link is sent to email within 1 minute"},
+        {"id": "AC-002-004", "story_ref": "US-002-003", "given": "admin is logged in", "when": "admin creates new user with role", "then": "user receives email invitation and can log in with assigned role"},
+        {"id": "AC-002-005", "story_ref": "US-002-004", "given": "admin deactivates user account", "when": "deactivated user tries to login", "then": "login is rejected with 'Account deactivated' message"},
+        {"id": "AC-002-006", "story_ref": "US-002-005", "given": "user has valid JWT token", "when": "24 hours have passed", "then": "token is expired and user must re-authenticate"},
+        {"id": "AC-002-007", "story_ref": "US-002-001", "given": "user enters wrong password 5 times", "when": "6th attempt is made", "then": "account is locked for 30 minutes"}
+      ]
+    },
+    "module_03_employee_management": {
+      "module_id": 3,
+      "module_name": "Employee Management (HRMS)",
+      "criteria": [
+        {"id": "AC-003-001", "story_ref": "US-003-001", "given": "HR manager is logged in", "when": "HR submits new employee form with required fields", "then": "employee is created with auto-generated ID (EMP-YYYY-XXXX)"},
+        {"id": "AC-003-002", "story_ref": "US-003-001", "given": "employee form has missing required fields", "when": "HR submits the form", "then": "validation error shows which fields are required"},
+        {"id": "AC-003-003", "story_ref": "US-003-003", "given": "employee has PAN, Aadhaar, UAN stored", "when": "HR views employee profile", "then": "statutory IDs are displayed (masked for security)"},
+        {"id": "AC-003-004", "story_ref": "US-003-004", "given": "employee is logged in", "when": "employee views profile", "then": "all personal and work information is displayed"},
+        {"id": "AC-003-005", "story_ref": "US-003-005", "given": "employee updates contact details", "when": "form is submitted", "then": "changes are saved and audit log entry is created"},
+        {"id": "AC-003-006", "story_ref": "US-003-006", "given": "HR marks employee as resigned", "when": "exit date is provided", "then": "employee status changes to Resigned and access is revoked"}
+      ]
+    },
+    "module_04_documents": {
+      "module_id": 4,
+      "module_name": "Enterprise Document Management (EDMS)",
+      "criteria": [
+        {"id": "AC-004-001", "story_ref": "US-004-001", "given": "HR uploads a document", "when": "file is PDF/Excel/Word/Image under 10MB", "then": "document is stored with metadata and version 1.0"},
+        {"id": "AC-004-002", "story_ref": "US-004-002", "given": "employee views documents", "when": "employee clicks on document", "then": "document preview or download is available"},
+        {"id": "AC-004-003", "story_ref": "US-004-003", "given": "HR categorizes document", "when": "category is selected", "then": "document appears in filtered view for that category"},
+        {"id": "AC-004-004", "story_ref": "US-004-004", "given": "document has expiry date", "when": "30 days before expiry", "then": "notification is sent to HR manager"},
+        {"id": "AC-004-005", "story_ref": "US-004-005", "given": "accountant searches for invoice", "when": "search query is submitted", "then": "matching documents are returned within 2 seconds"}
+      ]
+    },
+    "module_05_onboarding": {
+      "module_id": 5,
+      "module_name": "Employee Onboarding",
+      "criteria": [
+        {"id": "AC-005-001", "story_ref": "US-005-001", "given": "new employee is created", "when": "HR initiates onboarding", "then": "checklist with all tasks is created from template"},
+        {"id": "AC-005-002", "story_ref": "US-005-002", "given": "task is marked complete", "when": "HR updates status", "then": "progress percentage is updated and displayed"},
+        {"id": "AC-005-003", "story_ref": "US-005-003", "given": "new employee logs in", "when": "employee views dashboard", "then": "pending onboarding tasks are prominently displayed"},
+        {"id": "AC-005-004", "story_ref": "US-005-004", "given": "task due date is tomorrow", "when": "system runs daily check", "then": "reminder email is sent to task assignee"}
+      ]
+    },
+    "module_06_leave": {
+      "module_id": 6,
+      "module_name": "Leave Management",
+      "criteria": [
+        {"id": "AC-006-001", "story_ref": "US-006-001", "given": "employee views leave dashboard", "when": "page loads", "then": "all leave type balances are displayed with accrued and used breakdown"},
+        {"id": "AC-006-002", "story_ref": "US-006-002", "given": "employee applies for leave", "when": "dates are selected and reason provided", "then": "leave request is created with Pending status"},
+        {"id": "AC-006-003", "story_ref": "US-006-002", "given": "employee applies for leave exceeding balance", "when": "form is submitted", "then": "error 'Insufficient leave balance' is shown"},
+        {"id": "AC-006-004", "story_ref": "US-006-003", "given": "HR approves leave", "when": "approve button is clicked", "then": "leave status changes to Approved and balance is deducted"},
+        {"id": "AC-006-005", "story_ref": "US-006-004", "given": "leave is approved or rejected", "when": "status changes", "then": "email notification is sent to employee within 1 minute"},
+        {"id": "AC-006-006", "story_ref": "US-006-007", "given": "LOP leave is approved", "when": "payroll is processed", "then": "salary is reduced by (basic + DA) / working days * LOP days"}
+      ]
+    },
+    "module_07_timesheet": {
+      "module_id": 7,
+      "module_name": "Timesheet Management",
+      "criteria": [
+        {"id": "AC-007-001", "story_ref": "US-007-001", "given": "employee logs time", "when": "project and hours are entered", "then": "time entry is saved with billable/non-billable flag"},
+        {"id": "AC-007-002", "story_ref": "US-007-002", "given": "employee submits weekly timesheet", "when": "all days have entries", "then": "timesheet status changes to Submitted and manager is notified"},
+        {"id": "AC-007-003", "story_ref": "US-007-002", "given": "employee submits with missing days", "when": "submit is attempted", "then": "warning shows which days are missing"},
+        {"id": "AC-007-004", "story_ref": "US-007-003", "given": "manager approves timesheet", "when": "approve is clicked", "then": "status changes to Approved and hours are locked"},
+        {"id": "AC-007-005", "story_ref": "US-007-005", "given": "Friday 5 PM IST", "when": "timesheet not submitted", "then": "reminder email is sent to employee"}
+      ]
+    },
+    "module_08_payroll": {
+      "module_id": 8,
+      "module_name": "Payroll System",
+      "criteria": [
+        {"id": "AC-008-001", "story_ref": "US-008-001", "given": "HR configures salary structure", "when": "CTC components are entered", "then": "monthly breakdown with Basic, HRA, Special Allowance is calculated"},
+        {"id": "AC-008-002", "story_ref": "US-008-002", "given": "HR runs payroll for month", "when": "process is initiated", "then": "all active employees have salary calculated with deductions"},
+        {"id": "AC-008-003", "story_ref": "US-008-003", "given": "employee views payslip", "when": "payroll is processed", "then": "earnings, deductions, and net pay are displayed correctly"},
+        {"id": "AC-008-004", "story_ref": "US-008-004", "given": "employee downloads payslip", "when": "download is clicked", "then": "PDF with company logo and all details is generated"},
+        {"id": "AC-008-005", "story_ref": "US-008-005", "given": "payroll is processed", "when": "employee has PF/ESI/PT liability", "then": "all statutory deductions are calculated per current rules"},
+        {"id": "AC-008-006", "story_ref": "US-008-006", "given": "salary revision is processed", "when": "effective date is in current/future month", "then": "new salary applies from that month and arrears are calculated if backdated"}
+      ]
+    },
+    "module_09_statutory_pf": {
+      "module_id": 9,
+      "module_name": "Statutory - PF",
+      "criteria": [
+        {"id": "AC-009-001", "story_ref": "US-009-001", "given": "employee has PF wages Rs 15000", "when": "payroll is processed", "then": "employee PF = Rs 1800 (12%)"},
+        {"id": "AC-009-002", "story_ref": "US-009-002", "given": "employee has PF wages Rs 15000", "when": "payroll is processed", "then": "employer EPS = Rs 1250 (capped), employer EPF = Rs 550"},
+        {"id": "AC-009-003", "story_ref": "US-009-003", "given": "accountant requests ECR", "when": "month payroll is finalized", "then": "ECR text file in EPFO format is generated for download"}
+      ]
+    },
+    "module_10_statutory_esi": {
+      "module_id": 10,
+      "module_name": "Statutory - ESI",
+      "criteria": [
+        {"id": "AC-010-001", "story_ref": "US-010-001", "given": "employee gross is Rs 20000", "when": "payroll is processed", "then": "employee ESI = Rs 150 (0.75%), employer ESI = Rs 650 (3.25%)"},
+        {"id": "AC-010-002", "story_ref": "US-010-002", "given": "employee gross is Rs 22000", "when": "payroll is processed", "then": "ESI is not deducted (above Rs 21000 limit)"}
+      ]
+    },
+    "module_11_statutory_pt": {
+      "module_id": 11,
+      "module_name": "Statutory - PT",
+      "criteria": [
+        {"id": "AC-011-001", "story_ref": "US-011-001", "given": "employee salary > Rs 15000 in Karnataka", "when": "payroll for March is processed", "then": "PT = Rs 200"},
+        {"id": "AC-011-002", "story_ref": "US-011-002", "given": "employee salary > Rs 15000 in Karnataka", "when": "payroll for February is processed", "then": "PT = Rs 300"}
+      ]
+    },
+    "module_12_statutory_tds": {
+      "module_id": 12,
+      "module_name": "Statutory - TDS",
+      "criteria": [
+        {"id": "AC-012-001", "story_ref": "US-012-001", "given": "employee annual income Rs 10 lakhs (new regime)", "when": "TDS is calculated", "then": "annual tax = Rs 52000 (after standard deduction and cess)"},
+        {"id": "AC-012-002", "story_ref": "US-012-002", "given": "employee views tax computation", "when": "page loads", "then": "projected annual income, tax slabs applied, and monthly TDS shown"},
+        {"id": "AC-012-003", "story_ref": "US-012-003", "given": "FY is complete", "when": "employee requests Form 16", "then": "Form 16 PDF with Part A and Part B is generated"}
+      ]
+    },
+    "module_13_chart_of_accounts": {
+      "module_id": 13,
+      "module_name": "Chart of Accounts & GL",
+      "criteria": [
+        {"id": "AC-013-001", "story_ref": "US-013-001", "given": "accountant creates account", "when": "type and parent are selected", "then": "account appears in hierarchy under parent"},
+        {"id": "AC-013-002", "story_ref": "US-013-002", "given": "accountant creates journal entry", "when": "debits equal credits", "then": "entry is posted and GL is updated"},
+        {"id": "AC-013-003", "story_ref": "US-013-002", "given": "accountant creates journal entry", "when": "debits do not equal credits", "then": "error 'Debits must equal credits' is shown"},
+        {"id": "AC-013-004", "story_ref": "US-013-004", "given": "accountant generates trial balance", "when": "date range is selected", "then": "all accounts with debit and credit totals are shown"},
+        {"id": "AC-013-005", "story_ref": "US-013-005", "given": "admin closes accounting period", "when": "close is confirmed", "then": "no new entries can be posted to that period"}
+      ]
+    },
+    "module_14_multi_currency": {
+      "module_id": 14,
+      "module_name": "Multi-Currency",
+      "criteria": [
+        {"id": "AC-014-001", "story_ref": "US-014-001", "given": "accountant updates USD rate", "when": "new rate is entered", "then": "rate is saved with effective date"},
+        {"id": "AC-014-002", "story_ref": "US-014-002", "given": "invoice is created in USD", "when": "invoice is saved", "then": "INR equivalent is calculated using current rate"}
+      ]
+    },
+    "module_15_customers_ar": {
+      "module_id": 15,
+      "module_name": "Customers & AR",
+      "criteria": [
+        {"id": "AC-015-001", "story_ref": "US-015-001", "given": "accountant creates customer", "when": "required fields are filled", "then": "customer is created with unique ID"},
+        {"id": "AC-015-002", "story_ref": "US-015-002", "given": "accountant creates invoice", "when": "customer and line items are entered", "then": "GST is calculated (CGST+SGST or IGST) based on customer state"},
+        {"id": "AC-015-003", "story_ref": "US-015-003", "given": "invoice is created", "when": "PDF is requested", "then": "branded invoice PDF is generated within 5 seconds"},
+        {"id": "AC-015-004", "story_ref": "US-015-004", "given": "payment is recorded", "when": "invoice is selected", "then": "payment is matched to invoice and balance is updated"},
+        {"id": "AC-015-005", "story_ref": "US-015-005", "given": "accountant views AR aging", "when": "report is generated", "then": "invoices grouped by 0-30, 31-60, 61-90, 90+ days buckets"}
+      ]
+    },
+    "module_16_vendors_ap": {
+      "module_id": 16,
+      "module_name": "Vendors & AP",
+      "criteria": [
+        {"id": "AC-016-001", "story_ref": "US-016-001", "given": "accountant creates vendor", "when": "required fields including PAN are filled", "then": "vendor is created with unique ID"},
+        {"id": "AC-016-002", "story_ref": "US-016-002", "given": "accountant records bill", "when": "vendor and line items are entered", "then": "bill is created with GST ITC calculation"},
+        {"id": "AC-016-003", "story_ref": "US-016-003", "given": "payment is recorded for bill", "when": "TDS section is applicable", "then": "TDS is deducted at configured rate"},
+        {"id": "AC-016-004", "story_ref": "US-016-004", "given": "accountant views AP aging", "when": "report is generated", "then": "bills grouped by aging buckets with totals"}
+      ]
+    },
+    "module_17_banking": {
+      "module_id": 17,
+      "module_name": "Banking",
+      "criteria": [
+        {"id": "AC-017-001", "story_ref": "US-017-001", "given": "accountant adds bank account", "when": "account details are entered", "then": "bank account is created with opening balance"},
+        {"id": "AC-017-002", "story_ref": "US-017-002", "given": "accountant uploads bank statement", "when": "Excel/CSV file is selected", "then": "transactions are imported with date, amount, description"},
+        {"id": "AC-017-003", "story_ref": "US-017-003", "given": "accountant reconciles transaction", "when": "bank transaction matches system transaction", "then": "both are marked reconciled"},
+        {"id": "AC-017-004", "story_ref": "US-017-004", "given": "bank statement is imported", "when": "auto-match runs", "then": "transactions with matching amount and date are suggested for matching"}
+      ]
+    },
+    "module_18_gst": {
+      "module_id": 18,
+      "module_name": "GST Compliance",
+      "criteria": [
+        {"id": "AC-018-001", "story_ref": "US-018-001", "given": "invoice for IT services", "when": "invoice is created", "then": "GST = 18% of taxable amount"},
+        {"id": "AC-018-002", "story_ref": "US-018-002", "given": "customer is in same state", "when": "invoice is created", "then": "CGST = 9%, SGST = 9%"},
+        {"id": "AC-018-003", "story_ref": "US-018-002", "given": "customer is in different state", "when": "invoice is created", "then": "IGST = 18%"},
+        {"id": "AC-018-004", "story_ref": "US-018-003", "given": "accountant generates GSTR-1", "when": "month is selected", "then": "all outward supplies are listed in required format"},
+        {"id": "AC-018-005", "story_ref": "US-018-004", "given": "accountant generates GSTR-3B", "when": "month is selected", "then": "summary with output tax, ITC, and net liability is shown"},
+        {"id": "AC-018-006", "story_ref": "US-018-005", "given": "vendor bill with GST is recorded", "when": "bill is saved", "then": "ITC is calculated and available for GSTR-3B"}
+      ]
+    },
+    "module_19_tds_vendors": {
+      "module_id": 19,
+      "module_name": "TDS on Vendors",
+      "criteria": [
+        {"id": "AC-019-001", "story_ref": "US-019-001", "given": "accountant configures TDS section 194J", "when": "rate 10% is set", "then": "section is available for vendor selection"},
+        {"id": "AC-019-002", "story_ref": "US-019-002", "given": "payment to vendor with 194J", "when": "payment exceeds threshold", "then": "TDS = 10% of payment is deducted"},
+        {"id": "AC-019-003", "story_ref": "US-019-003", "given": "accountant generates Form 26Q", "when": "quarter is selected", "then": "all vendor TDS deductions are listed in filing format"}
+      ]
+    },
+    "module_20_crm": {
+      "module_id": 20,
+      "module_name": "CRM",
+      "criteria": [
+        {"id": "AC-020-001", "story_ref": "US-020-001", "given": "admin captures lead", "when": "contact details are entered", "then": "lead is created with New status"},
+        {"id": "AC-020-002", "story_ref": "US-020-002", "given": "admin updates lead status", "when": "new status is selected", "then": "status history is recorded with timestamp"},
+        {"id": "AC-020-003", "story_ref": "US-020-003", "given": "lead is qualified", "when": "convert to customer is clicked", "then": "customer record is created with lead data pre-filled"}
+      ]
+    },
+    "module_21_projects": {
+      "module_id": 21,
+      "module_name": "Projects",
+      "criteria": [
+        {"id": "AC-021-001", "story_ref": "US-021-001", "given": "admin creates project", "when": "customer and budget are entered", "then": "project is created with Active status"},
+        {"id": "AC-021-002", "story_ref": "US-021-002", "given": "HR allocates employee", "when": "project and role are selected", "then": "employee appears in project team and can log time"},
+        {"id": "AC-021-003", "story_ref": "US-021-004", "given": "admin views project profitability", "when": "report is generated", "then": "revenue, cost (from timesheets), and margin are calculated"}
+      ]
+    },
+    "module_22_ai_services": {
+      "module_id": 22,
+      "module_name": "AI Services",
+      "criteria": [
+        {"id": "AC-022-001", "story_ref": "US-022-001", "given": "AI confidence >= 95%", "when": "action is suggested", "then": "action is auto-executed without user intervention"},
+        {"id": "AC-022-002", "story_ref": "US-022-001", "given": "AI confidence 70-94%", "when": "action is suggested", "then": "action is queued for user review"},
+        {"id": "AC-022-003", "story_ref": "US-022-001", "given": "AI confidence < 70%", "when": "action is suggested", "then": "item is flagged for manual handling"},
+        {"id": "AC-022-004", "story_ref": "US-022-002", "given": "invoice image is uploaded", "when": "AI parses document", "then": "vendor, amount, date, and line items are extracted"},
+        {"id": "AC-022-005", "story_ref": "US-022-005", "given": "admin views AI usage", "when": "dashboard loads", "then": "API calls, tokens, and cost by provider are displayed"}
+      ]
+    },
+    "module_23_reports": {
+      "module_id": 23,
+      "module_name": "Reports",
+      "criteria": [
+        {"id": "AC-023-001", "story_ref": "US-023-001", "given": "admin generates P&L", "when": "date range is selected", "then": "income, expenses, and net profit/loss are calculated"},
+        {"id": "AC-023-002", "story_ref": "US-023-002", "given": "admin generates Balance Sheet", "when": "as-of date is selected", "then": "assets, liabilities, and equity are displayed with totals balanced"},
+        {"id": "AC-023-003", "story_ref": "US-023-004", "given": "HR generates payroll summary", "when": "month is selected", "then": "total earnings, deductions, and net pay for all employees shown"},
+        {"id": "AC-023-004", "story_ref": "US-023-005", "given": "External CA logs in", "when": "CA accesses reports", "then": "all financial reports are available in read-only mode"},
+        {"id": "AC-023-005", "story_ref": "US-023-006", "given": "report is displayed", "when": "export button is clicked", "then": "PDF and Excel download options are available"}
+      ]
+    }
+  },
+  "summary": {
+    "total_modules": 23,
+    "total_acceptance_criteria": 95,
+    "format": "Given-When-Then (BDD style)"
+  }
+}

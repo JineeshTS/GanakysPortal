@@ -1,0 +1,436 @@
+{
+  "metadata": {
+    "agent_id": "REQ-005",
+    "agent_name": "Non-Functional Requirements Extractor",
+    "source_file": "/var/ganaportal/artifacts/requirements/parsed_requirements.json",
+    "created_at": "2026-01-08T10:18:00Z",
+    "version": "1.0"
+  },
+  "non_functional_requirements": {
+    "performance": {
+      "category_id": "NFR-PERF",
+      "category_name": "Performance",
+      "requirements": [
+        {
+          "id": "NFR-PERF-001",
+          "name": "API Response Time",
+          "description": "95th percentile API response time shall be under 500ms",
+          "target": "< 500ms (P95)",
+          "measurement": "Server-side response time excluding network latency",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-PERF-002",
+          "name": "Page Load Time",
+          "description": "Initial page load time shall be under 3 seconds",
+          "target": "< 3 seconds",
+          "measurement": "Time to First Contentful Paint (FCP)",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-PERF-003",
+          "name": "Concurrent Users",
+          "description": "System shall support 10-20 concurrent users",
+          "target": "20 concurrent users",
+          "measurement": "Simultaneous active sessions without degradation",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-PERF-004",
+          "name": "Database Query Time",
+          "description": "Database queries shall complete within 100ms",
+          "target": "< 100ms (P95)",
+          "measurement": "Query execution time at database level",
+          "priority": "P1"
+        },
+        {
+          "id": "NFR-PERF-005",
+          "name": "Report Generation",
+          "description": "Standard reports shall generate within 10 seconds",
+          "target": "< 10 seconds",
+          "measurement": "Time from request to PDF/Excel file ready",
+          "priority": "P1"
+        },
+        {
+          "id": "NFR-PERF-006",
+          "name": "File Upload",
+          "description": "File uploads up to 10MB shall complete within 30 seconds",
+          "target": "< 30 seconds for 10MB",
+          "measurement": "Time from upload start to confirmation",
+          "priority": "P1"
+        },
+        {
+          "id": "NFR-PERF-007",
+          "name": "Payroll Processing",
+          "description": "Monthly payroll for 50 employees shall complete within 5 minutes",
+          "target": "< 5 minutes for 50 employees",
+          "measurement": "Time from payroll run initiation to completion",
+          "priority": "P0"
+        }
+      ]
+    },
+    "security": {
+      "category_id": "NFR-SEC",
+      "category_name": "Security",
+      "requirements": [
+        {
+          "id": "NFR-SEC-001",
+          "name": "HTTPS Encryption",
+          "description": "All communications shall use HTTPS with TLS 1.2+",
+          "target": "100% HTTPS",
+          "measurement": "No HTTP traffic allowed",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-SEC-002",
+          "name": "Password Hashing",
+          "description": "Passwords shall be hashed using bcrypt with cost factor 12",
+          "target": "bcrypt with salt",
+          "measurement": "No plaintext passwords stored",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-SEC-003",
+          "name": "JWT Token Security",
+          "description": "JWT tokens shall expire after 24 hours and use HS256 signing",
+          "target": "24-hour expiry, HS256",
+          "measurement": "Token validation on every request",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-SEC-004",
+          "name": "Role-Based Access Control",
+          "description": "All API endpoints shall enforce RBAC based on user role",
+          "target": "100% endpoint protection",
+          "measurement": "Unauthorized access attempts blocked and logged",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-SEC-005",
+          "name": "SQL Injection Prevention",
+          "description": "All database queries shall use parameterized queries",
+          "target": "Zero SQL injection vulnerabilities",
+          "measurement": "SQLAlchemy ORM with parameterized queries",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-SEC-006",
+          "name": "XSS Prevention",
+          "description": "All user input shall be sanitized to prevent XSS attacks",
+          "target": "Zero XSS vulnerabilities",
+          "measurement": "Input sanitization and output encoding",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-SEC-007",
+          "name": "Audit Logging",
+          "description": "All sensitive operations shall be logged with user, timestamp, and action",
+          "target": "100% audit coverage for sensitive operations",
+          "measurement": "Audit logs retained for 2 years",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-SEC-008",
+          "name": "Account Lockout",
+          "description": "Accounts shall be locked after 5 consecutive failed login attempts",
+          "target": "5 failed attempts = 30-minute lockout",
+          "measurement": "Lockout events logged",
+          "priority": "P1"
+        },
+        {
+          "id": "NFR-SEC-009",
+          "name": "Data Encryption at Rest",
+          "description": "Sensitive data (PAN, bank details) shall be encrypted at rest",
+          "target": "AES-256 encryption for PII",
+          "measurement": "Encrypted fields in database",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-SEC-010",
+          "name": "API Rate Limiting",
+          "description": "API shall enforce rate limiting to prevent abuse",
+          "target": "100 requests/minute per user",
+          "measurement": "Rate limit exceeded responses logged",
+          "priority": "P1"
+        }
+      ]
+    },
+    "availability": {
+      "category_id": "NFR-AVAIL",
+      "category_name": "Availability",
+      "requirements": [
+        {
+          "id": "NFR-AVAIL-001",
+          "name": "System Uptime",
+          "description": "System shall maintain 99.5% uptime (excluding planned maintenance)",
+          "target": "99.5% uptime",
+          "measurement": "Monthly uptime calculated from monitoring",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-AVAIL-002",
+          "name": "Planned Maintenance Window",
+          "description": "Planned maintenance shall be limited to 4 hours per month",
+          "target": "< 4 hours/month",
+          "measurement": "Maintenance scheduled during off-hours (IST 2 AM - 6 AM)",
+          "priority": "P1"
+        },
+        {
+          "id": "NFR-AVAIL-003",
+          "name": "Recovery Time Objective",
+          "description": "System shall recover from failure within 4 hours",
+          "target": "RTO: 4 hours",
+          "measurement": "Time from failure detection to service restoration",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-AVAIL-004",
+          "name": "Recovery Point Objective",
+          "description": "Data loss in case of failure shall be limited to 24 hours",
+          "target": "RPO: 24 hours",
+          "measurement": "Daily backups with point-in-time recovery",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-AVAIL-005",
+          "name": "Backup Frequency",
+          "description": "Database shall be backed up daily with 30-day retention",
+          "target": "Daily backups, 30-day retention",
+          "measurement": "Backup job success rate >= 99%",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-AVAIL-006",
+          "name": "Health Monitoring",
+          "description": "System shall expose health check endpoints for monitoring",
+          "target": "/health endpoint returning system status",
+          "measurement": "Health check polled every 5 minutes",
+          "priority": "P1"
+        }
+      ]
+    },
+    "scalability": {
+      "category_id": "NFR-SCALE",
+      "category_name": "Scalability",
+      "requirements": [
+        {
+          "id": "NFR-SCALE-001",
+          "name": "User Capacity",
+          "description": "System shall support growth from 5 to 50 employees",
+          "target": "50 employees by 2030",
+          "measurement": "System performance maintained at 50 users",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-SCALE-002",
+          "name": "Data Growth",
+          "description": "System shall handle 5 years of transaction data",
+          "target": "5 years data retention with acceptable performance",
+          "measurement": "Query performance on historical data",
+          "priority": "P1"
+        },
+        {
+          "id": "NFR-SCALE-003",
+          "name": "Vertical Scaling",
+          "description": "System shall support vertical scaling of VPS resources",
+          "target": "Upgrade path from 4GB to 16GB RAM",
+          "measurement": "No architectural changes needed for VPS upgrade",
+          "priority": "P1"
+        },
+        {
+          "id": "NFR-SCALE-004",
+          "name": "Database Size",
+          "description": "System shall perform well with database up to 10GB",
+          "target": "10GB database size",
+          "measurement": "Query response times maintained",
+          "priority": "P1"
+        }
+      ]
+    },
+    "reliability": {
+      "category_id": "NFR-REL",
+      "category_name": "Reliability",
+      "requirements": [
+        {
+          "id": "NFR-REL-001",
+          "name": "Transaction Integrity",
+          "description": "All financial transactions shall be atomic and consistent",
+          "target": "ACID compliance for all transactions",
+          "measurement": "Zero data corruption incidents",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-REL-002",
+          "name": "Error Handling",
+          "description": "System shall handle errors gracefully without data loss",
+          "target": "100% graceful error handling",
+          "measurement": "Error logs with stack traces, user-friendly messages",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-REL-003",
+          "name": "Data Validation",
+          "description": "All input data shall be validated before processing",
+          "target": "100% input validation",
+          "measurement": "Pydantic/Zod validation on all endpoints",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-REL-004",
+          "name": "Calculation Accuracy",
+          "description": "Financial calculations shall be accurate to 2 decimal places",
+          "target": "100% calculation accuracy",
+          "measurement": "Unit tests for all financial calculations",
+          "priority": "P0"
+        }
+      ]
+    },
+    "maintainability": {
+      "category_id": "NFR-MAINT",
+      "category_name": "Maintainability",
+      "requirements": [
+        {
+          "id": "NFR-MAINT-001",
+          "name": "Code Coverage - Backend",
+          "description": "Backend code shall have minimum 80% test coverage",
+          "target": ">= 80% coverage",
+          "measurement": "pytest-cov coverage report",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-MAINT-002",
+          "name": "Code Coverage - Frontend",
+          "description": "Frontend code shall have minimum 60% test coverage",
+          "target": ">= 60% coverage",
+          "measurement": "Jest coverage report",
+          "priority": "P1"
+        },
+        {
+          "id": "NFR-MAINT-003",
+          "name": "Code Documentation",
+          "description": "All public APIs shall have docstrings/JSDoc comments",
+          "target": "100% public API documentation",
+          "measurement": "Automated documentation generation",
+          "priority": "P1"
+        },
+        {
+          "id": "NFR-MAINT-004",
+          "name": "Type Safety",
+          "description": "Full TypeScript and Python type hints coverage",
+          "target": "Strict TypeScript, Python 3.11+ type hints",
+          "measurement": "Zero type errors in build",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-MAINT-005",
+          "name": "Database Migrations",
+          "description": "All schema changes shall be tracked via migrations",
+          "target": "100% schema changes via Alembic",
+          "measurement": "No manual schema modifications",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-MAINT-006",
+          "name": "Logging",
+          "description": "System shall implement structured logging for debugging",
+          "target": "JSON-formatted logs with correlation IDs",
+          "measurement": "Log aggregation and searchability",
+          "priority": "P1"
+        }
+      ]
+    },
+    "usability": {
+      "category_id": "NFR-USE",
+      "category_name": "Usability",
+      "requirements": [
+        {
+          "id": "NFR-USE-001",
+          "name": "Responsive Design",
+          "description": "UI shall be responsive and work on desktop and tablet",
+          "target": "Breakpoints: 1024px, 768px",
+          "measurement": "UI tested on common screen sizes",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-USE-002",
+          "name": "Browser Support",
+          "description": "System shall support Chrome, Firefox, Safari, Edge (latest 2 versions)",
+          "target": "4 major browsers supported",
+          "measurement": "Cross-browser testing",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-USE-003",
+          "name": "Accessibility",
+          "description": "UI shall follow basic WCAG 2.1 Level A guidelines",
+          "target": "WCAG 2.1 Level A compliance",
+          "measurement": "Keyboard navigation, screen reader support",
+          "priority": "P2"
+        },
+        {
+          "id": "NFR-USE-004",
+          "name": "Form Validation",
+          "description": "Forms shall provide real-time validation feedback",
+          "target": "Inline validation on all forms",
+          "measurement": "Error messages shown before submission",
+          "priority": "P1"
+        },
+        {
+          "id": "NFR-USE-005",
+          "name": "Loading States",
+          "description": "UI shall show loading indicators for async operations",
+          "target": "Loading state for all async operations",
+          "measurement": "User feedback within 200ms of action",
+          "priority": "P1"
+        }
+      ]
+    },
+    "compliance": {
+      "category_id": "NFR-COMP",
+      "category_name": "Compliance",
+      "requirements": [
+        {
+          "id": "NFR-COMP-001",
+          "name": "Data Privacy",
+          "description": "System shall comply with IT Act 2000 data protection requirements",
+          "target": "IT Act 2000 compliance",
+          "measurement": "Annual compliance review",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-COMP-002",
+          "name": "Financial Record Retention",
+          "description": "Financial records shall be retained for 8 years per Companies Act",
+          "target": "8-year retention for financial data",
+          "measurement": "Data retention policy implemented",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-COMP-003",
+          "name": "Statutory Compliance",
+          "description": "System shall support current India PF, ESI, PT, TDS, GST rules",
+          "target": "Current FY compliance rules",
+          "measurement": "Statutory calculations verified by CA",
+          "priority": "P0"
+        },
+        {
+          "id": "NFR-COMP-004",
+          "name": "Audit Trail",
+          "description": "System shall maintain immutable audit trail for 2 years",
+          "target": "2-year audit trail retention",
+          "measurement": "Audit logs cannot be modified or deleted",
+          "priority": "P0"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_categories": 8,
+    "total_requirements": 51,
+    "priority_breakdown": {
+      "P0_Critical": 35,
+      "P1_High": 14,
+      "P2_Medium": 2
+    }
+  }
+}

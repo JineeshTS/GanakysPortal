@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-011",
+    "agent_name": "Queue Architect",
+    "created_at": "2026-01-08T10:55:00Z",
+    "version": "1.0"
+  },
+  "queue_infrastructure": {
+    "broker": "Redis 7",
+    "result_backend": "Redis 7",
+    "framework": "Celery 5.3.x"
+  },
+  "queues": {
+    "high": {"priority": 1, "workers": 2, "tasks": ["email_send", "sms_send", "payment_webhook"]},
+    "default": {"priority": 2, "workers": 2, "tasks": ["document_process", "ai_analyze", "notification"]},
+    "low": {"priority": 3, "workers": 1, "tasks": ["report_generate", "bulk_export", "cleanup"]}
+  },
+  "task_definitions": {
+    "email_send": {"queue": "high", "timeout": 30, "retry": 3},
+    "sms_send": {"queue": "high", "timeout": 30, "retry": 3},
+    "ai_document_analysis": {"queue": "default", "timeout": 300, "retry": 2},
+    "payroll_calculate": {"queue": "default", "timeout": 600, "retry": 1},
+    "report_generate": {"queue": "low", "timeout": 1800, "retry": 1},
+    "bulk_import": {"queue": "low", "timeout": 3600, "retry": 1},
+    "backup_database": {"queue": "low", "timeout": 3600, "retry": 1}
+  },
+  "scheduled_tasks": {
+    "cleanup_temp_files": {"schedule": "0 3 * * *", "description": "Daily at 3 AM"},
+    "sync_exchange_rates": {"schedule": "0 6 * * *", "description": "Daily at 6 AM"},
+    "send_leave_reminders": {"schedule": "0 9 * * 1-5", "description": "Weekdays at 9 AM"},
+    "backup_database": {"schedule": "0 2 * * *", "description": "Daily at 2 AM"},
+    "generate_compliance_alerts": {"schedule": "0 8 1 * *", "description": "1st of month at 8 AM"}
+  },
+  "error_handling": {
+    "retry_policy": {"max_retries": 3, "backoff": "exponential", "max_backoff": 3600},
+    "dead_letter": "Store failed tasks for manual review",
+    "alerting": "Email on critical task failures"
+  }
+}

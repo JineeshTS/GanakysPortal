@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "agents": ["BE-036", "BE-037", "BE-038", "BE-039", "BE-040"],
+    "category": "Banking & GST",
+    "created_at": "2026-01-08T11:07:00Z"
+  },
+  "BE-036_banking_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/banking.py",
+      "service": "app/services/banking_service.py"
+    },
+    "features": [
+      "Bank account management",
+      "Transaction import",
+      "Statement parsing",
+      "Balance tracking"
+    ]
+  },
+  "BE-037_reconciliation_module": {
+    "status": "completed",
+    "files": {
+      "service": "app/services/banking_service.py"
+    },
+    "features": [
+      "Auto-matching rules",
+      "Manual matching",
+      "Unreconciled items",
+      "Reconciliation reports"
+    ]
+  },
+  "BE-038_gst_module": {
+    "status": "completed",
+    "files": {
+      "model": "app/models/gst.py",
+      "service": "app/services/gst_service.py"
+    },
+    "features": [
+      "GST computation",
+      "CGST/SGST/IGST",
+      "HSN classification",
+      "Place of supply"
+    ]
+  },
+  "BE-039_gst_returns_module": {
+    "status": "completed",
+    "files": {
+      "service": "app/services/gst_service.py"
+    },
+    "features": [
+      "GSTR-1 generation",
+      "GSTR-3B summary",
+      "JSON export for filing",
+      "Return status tracking"
+    ]
+  },
+  "BE-040_tds_vendor_module": {
+    "status": "completed",
+    "files": {
+      "service": "app/services/tds_vendor_service.py"
+    },
+    "features": [
+      "TDS section rates (194C, 194J, 194H, 194I)",
+      "Deduction recording",
+      "Challan generation",
+      "Certificate generation"
+    ]
+  }
+}

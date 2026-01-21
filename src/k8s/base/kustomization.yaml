@@ -1,0 +1,44 @@
+# DEP-004: Kubernetes Manifests Agent
+# GanaPortal Base Kustomization
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ganaportal
+
+resources:
+  - namespace.yaml
+  - backend-deployment.yaml
+  - frontend-deployment.yaml
+  - postgres.yaml
+  - redis.yaml
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/name: ganaportal
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: ganaportal-erp
+
+configMapGenerator:
+  - name: ganaportal-config
+    literals:
+      - ENVIRONMENT=development
+      - API_URL=http://backend:80
+      - LOG_LEVEL=INFO
+      - TZ=Asia/Kolkata
+
+secretGenerator:
+  - name: ganaportal-secrets
+    literals:
+      - DATABASE_URL=postgresql+asyncpg://ganaportal:changeme@postgres:5432/ganaportal
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=change-this-in-production
+      - POSTGRES_USER=ganaportal
+      - POSTGRES_PASSWORD=changeme
+    type: Opaque
+
+images:
+  - name: ghcr.io/ganakys/ganaportal/backend
+    newTag: latest
+  - name: ghcr.io/ganakys/ganaportal/frontend
+    newTag: latest

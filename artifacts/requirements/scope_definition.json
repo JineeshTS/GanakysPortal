@@ -1,0 +1,347 @@
+{
+  "metadata": {
+    "agent_id": "REQ-003",
+    "agent_name": "Scope Definer",
+    "source_file": "/var/ganaportal/artifacts/requirements/parsed_requirements.json",
+    "created_at": "2026-01-08T10:16:00Z",
+    "version": "1.0"
+  },
+  "in_scope": {
+    "summary": {
+      "modules": 23,
+      "database_tables": 127,
+      "api_endpoints": 267,
+      "frontend_screens": 68,
+      "user_roles": 5,
+      "compliance_rules": 47
+    },
+    "modules": [
+      {
+        "id": 1,
+        "name": "Infrastructure & DevOps",
+        "description": "Server setup, deployment, monitoring, and CI/CD pipeline",
+        "priority": "P0-Critical",
+        "phase": 1
+      },
+      {
+        "id": 2,
+        "name": "Authentication & Users",
+        "description": "JWT-based authentication, user management, role-based access control",
+        "priority": "P0-Critical",
+        "phase": 1
+      },
+      {
+        "id": 3,
+        "name": "Employee Management (HRMS)",
+        "description": "Employee profiles, personal info, work history, and document management",
+        "priority": "P0-Critical",
+        "phase": 1
+      },
+      {
+        "id": 4,
+        "name": "Enterprise Document Management (EDMS)",
+        "description": "Document storage, versioning, categorization, and retrieval",
+        "priority": "P1-High",
+        "phase": 1
+      },
+      {
+        "id": 5,
+        "name": "Employee Onboarding",
+        "description": "Onboarding workflows, task checklists, and completion tracking",
+        "priority": "P1-High",
+        "phase": 1
+      },
+      {
+        "id": 6,
+        "name": "Leave Management",
+        "description": "Leave types, policies, applications, approvals, and balance tracking",
+        "priority": "P0-Critical",
+        "phase": 1
+      },
+      {
+        "id": 7,
+        "name": "Timesheet Management",
+        "description": "Project time tracking, timesheet submission, and approvals",
+        "priority": "P1-High",
+        "phase": 1
+      },
+      {
+        "id": 8,
+        "name": "Payroll System",
+        "description": "Salary calculation, payslip generation, and payment processing",
+        "priority": "P0-Critical",
+        "phase": 2
+      },
+      {
+        "id": 9,
+        "name": "Statutory - PF",
+        "description": "Provident Fund calculations, contributions, and ECR generation",
+        "priority": "P0-Critical",
+        "phase": 2
+      },
+      {
+        "id": 10,
+        "name": "Statutory - ESI",
+        "description": "Employee State Insurance calculations and compliance",
+        "priority": "P0-Critical",
+        "phase": 2
+      },
+      {
+        "id": 11,
+        "name": "Statutory - PT",
+        "description": "Professional Tax calculations for Karnataka",
+        "priority": "P0-Critical",
+        "phase": 2
+      },
+      {
+        "id": 12,
+        "name": "Statutory - TDS",
+        "description": "Tax Deducted at Source on salary with new tax regime",
+        "priority": "P0-Critical",
+        "phase": 2
+      },
+      {
+        "id": 13,
+        "name": "Chart of Accounts & GL",
+        "description": "Account hierarchy, general ledger, and journal entries",
+        "priority": "P0-Critical",
+        "phase": 2
+      },
+      {
+        "id": 14,
+        "name": "Multi-Currency",
+        "description": "Currency management, exchange rates, and conversions",
+        "priority": "P2-Medium",
+        "phase": 3
+      },
+      {
+        "id": 15,
+        "name": "Customers & AR",
+        "description": "Customer management, invoicing, and accounts receivable",
+        "priority": "P0-Critical",
+        "phase": 2
+      },
+      {
+        "id": 16,
+        "name": "Vendors & AP",
+        "description": "Vendor management, bills, and accounts payable",
+        "priority": "P0-Critical",
+        "phase": 2
+      },
+      {
+        "id": 17,
+        "name": "Banking",
+        "description": "Bank accounts, transactions, and reconciliation",
+        "priority": "P0-Critical",
+        "phase": 2
+      },
+      {
+        "id": 18,
+        "name": "GST Compliance",
+        "description": "GST calculations, GSTR-1, GSTR-3B, and filing support",
+        "priority": "P0-Critical",
+        "phase": 2
+      },
+      {
+        "id": 19,
+        "name": "TDS on Vendors",
+        "description": "TDS deduction on vendor payments and quarterly returns",
+        "priority": "P1-High",
+        "phase": 2
+      },
+      {
+        "id": 20,
+        "name": "CRM",
+        "description": "Lead management, opportunity tracking, and client communications",
+        "priority": "P2-Medium",
+        "phase": 3
+      },
+      {
+        "id": 21,
+        "name": "Projects",
+        "description": "Project setup, resource allocation, and tracking",
+        "priority": "P1-High",
+        "phase": 2
+      },
+      {
+        "id": 22,
+        "name": "AI Services",
+        "description": "AI-powered automation, document parsing, and intelligent suggestions",
+        "priority": "P1-High",
+        "phase": 2
+      },
+      {
+        "id": 23,
+        "name": "Reports",
+        "description": "Financial reports, HR reports, and compliance reports",
+        "priority": "P0-Critical",
+        "phase": 2
+      }
+    ],
+    "deployment_model": {
+      "type": "Single-tenant SaaS",
+      "hosting": "Hostinger VPS",
+      "url": "portal.ganakys.com"
+    },
+    "user_roles_in_scope": [
+      "ADMIN (Company Owner/Founder)",
+      "HR_MANAGER (Human Resources)",
+      "ACCOUNTANT (Finance/Accounts)",
+      "EMPLOYEE (Regular Employee)",
+      "EXTERNAL_CA (External Chartered Accountant)"
+    ],
+    "integrations_in_scope": [
+      "AI APIs (Claude, Gemini, OpenAI, Together AI) for intelligent automation",
+      "Email notifications via SMTP",
+      "PDF generation for reports and documents",
+      "Excel export for data analysis"
+    ],
+    "compliance_in_scope": [
+      "India PF (Provident Fund) - 12% employee, 12% employer with EPS/EPF split",
+      "India ESI (Employee State Insurance) - 0.75% employee, 3.25% employer",
+      "Karnataka PT (Professional Tax) - Rs 200/month, Rs 300 February",
+      "India TDS (Tax Deducted at Source) - New tax regime slabs 2024-25",
+      "India GST (Goods & Services Tax) - 18% for IT services"
+    ]
+  },
+  "out_of_scope": {
+    "features": [
+      {
+        "name": "Mobile Application",
+        "reason": "Web application is responsive; native mobile apps planned for future phase",
+        "future_consideration": "Phase 4 (2027)"
+      },
+      {
+        "name": "Multi-Company Support",
+        "reason": "Single company deployment for Ganakys; multi-tenant architecture adds complexity",
+        "future_consideration": "Phase 4 (2027)"
+      },
+      {
+        "name": "Inventory Management",
+        "reason": "IT services company; no physical inventory to manage",
+        "future_consideration": "Not planned"
+      },
+      {
+        "name": "Manufacturing Module",
+        "reason": "Not applicable to IT services business",
+        "future_consideration": "Not planned"
+      },
+      {
+        "name": "E-commerce Integration",
+        "reason": "B2B services model; no e-commerce requirements",
+        "future_consideration": "Not planned"
+      },
+      {
+        "name": "Point of Sale (POS)",
+        "reason": "Not applicable to IT services business",
+        "future_consideration": "Not planned"
+      },
+      {
+        "name": "Biometric Attendance",
+        "reason": "Remote-first company; timesheet-based tracking sufficient",
+        "future_consideration": "Phase 4 (2027)"
+      },
+      {
+        "name": "Asset Management",
+        "reason": "Minimal assets; manual tracking sufficient initially",
+        "future_consideration": "Phase 3 (2026)"
+      },
+      {
+        "name": "International Tax Compliance",
+        "reason": "India-focused operations initially",
+        "future_consideration": "Phase 4 (2027)"
+      },
+      {
+        "name": "Advanced Analytics/BI",
+        "reason": "Basic reports sufficient; advanced BI adds complexity",
+        "future_consideration": "Phase 3 (2026)"
+      }
+    ],
+    "integrations_out_of_scope": [
+      "Third-party payroll providers",
+      "HRMS/ERP integrations",
+      "Government portal direct filing (manual upload required)",
+      "Banking API integrations (manual import/export)",
+      "Accounting software sync (Tally, QuickBooks)"
+    ]
+  },
+  "constraints": {
+    "infrastructure": {
+      "vps_memory": "4GB RAM",
+      "vps_storage": "50GB SSD",
+      "vps_provider": "Hostinger",
+      "database_size_limit": "10GB",
+      "file_storage_limit": "30GB"
+    },
+    "deployment": {
+      "model": "Single tenant",
+      "tenancy": "Single company only",
+      "scaling": "Vertical scaling within VPS limits"
+    },
+    "performance": {
+      "concurrent_users": "10-20 max",
+      "api_response_p95_ms": 500,
+      "page_load_seconds": 3,
+      "background_jobs": "Celery with Redis queue"
+    },
+    "budget": {
+      "monthly_infrastructure": "$20-30 USD",
+      "ai_api_usage": "$50-100 USD/month estimated"
+    },
+    "timeline": {
+      "phase_1_deadline": "2026-Q1",
+      "phase_2_deadline": "2026-Q2",
+      "phase_3_deadline": "2026-Q4",
+      "full_launch_target": "2026-Q2"
+    },
+    "team": {
+      "development_approach": "AI-assisted development",
+      "primary_developer": "Founder + AI agents",
+      "testing": "Automated tests + manual QA"
+    }
+  },
+  "assumptions": [
+    "All users have reliable internet access",
+    "Users are comfortable with web-based interfaces",
+    "India compliance rules (PF, ESI, PT, TDS, GST) remain stable during development",
+    "AI API providers maintain current pricing and availability",
+    "4GB VPS is sufficient for 5-15 employees initially",
+    "Single timezone operation (IST)",
+    "English language interface sufficient for all users",
+    "Document formats limited to PDF, Excel, Word, and images"
+  ],
+  "dependencies": [
+    "Hostinger VPS availability and reliability",
+    "PostgreSQL 16 and Redis 7 installation",
+    "AI API access (Claude, Gemini, OpenAI, Together AI)",
+    "Domain and SSL certificate for portal.ganakys.com",
+    "Email service for notifications",
+    "India compliance rate updates from government sources"
+  ],
+  "risks": [
+    {
+      "risk": "VPS resource exhaustion as user count grows",
+      "probability": "Medium",
+      "impact": "High",
+      "mitigation": "Monitor usage, upgrade VPS plan when approaching limits"
+    },
+    {
+      "risk": "AI API rate limits or cost overruns",
+      "probability": "Medium",
+      "impact": "Medium",
+      "mitigation": "Implement caching, fallback chain, and usage monitoring"
+    },
+    {
+      "risk": "Compliance rule changes mid-development",
+      "probability": "Low",
+      "impact": "Medium",
+      "mitigation": "Configurable compliance rules, regular government updates monitoring"
+    },
+    {
+      "risk": "Single point of failure with single-tenant deployment",
+      "probability": "Low",
+      "impact": "High",
+      "mitigation": "Daily backups, disaster recovery plan, monitoring alerts"
+    }
+  ]
+}

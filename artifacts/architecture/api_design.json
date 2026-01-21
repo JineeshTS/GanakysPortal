@@ -1,0 +1,79 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-003",
+    "agent_name": "API Designer",
+    "created_at": "2026-01-08T10:47:00Z",
+    "version": "1.0"
+  },
+  "api_standards": {
+    "specification": "OpenAPI 3.1",
+    "base_path": "/api/v1",
+    "versioning": "URL path versioning",
+    "authentication": "Bearer JWT in Authorization header",
+    "content_type": "application/json",
+    "encoding": "UTF-8"
+  },
+  "request_conventions": {
+    "pagination": {
+      "page": "integer (default: 1)",
+      "limit": "integer (default: 20, max: 100)",
+      "sort_by": "string (field name)",
+      "sort_order": "asc | desc"
+    },
+    "filtering": {
+      "pattern": "?field=value&field2=value2",
+      "operators": ["eq", "ne", "gt", "gte", "lt", "lte", "in", "like"]
+    },
+    "date_format": "ISO 8601 (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ssZ)"
+  },
+  "response_conventions": {
+    "success": {
+      "format": {"success": true, "data": "object|array", "message": "string?"},
+      "paginated": {"success": true, "data": "array", "pagination": {"page": 1, "limit": 20, "total": 100, "total_pages": 5}}
+    },
+    "error": {
+      "format": {"success": false, "error": {"code": "string", "message": "string", "details": "object?"}}
+    }
+  },
+  "error_codes": {
+    "AUTH_001": "Invalid credentials",
+    "AUTH_002": "Token expired",
+    "AUTH_003": "Token invalid",
+    "AUTH_004": "Account locked",
+    "AUTH_005": "Insufficient permissions",
+    "VAL_001": "Validation error",
+    "VAL_002": "Required field missing",
+    "VAL_003": "Invalid format",
+    "RES_001": "Resource not found",
+    "RES_002": "Resource already exists",
+    "RES_003": "Resource conflict",
+    "SYS_001": "Internal server error",
+    "SYS_002": "Service unavailable",
+    "SYS_003": "Rate limit exceeded"
+  },
+  "rate_limiting": {
+    "strategy": "Token bucket",
+    "default": {"requests": 100, "window": "1 minute"},
+    "ai_endpoints": {"requests": 20, "window": "1 minute"},
+    "auth_endpoints": {"requests": 10, "window": "1 minute"},
+    "headers": ["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"]
+  },
+  "middleware_chain": [
+    "CORSMiddleware",
+    "RequestIDMiddleware",
+    "LoggingMiddleware",
+    "RateLimitMiddleware",
+    "AuthenticationMiddleware",
+    "AuthorizationMiddleware",
+    "ValidationMiddleware"
+  ],
+  "endpoint_patterns": {
+    "list": "GET /resources",
+    "create": "POST /resources",
+    "read": "GET /resources/{id}",
+    "update": "PUT /resources/{id}",
+    "partial_update": "PATCH /resources/{id}",
+    "delete": "DELETE /resources/{id}",
+    "action": "POST /resources/{id}/{action}"
+  }
+}

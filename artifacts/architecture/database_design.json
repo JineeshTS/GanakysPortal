@@ -1,0 +1,234 @@
+{
+  "metadata": {
+    "agent_id": "ARCH-002",
+    "agent_name": "Database Designer",
+    "created_at": "2026-01-08T10:46:00Z",
+    "version": "1.0"
+  },
+  "database_config": {
+    "engine": "PostgreSQL 16",
+    "charset": "UTF8",
+    "collation": "en_US.UTF-8",
+    "timezone": "Asia/Kolkata"
+  },
+  "schema_design": {
+    "total_tables": 127,
+    "naming_convention": "snake_case",
+    "primary_key_type": "UUID v4",
+    "audit_columns": ["created_at", "updated_at", "created_by", "updated_by", "is_deleted", "deleted_at"]
+  },
+  "core_tables": {
+    "users": {
+      "columns": ["id", "email", "password_hash", "role", "is_active", "last_login", "failed_attempts", "locked_until"],
+      "indexes": ["email_unique", "role_idx"],
+      "relationships": ["employees", "audit_logs"]
+    },
+    "organizations": {
+      "columns": ["id", "name", "gstin", "pan", "address", "city", "state", "pincode", "logo_url"],
+      "purpose": "Multi-tenant ready (single tenant for v1)"
+    },
+    "employees": {
+      "columns": ["id", "user_id", "employee_id", "first_name", "last_name", "email", "phone", "dob", "gender", "pan", "aadhaar", "uan", "esic_number", "department", "designation", "join_date", "exit_date", "status"],
+      "indexes": ["employee_id_unique", "pan_unique", "email_idx", "status_idx"],
+      "relationships": ["users", "salary_structures", "payslips", "leave_applications", "timesheets"]
+    },
+    "departments": {
+      "columns": ["id", "name", "code", "parent_id", "manager_id"],
+      "relationships": ["employees"]
+    },
+    "designations": {
+      "columns": ["id", "name", "grade", "level"],
+      "relationships": ["employees"]
+    }
+  },
+  "hr_tables": {
+    "onboarding_workflows": {
+      "columns": ["id", "employee_id", "status", "started_at", "completed_at"],
+      "relationships": ["employees", "onboarding_tasks"]
+    },
+    "onboarding_tasks": {
+      "columns": ["id", "workflow_id", "title", "description", "assigned_to", "due_date", "status", "completed_at"]
+    },
+    "leave_types": {
+      "columns": ["id", "name", "code", "is_paid", "max_days_per_year", "carry_forward_limit"]
+    },
+    "leave_policies": {
+      "columns": ["id", "leave_type_id", "accrual_type", "accrual_value", "applicable_from"]
+    },
+    "leave_balances": {
+      "columns": ["id", "employee_id", "leave_type_id", "fiscal_year", "opening_balance", "accrued", "used", "closing_balance"]
+    },
+    "leave_applications": {
+      "columns": ["id", "employee_id", "leave_type_id", "from_date", "to_date", "days", "reason", "status", "approved_by", "remarks"]
+    },
+    "timesheets": {
+      "columns": ["id", "employee_id", "project_id", "task_id", "date", "hours", "description", "status"]
+    }
+  },
+  "payroll_tables": {
+    "salary_components": {
+      "columns": ["id", "name", "code", "type", "is_taxable", "is_statutory", "calculation_type"]
+    },
+    "salary_structures": {
+      "columns": ["id", "employee_id", "effective_from", "ctc", "basic", "hra", "other_allowances"]
+    },
+    "salary_component_values": {
+      "columns": ["id", "structure_id", "component_id", "amount", "percentage"]
+    },
+    "payroll_runs": {
+      "columns": ["id", "month", "year", "status", "processed_at", "approved_by"]
+    },
+    "payslips": {
+      "columns": ["id", "employee_id", "payroll_run_id", "gross_salary", "total_deductions", "net_salary", "pf_employee", "pf_employer", "esi_employee", "esi_employer", "pt", "tds"]
+    }
+  },
+  "statutory_tables": {
+    "pf_returns": {
+      "columns": ["id", "month", "year", "total_employees", "total_wages", "total_pf", "ecr_file_path", "status"]
+    },
+    "esi_returns": {
+      "columns": ["id", "contribution_period", "total_employees", "total_wages", "total_contribution", "status"]
+    },
+    "pt_returns": {
+      "columns": ["id", "month", "year", "total_employees", "total_pt", "status"]
+    },
+    "tds_deductions": {
+      "columns": ["id", "employee_id", "payslip_id", "amount", "section", "financial_year"]
+    },
+    "form16_data": {
+      "columns": ["id", "employee_id", "financial_year", "part_a_data", "part_b_data", "generated_at"]
+    }
+  },
+  "accounting_tables": {
+    "chart_of_accounts": {
+      "columns": ["id", "code", "name", "type", "parent_id", "is_active", "opening_balance"]
+    },
+    "journal_entries": {
+      "columns": ["id", "entry_number", "date", "narration", "status", "posted_at", "posted_by"]
+    },
+    "journal_lines": {
+      "columns": ["id", "entry_id", "account_id", "debit", "credit", "narration"]
+    },
+    "fiscal_years": {
+      "columns": ["id", "name", "start_date", "end_date", "is_current", "is_closed"]
+    }
+  },
+  "customer_ar_tables": {
+    "customers": {
+      "columns": ["id", "name", "gstin", "pan", "email", "phone", "billing_address", "shipping_address", "credit_limit", "payment_terms"]
+    },
+    "invoices": {
+      "columns": ["id", "customer_id", "invoice_number", "date", "due_date", "subtotal", "tax_amount", "total", "status", "currency"]
+    },
+    "invoice_lines": {
+      "columns": ["id", "invoice_id", "description", "hsn_code", "quantity", "rate", "amount", "gst_rate", "cgst", "sgst", "igst"]
+    },
+    "customer_payments": {
+      "columns": ["id", "customer_id", "invoice_id", "amount", "payment_date", "payment_mode", "reference"]
+    }
+  },
+  "vendor_ap_tables": {
+    "vendors": {
+      "columns": ["id", "name", "gstin", "pan", "email", "phone", "address", "tds_applicable", "tds_section", "payment_terms"]
+    },
+    "bills": {
+      "columns": ["id", "vendor_id", "bill_number", "date", "due_date", "subtotal", "tax_amount", "tds_amount", "total", "status"]
+    },
+    "bill_lines": {
+      "columns": ["id", "bill_id", "description", "hsn_code", "quantity", "rate", "amount", "gst_rate"]
+    },
+    "vendor_payments": {
+      "columns": ["id", "vendor_id", "bill_id", "amount", "tds_deducted", "payment_date", "payment_mode", "reference"]
+    },
+    "tds_challans": {
+      "columns": ["id", "section", "month", "year", "amount", "bsr_code", "challan_number", "payment_date", "status"]
+    }
+  },
+  "banking_tables": {
+    "bank_accounts": {
+      "columns": ["id", "bank_name", "account_number", "ifsc", "branch", "account_type", "coa_id", "opening_balance"]
+    },
+    "bank_transactions": {
+      "columns": ["id", "account_id", "date", "description", "debit", "credit", "balance", "reference", "is_reconciled"]
+    },
+    "bank_reconciliation": {
+      "columns": ["id", "account_id", "statement_date", "statement_balance", "book_balance", "reconciled_by", "reconciled_at"]
+    }
+  },
+  "gst_tables": {
+    "gst_returns": {
+      "columns": ["id", "return_type", "period", "status", "filed_at", "arn"]
+    },
+    "gstr1_data": {
+      "columns": ["id", "return_id", "invoice_id", "invoice_type", "gstin", "taxable_value", "cgst", "sgst", "igst", "cess"]
+    },
+    "gstr3b_summary": {
+      "columns": ["id", "return_id", "outward_taxable", "outward_zero", "inward_reverse", "itc_igst", "itc_cgst", "itc_sgst", "tax_payable"]
+    }
+  },
+  "crm_tables": {
+    "leads": {
+      "columns": ["id", "name", "company", "email", "phone", "source", "status", "assigned_to", "expected_value"]
+    },
+    "lead_activities": {
+      "columns": ["id", "lead_id", "activity_type", "description", "date", "created_by"]
+    }
+  },
+  "project_tables": {
+    "projects": {
+      "columns": ["id", "name", "code", "customer_id", "start_date", "end_date", "budget", "status", "manager_id"]
+    },
+    "project_tasks": {
+      "columns": ["id", "project_id", "title", "description", "assigned_to", "priority", "status", "due_date", "estimated_hours"]
+    },
+    "project_members": {
+      "columns": ["id", "project_id", "user_id", "role", "hourly_rate"]
+    }
+  },
+  "document_tables": {
+    "documents": {
+      "columns": ["id", "name", "file_path", "file_type", "size", "category", "entity_type", "entity_id", "uploaded_by", "expiry_date"]
+    },
+    "document_versions": {
+      "columns": ["id", "document_id", "version", "file_path", "uploaded_by", "uploaded_at"]
+    }
+  },
+  "system_tables": {
+    "audit_logs": {
+      "columns": ["id", "user_id", "action", "entity_type", "entity_id", "old_values", "new_values", "ip_address", "user_agent", "created_at"]
+    },
+    "notifications": {
+      "columns": ["id", "user_id", "type", "title", "message", "data", "is_read", "read_at"]
+    },
+    "settings": {
+      "columns": ["id", "key", "value", "type", "category"]
+    },
+    "email_templates": {
+      "columns": ["id", "name", "subject", "body", "variables"]
+    }
+  },
+  "ai_tables": {
+    "ai_requests": {
+      "columns": ["id", "user_id", "provider", "model", "prompt_tokens", "completion_tokens", "latency_ms", "status", "created_at"]
+    },
+    "ai_document_analyses": {
+      "columns": ["id", "document_id", "analysis_type", "result", "confidence", "provider", "created_at"]
+    }
+  },
+  "indexes": {
+    "performance_indexes": [
+      "idx_employees_status",
+      "idx_payslips_employee_period",
+      "idx_leave_applications_employee_status",
+      "idx_invoices_customer_status",
+      "idx_bills_vendor_status",
+      "idx_journal_entries_date",
+      "idx_audit_logs_entity"
+    ],
+    "search_indexes": [
+      "idx_employees_search (GIN on name, email)",
+      "idx_customers_search (GIN on name, gstin)",
+      "idx_vendors_search (GIN on name, gstin)"
+    ]
+  }
+}

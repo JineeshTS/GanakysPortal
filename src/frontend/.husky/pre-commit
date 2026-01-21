@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# GanaPortal Pre-commit Hook
+# QA-002: Husky Pre-commit Hooks Agent
+
+echo "Running pre-commit checks..."
+
+# Run lint-staged for staged files
+npx lint-staged
+
+# Run TypeScript check
+echo "Checking TypeScript..."
+npm run type-check
+
+echo "Pre-commit checks passed!"

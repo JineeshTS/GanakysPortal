@@ -1,0 +1,41 @@
+# DEP-004: Kubernetes Manifests Agent
+# GanaPortal Namespace Configuration
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ganaportal
+  labels:
+    app.kubernetes.io/name: ganaportal
+    app.kubernetes.io/component: platform
+    india.compliance/pf: "enabled"
+    india.compliance/gst: "enabled"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ganaportal-quota
+  namespace: ganaportal
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: 20Gi
+    limits.cpu: "20"
+    limits.memory: 40Gi
+    persistentvolumeclaims: "10"
+    pods: "50"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ganaportal-limits
+  namespace: ganaportal
+spec:
+  limits:
+    - default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      type: Container

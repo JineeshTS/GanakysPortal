@@ -1,0 +1,275 @@
+{
+  "metadata": {
+    "agent_id": "REQ-006",
+    "agent_name": "User Story Writer",
+    "source_file": "/var/ganaportal/artifacts/requirements/parsed_requirements.json",
+    "created_at": "2026-01-08T10:19:00Z",
+    "version": "1.0"
+  },
+  "user_stories": {
+    "module_01_infrastructure": {
+      "module_id": 1,
+      "module_name": "Infrastructure & DevOps",
+      "stories": [
+        {"id": "US-001-001", "role": "ADMIN", "story": "As an Admin, I want the system to be deployed on a secure VPS so that I can access the portal from anywhere", "priority": "P0"},
+        {"id": "US-001-002", "role": "ADMIN", "story": "As an Admin, I want daily automated backups so that I don't lose critical business data", "priority": "P0"},
+        {"id": "US-001-003", "role": "ADMIN", "story": "As an Admin, I want to view system health status so that I can proactively address issues", "priority": "P1"}
+      ]
+    },
+    "module_02_authentication": {
+      "module_id": 2,
+      "module_name": "Authentication & Users",
+      "stories": [
+        {"id": "US-002-001", "role": "USER", "story": "As a User, I want to log in with my email and password so that I can securely access the system", "priority": "P0"},
+        {"id": "US-002-002", "role": "USER", "story": "As a User, I want to reset my password via email so that I can regain access if I forget it", "priority": "P0"},
+        {"id": "US-002-003", "role": "ADMIN", "story": "As an Admin, I want to create user accounts with specific roles so that I can control access to features", "priority": "P0"},
+        {"id": "US-002-004", "role": "ADMIN", "story": "As an Admin, I want to deactivate user accounts so that former employees cannot access the system", "priority": "P0"},
+        {"id": "US-002-005", "role": "USER", "story": "As a User, I want my session to remain active for 24 hours so that I don't have to log in repeatedly", "priority": "P1"}
+      ]
+    },
+    "module_03_employee_management": {
+      "module_id": 3,
+      "module_name": "Employee Management (HRMS)",
+      "stories": [
+        {"id": "US-003-001", "role": "HR_MANAGER", "story": "As an HR Manager, I want to add new employees with their personal and professional details so that I can maintain a complete employee database", "priority": "P0"},
+        {"id": "US-003-002", "role": "HR_MANAGER", "story": "As an HR Manager, I want to view and update employee information so that records remain current", "priority": "P0"},
+        {"id": "US-003-003", "role": "HR_MANAGER", "story": "As an HR Manager, I want to store employee statutory IDs (PAN, Aadhaar, UAN) so that compliance requirements are met", "priority": "P0"},
+        {"id": "US-003-004", "role": "EMPLOYEE", "story": "As an Employee, I want to view my profile so that I can verify my information is correct", "priority": "P0"},
+        {"id": "US-003-005", "role": "EMPLOYEE", "story": "As an Employee, I want to update my contact details so that the company can reach me", "priority": "P1"},
+        {"id": "US-003-006", "role": "HR_MANAGER", "story": "As an HR Manager, I want to mark employees as resigned or terminated so that their status is accurately reflected", "priority": "P0"}
+      ]
+    },
+    "module_04_documents": {
+      "module_id": 4,
+      "module_name": "Enterprise Document Management (EDMS)",
+      "stories": [
+        {"id": "US-004-001", "role": "HR_MANAGER", "story": "As an HR Manager, I want to upload employee documents so that all records are centralized", "priority": "P0"},
+        {"id": "US-004-002", "role": "EMPLOYEE", "story": "As an Employee, I want to view my documents so that I can access them when needed", "priority": "P0"},
+        {"id": "US-004-003", "role": "HR_MANAGER", "story": "As an HR Manager, I want to categorize documents so that they are organized and searchable", "priority": "P1"},
+        {"id": "US-004-004", "role": "HR_MANAGER", "story": "As an HR Manager, I want to be notified when documents expire so that I can request renewals", "priority": "P1"},
+        {"id": "US-004-005", "role": "ACCOUNTANT", "story": "As an Accountant, I want to access financial documents so that I can reference them for compliance", "priority": "P0"}
+      ]
+    },
+    "module_05_onboarding": {
+      "module_id": 5,
+      "module_name": "Employee Onboarding",
+      "stories": [
+        {"id": "US-005-001", "role": "HR_MANAGER", "story": "As an HR Manager, I want to create an onboarding checklist for new employees so that nothing is missed", "priority": "P0"},
+        {"id": "US-005-002", "role": "HR_MANAGER", "story": "As an HR Manager, I want to track onboarding task completion so that I know the progress", "priority": "P0"},
+        {"id": "US-005-003", "role": "EMPLOYEE", "story": "As a New Employee, I want to see my onboarding tasks so that I know what I need to complete", "priority": "P0"},
+        {"id": "US-005-004", "role": "HR_MANAGER", "story": "As an HR Manager, I want to receive reminders for pending onboarding tasks so that deadlines are met", "priority": "P1"}
+      ]
+    },
+    "module_06_leave": {
+      "module_id": 6,
+      "module_name": "Leave Management",
+      "stories": [
+        {"id": "US-006-001", "role": "EMPLOYEE", "story": "As an Employee, I want to view my leave balance so that I know how many leaves I have", "priority": "P0"},
+        {"id": "US-006-002", "role": "EMPLOYEE", "story": "As an Employee, I want to apply for leave so that I can take time off", "priority": "P0"},
+        {"id": "US-006-003", "role": "HR_MANAGER", "story": "As an HR Manager, I want to approve or reject leave requests so that I can manage team availability", "priority": "P0"},
+        {"id": "US-006-004", "role": "EMPLOYEE", "story": "As an Employee, I want to be notified when my leave is approved or rejected so that I can plan accordingly", "priority": "P1"},
+        {"id": "US-006-005", "role": "HR_MANAGER", "story": "As an HR Manager, I want to configure leave policies so that accrual rules are automated", "priority": "P0"},
+        {"id": "US-006-006", "role": "EMPLOYEE", "story": "As an Employee, I want to view the company holiday calendar so that I can plan my leaves", "priority": "P1"},
+        {"id": "US-006-007", "role": "HR_MANAGER", "story": "As an HR Manager, I want leave data to integrate with payroll so that LOP is calculated correctly", "priority": "P0"}
+      ]
+    },
+    "module_07_timesheet": {
+      "module_id": 7,
+      "module_name": "Timesheet Management",
+      "stories": [
+        {"id": "US-007-001", "role": "EMPLOYEE", "story": "As an Employee, I want to log my time against projects so that my work is tracked", "priority": "P0"},
+        {"id": "US-007-002", "role": "EMPLOYEE", "story": "As an Employee, I want to submit my weekly timesheet so that it can be approved", "priority": "P0"},
+        {"id": "US-007-003", "role": "HR_MANAGER", "story": "As an HR Manager, I want to approve timesheets so that hours are validated", "priority": "P0"},
+        {"id": "US-007-004", "role": "ADMIN", "story": "As an Admin, I want to view timesheet reports so that I can track project utilization", "priority": "P0"},
+        {"id": "US-007-005", "role": "EMPLOYEE", "story": "As an Employee, I want to be reminded to submit my timesheet so that I don't miss deadlines", "priority": "P1"}
+      ]
+    },
+    "module_08_payroll": {
+      "module_id": 8,
+      "module_name": "Payroll System",
+      "stories": [
+        {"id": "US-008-001", "role": "HR_MANAGER", "story": "As an HR Manager, I want to configure salary structures so that CTC is broken down correctly", "priority": "P0"},
+        {"id": "US-008-002", "role": "HR_MANAGER", "story": "As an HR Manager, I want to run monthly payroll so that salaries are calculated", "priority": "P0"},
+        {"id": "US-008-003", "role": "EMPLOYEE", "story": "As an Employee, I want to view my payslip so that I understand my salary breakdown", "priority": "P0"},
+        {"id": "US-008-004", "role": "EMPLOYEE", "story": "As an Employee, I want to download my payslip as PDF so that I have a record", "priority": "P0"},
+        {"id": "US-008-005", "role": "ACCOUNTANT", "story": "As an Accountant, I want payroll to calculate all statutory deductions so that compliance is ensured", "priority": "P0"},
+        {"id": "US-008-006", "role": "HR_MANAGER", "story": "As an HR Manager, I want to process salary revisions so that changes are reflected from effective date", "priority": "P0"},
+        {"id": "US-008-007", "role": "ACCOUNTANT", "story": "As an Accountant, I want to generate bank transfer file so that salaries can be paid", "priority": "P1"}
+      ]
+    },
+    "module_09_statutory_pf": {
+      "module_id": 9,
+      "module_name": "Statutory - PF",
+      "stories": [
+        {"id": "US-009-001", "role": "ACCOUNTANT", "story": "As an Accountant, I want PF to be calculated automatically at 12% so that compliance is ensured", "priority": "P0"},
+        {"id": "US-009-002", "role": "ACCOUNTANT", "story": "As an Accountant, I want EPS and EPF split to be calculated correctly so that contributions are accurate", "priority": "P0"},
+        {"id": "US-009-003", "role": "ACCOUNTANT", "story": "As an Accountant, I want to generate ECR file so that I can upload to EPFO portal", "priority": "P0"},
+        {"id": "US-009-004", "role": "ACCOUNTANT", "story": "As an Accountant, I want to be reminded of PF due dates so that I don't miss deadlines", "priority": "P1"}
+      ]
+    },
+    "module_10_statutory_esi": {
+      "module_id": 10,
+      "module_name": "Statutory - ESI",
+      "stories": [
+        {"id": "US-010-001", "role": "ACCOUNTANT", "story": "As an Accountant, I want ESI to be calculated for eligible employees so that compliance is met", "priority": "P0"},
+        {"id": "US-010-002", "role": "ACCOUNTANT", "story": "As an Accountant, I want ESI to be skipped for employees above wage limit so that rules are followed", "priority": "P0"},
+        {"id": "US-010-003", "role": "ACCOUNTANT", "story": "As an Accountant, I want to generate ESI contribution report so that I can make payments", "priority": "P0"}
+      ]
+    },
+    "module_11_statutory_pt": {
+      "module_id": 11,
+      "module_name": "Statutory - PT",
+      "stories": [
+        {"id": "US-011-001", "role": "ACCOUNTANT", "story": "As an Accountant, I want PT to be deducted per Karnataka rules so that state compliance is met", "priority": "P0"},
+        {"id": "US-011-002", "role": "ACCOUNTANT", "story": "As an Accountant, I want February PT to be Rs 300 so that annual total is correct", "priority": "P0"}
+      ]
+    },
+    "module_12_statutory_tds": {
+      "module_id": 12,
+      "module_name": "Statutory - TDS",
+      "stories": [
+        {"id": "US-012-001", "role": "ACCOUNTANT", "story": "As an Accountant, I want TDS to be calculated using new tax regime so that compliance is current", "priority": "P0"},
+        {"id": "US-012-002", "role": "EMPLOYEE", "story": "As an Employee, I want to view my tax computation so that I understand my tax liability", "priority": "P0"},
+        {"id": "US-012-003", "role": "EMPLOYEE", "story": "As an Employee, I want to download Form 16 so that I can file my tax return", "priority": "P0"},
+        {"id": "US-012-004", "role": "ACCOUNTANT", "story": "As an Accountant, I want TDS to be recalculated on salary revision so that projections are accurate", "priority": "P0"}
+      ]
+    },
+    "module_13_chart_of_accounts": {
+      "module_id": 13,
+      "module_name": "Chart of Accounts & GL",
+      "stories": [
+        {"id": "US-013-001", "role": "ACCOUNTANT", "story": "As an Accountant, I want to set up chart of accounts so that transactions can be categorized", "priority": "P0"},
+        {"id": "US-013-002", "role": "ACCOUNTANT", "story": "As an Accountant, I want to create journal entries so that I can record transactions", "priority": "P0"},
+        {"id": "US-013-003", "role": "ACCOUNTANT", "story": "As an Accountant, I want to view the general ledger so that I can see account activity", "priority": "P0"},
+        {"id": "US-013-004", "role": "ACCOUNTANT", "story": "As an Accountant, I want to generate trial balance so that I can verify books are balanced", "priority": "P0"},
+        {"id": "US-013-005", "role": "ADMIN", "story": "As an Admin, I want to close accounting periods so that past entries cannot be modified", "priority": "P0"}
+      ]
+    },
+    "module_14_multi_currency": {
+      "module_id": 14,
+      "module_name": "Multi-Currency",
+      "stories": [
+        {"id": "US-014-001", "role": "ACCOUNTANT", "story": "As an Accountant, I want to maintain exchange rates so that foreign transactions are converted correctly", "priority": "P1"},
+        {"id": "US-014-002", "role": "ACCOUNTANT", "story": "As an Accountant, I want to create invoices in USD/EUR so that I can bill international clients", "priority": "P1"},
+        {"id": "US-014-003", "role": "ACCOUNTANT", "story": "As an Accountant, I want exchange gains/losses to be calculated so that accounts are accurate", "priority": "P2"}
+      ]
+    },
+    "module_15_customers_ar": {
+      "module_id": 15,
+      "module_name": "Customers & AR",
+      "stories": [
+        {"id": "US-015-001", "role": "ACCOUNTANT", "story": "As an Accountant, I want to create customer records so that I can invoice them", "priority": "P0"},
+        {"id": "US-015-002", "role": "ACCOUNTANT", "story": "As an Accountant, I want to create invoices with GST so that I can bill customers", "priority": "P0"},
+        {"id": "US-015-003", "role": "ACCOUNTANT", "story": "As an Accountant, I want to generate invoice PDF so that I can send to customers", "priority": "P0"},
+        {"id": "US-015-004", "role": "ACCOUNTANT", "story": "As an Accountant, I want to record customer payments so that I can track receivables", "priority": "P0"},
+        {"id": "US-015-005", "role": "ACCOUNTANT", "story": "As an Accountant, I want to view AR aging report so that I can follow up on overdue invoices", "priority": "P0"},
+        {"id": "US-015-006", "role": "ADMIN", "story": "As an Admin, I want to send payment reminders so that collections improve", "priority": "P1"}
+      ]
+    },
+    "module_16_vendors_ap": {
+      "module_id": 16,
+      "module_name": "Vendors & AP",
+      "stories": [
+        {"id": "US-016-001", "role": "ACCOUNTANT", "story": "As an Accountant, I want to create vendor records so that I can record their bills", "priority": "P0"},
+        {"id": "US-016-002", "role": "ACCOUNTANT", "story": "As an Accountant, I want to record vendor bills so that I can track payables", "priority": "P0"},
+        {"id": "US-016-003", "role": "ACCOUNTANT", "story": "As an Accountant, I want to record vendor payments so that I can close bills", "priority": "P0"},
+        {"id": "US-016-004", "role": "ACCOUNTANT", "story": "As an Accountant, I want to view AP aging report so that I can manage cash flow", "priority": "P0"},
+        {"id": "US-016-005", "role": "ACCOUNTANT", "story": "As an Accountant, I want TDS to be calculated on vendor payments so that compliance is met", "priority": "P0"}
+      ]
+    },
+    "module_17_banking": {
+      "module_id": 17,
+      "module_name": "Banking",
+      "stories": [
+        {"id": "US-017-001", "role": "ACCOUNTANT", "story": "As an Accountant, I want to add bank accounts so that I can track transactions", "priority": "P0"},
+        {"id": "US-017-002", "role": "ACCOUNTANT", "story": "As an Accountant, I want to import bank statements so that transactions are loaded", "priority": "P0"},
+        {"id": "US-017-003", "role": "ACCOUNTANT", "story": "As an Accountant, I want to reconcile bank transactions so that books match bank", "priority": "P0"},
+        {"id": "US-017-004", "role": "ACCOUNTANT", "story": "As an Accountant, I want auto-matching of transactions so that reconciliation is faster", "priority": "P1"},
+        {"id": "US-017-005", "role": "ACCOUNTANT", "story": "As an Accountant, I want to generate bank reconciliation report so that I can verify accuracy", "priority": "P0"}
+      ]
+    },
+    "module_18_gst": {
+      "module_id": 18,
+      "module_name": "GST Compliance",
+      "stories": [
+        {"id": "US-018-001", "role": "ACCOUNTANT", "story": "As an Accountant, I want GST to be calculated at 18% on invoices so that taxes are correct", "priority": "P0"},
+        {"id": "US-018-002", "role": "ACCOUNTANT", "story": "As an Accountant, I want CGST/SGST split for intra-state so that returns are accurate", "priority": "P0"},
+        {"id": "US-018-003", "role": "ACCOUNTANT", "story": "As an Accountant, I want to generate GSTR-1 report so that I can file returns", "priority": "P0"},
+        {"id": "US-018-004", "role": "ACCOUNTANT", "story": "As an Accountant, I want to generate GSTR-3B report so that I can file summary return", "priority": "P0"},
+        {"id": "US-018-005", "role": "ACCOUNTANT", "story": "As an Accountant, I want to calculate ITC from vendor bills so that credits are claimed", "priority": "P0"},
+        {"id": "US-018-006", "role": "ACCOUNTANT", "story": "As an Accountant, I want to be reminded of GST due dates so that I don't miss filings", "priority": "P1"}
+      ]
+    },
+    "module_19_tds_vendors": {
+      "module_id": 19,
+      "module_name": "TDS on Vendors",
+      "stories": [
+        {"id": "US-019-001", "role": "ACCOUNTANT", "story": "As an Accountant, I want to configure TDS sections so that deductions are calculated correctly", "priority": "P0"},
+        {"id": "US-019-002", "role": "ACCOUNTANT", "story": "As an Accountant, I want TDS to be deducted on vendor payments so that compliance is met", "priority": "P0"},
+        {"id": "US-019-003", "role": "ACCOUNTANT", "story": "As an Accountant, I want to generate Form 26Q so that I can file quarterly TDS returns", "priority": "P0"},
+        {"id": "US-019-004", "role": "ACCOUNTANT", "story": "As an Accountant, I want to issue Form 16A to vendors so that they can claim TDS credit", "priority": "P1"}
+      ]
+    },
+    "module_20_crm": {
+      "module_id": 20,
+      "module_name": "CRM",
+      "stories": [
+        {"id": "US-020-001", "role": "ADMIN", "story": "As an Admin, I want to capture leads so that I can track potential clients", "priority": "P1"},
+        {"id": "US-020-002", "role": "ADMIN", "story": "As an Admin, I want to update lead status so that I can track the sales pipeline", "priority": "P1"},
+        {"id": "US-020-003", "role": "ADMIN", "story": "As an Admin, I want to convert leads to customers so that the transition is seamless", "priority": "P1"},
+        {"id": "US-020-004", "role": "ADMIN", "story": "As an Admin, I want to log activities against leads so that I have a record of interactions", "priority": "P2"}
+      ]
+    },
+    "module_21_projects": {
+      "module_id": 21,
+      "module_name": "Projects",
+      "stories": [
+        {"id": "US-021-001", "role": "ADMIN", "story": "As an Admin, I want to create projects so that work can be tracked", "priority": "P0"},
+        {"id": "US-021-002", "role": "HR_MANAGER", "story": "As an HR Manager, I want to allocate employees to projects so that resources are assigned", "priority": "P0"},
+        {"id": "US-021-003", "role": "ADMIN", "story": "As an Admin, I want to track project status so that I know progress", "priority": "P0"},
+        {"id": "US-021-004", "role": "ADMIN", "story": "As an Admin, I want to view project profitability so that I can assess performance", "priority": "P1"},
+        {"id": "US-021-005", "role": "EMPLOYEE", "story": "As an Employee, I want to see my project assignments so that I know where to log time", "priority": "P0"}
+      ]
+    },
+    "module_22_ai_services": {
+      "module_id": 22,
+      "module_name": "AI Services",
+      "stories": [
+        {"id": "US-022-001", "role": "ADMIN", "story": "As an Admin, I want AI to auto-execute high-confidence actions so that manual work is reduced", "priority": "P0"},
+        {"id": "US-022-002", "role": "ACCOUNTANT", "story": "As an Accountant, I want AI to parse invoices so that data entry is automated", "priority": "P1"},
+        {"id": "US-022-003", "role": "ACCOUNTANT", "story": "As an Accountant, I want AI to suggest transaction categorization so that accuracy improves", "priority": "P1"},
+        {"id": "US-022-004", "role": "ADMIN", "story": "As an Admin, I want to review medium-confidence AI suggestions so that I can approve them", "priority": "P0"},
+        {"id": "US-022-005", "role": "ADMIN", "story": "As an Admin, I want to track AI usage costs so that I can monitor expenses", "priority": "P1"}
+      ]
+    },
+    "module_23_reports": {
+      "module_id": 23,
+      "module_name": "Reports",
+      "stories": [
+        {"id": "US-023-001", "role": "ADMIN", "story": "As an Admin, I want to view Profit & Loss statement so that I can assess profitability", "priority": "P0"},
+        {"id": "US-023-002", "role": "ADMIN", "story": "As an Admin, I want to view Balance Sheet so that I can see financial position", "priority": "P0"},
+        {"id": "US-023-003", "role": "ACCOUNTANT", "story": "As an Accountant, I want to generate Trial Balance so that I can verify accuracy", "priority": "P0"},
+        {"id": "US-023-004", "role": "HR_MANAGER", "story": "As an HR Manager, I want to view payroll summary so that I can verify totals", "priority": "P0"},
+        {"id": "US-023-005", "role": "EXTERNAL_CA", "story": "As an External CA, I want to access financial reports so that I can verify compliance", "priority": "P0"},
+        {"id": "US-023-006", "role": "ADMIN", "story": "As an Admin, I want to export reports to PDF and Excel so that I can share them", "priority": "P0"}
+      ]
+    }
+  },
+  "summary": {
+    "total_modules": 23,
+    "total_user_stories": 116,
+    "stories_by_role": {
+      "ADMIN": 28,
+      "HR_MANAGER": 26,
+      "ACCOUNTANT": 42,
+      "EMPLOYEE": 17,
+      "EXTERNAL_CA": 1,
+      "USER": 2
+    },
+    "priority_breakdown": {
+      "P0_Critical": 85,
+      "P1_High": 26,
+      "P2_Medium": 5
+    }
+  }
+}
