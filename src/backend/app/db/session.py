@@ -3,12 +3,13 @@ Database Session Management
 Async SQLAlchemy with connection pooling
 """
 from typing import AsyncGenerator
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.core.config import settings
 
@@ -27,6 +28,20 @@ async_session_maker = async_sessionmaker(
     engine,
     class_=AsyncSession,
     expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
+
+# Sync engine and session for Celery tasks
+sync_engine = create_engine(
+    settings.database_url_sync,
+    pool_size=settings.DATABASE_POOL_SIZE,
+    max_overflow=settings.DATABASE_MAX_OVERFLOW,
+    pool_pre_ping=True,
+)
+
+SessionLocal = sessionmaker(
+    bind=sync_engine,
     autocommit=False,
     autoflush=False,
 )

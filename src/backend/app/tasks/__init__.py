@@ -21,6 +21,11 @@ from app.tasks.notification_tasks import (
     send_bulk_notification_task,
     send_approval_reminder_task,
 )
+from app.tasks.maintenance_tasks import (
+    cleanup_expired_sessions,
+    cleanup_old_audit_logs,
+    cleanup_old_login_history,
+)
 from app.tasks.task_auth import (
     TaskAuthorizationError,
     TaskAuthorization,
@@ -41,6 +46,10 @@ __all__ = [
     "send_notification_task",
     "send_bulk_notification_task",
     "send_approval_reminder_task",
+    # Maintenance tasks
+    "cleanup_expired_sessions",
+    "cleanup_old_audit_logs",
+    "cleanup_old_login_history",
     # Authorization
     "TaskAuthorizationError",
     "TaskAuthorization",
