@@ -1,0 +1,17 @@
+class: Enrollment
+table: enrollments
+fields:
+  userId: int, relation(parent=users)
+  courseId: int, relation(parent=courses)
+  progressPercent: double, default=0
+  status: String, default='enrolled'
+  enrolledAt: DateTime
+  completedAt: DateTime?
+indexes:
+  enrollment_user_course_idx:
+    fields: userId, courseId
+    unique: true
+  enrollment_user_idx:
+    fields: userId
+  enrollment_course_idx:
+    fields: courseId

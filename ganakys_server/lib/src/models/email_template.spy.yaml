@@ -1,0 +1,12 @@
+class: EmailTemplate
+table: email_templates
+fields:
+  slug: String
+  subject: String
+  bodyHtml: String
+  bodyText: String?
+  variables: String?
+indexes:
+  template_slug_idx:
+    fields: slug
+    unique: true

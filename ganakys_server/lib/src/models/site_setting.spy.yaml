@@ -1,0 +1,11 @@
+class: SiteSetting
+table: site_settings
+fields:
+  key: String
+  value: String
+  updatedBy: int?
+  updatedAt: DateTime
+indexes:
+  setting_key_idx:
+    fields: key
+    unique: true

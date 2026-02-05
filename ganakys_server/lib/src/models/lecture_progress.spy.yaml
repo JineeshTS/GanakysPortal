@@ -1,0 +1,16 @@
+class: LectureProgress
+table: lecture_progress
+fields:
+  userId: int, relation(parent=users)
+  lectureId: int, relation(parent=lectures)
+  courseId: int, relation(parent=courses)
+  isCompleted: bool, default=false
+  watchTimeSeconds: int, default=0
+  lastPositionSeconds: int, default=0
+  completedAt: DateTime?
+indexes:
+  progress_user_lecture_idx:
+    fields: userId, lectureId
+    unique: true
+  progress_user_course_idx:
+    fields: userId, courseId

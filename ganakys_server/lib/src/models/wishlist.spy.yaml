@@ -1,0 +1,10 @@
+class: Wishlist
+table: wishlists
+fields:
+  userId: int, relation(parent=users)
+  courseId: int, relation(parent=courses)
+  createdAt: DateTime
+indexes:
+  wishlist_user_course_idx:
+    fields: userId, courseId
+    unique: true

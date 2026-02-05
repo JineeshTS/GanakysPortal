@@ -1,0 +1,12 @@
+class: CourseVersion
+table: course_versions
+fields:
+  courseId: int, relation(parent=courses)
+  versionNumber: int
+  snapshotJson: String
+  changeSummary: String?
+  createdBy: int?
+  createdAt: DateTime
+indexes:
+  version_course_idx:
+    fields: courseId

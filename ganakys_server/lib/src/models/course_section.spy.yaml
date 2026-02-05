@@ -1,0 +1,10 @@
+class: CourseSection
+table: course_sections
+fields:
+  courseId: int, relation(parent=courses)
+  title: String
+  description: String?
+  sortOrder: int, default=0
+indexes:
+  section_course_idx:
+    fields: courseId

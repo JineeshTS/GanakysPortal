@@ -1,0 +1,11 @@
+class: Quiz
+table: quizzes
+fields:
+  courseId: int, relation(parent=courses)
+  lectureId: int?
+  title: String
+  type: String, default='section_quiz'
+  passPercentage: int, default=70
+indexes:
+  quiz_course_idx:
+    fields: courseId

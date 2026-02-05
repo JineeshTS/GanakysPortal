@@ -1,0 +1,15 @@
+class: Certificate
+table: certificates
+fields:
+  userId: int, relation(parent=users)
+  courseId: int, relation(parent=courses)
+  certificateNumber: String
+  pdfUrl: String?
+  isRevoked: bool, default=false
+  issuedAt: DateTime
+indexes:
+  cert_number_idx:
+    fields: certificateNumber
+    unique: true
+  cert_user_course_idx:
+    fields: userId, courseId

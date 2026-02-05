@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+Allow: /courses
+Allow: /courses/
+Allow: /pricing
+Allow: /about
+Allow: /privacy
+Allow: /terms
+
+Disallow: /admin
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /settings
+Disallow: /billing
+Disallow: /checkout
+Disallow: /my-courses
+Disallow: /certificates
+Disallow: /api/
+
+Sitemap: https://academy.ganakys.com/sitemap.xml

@@ -1,0 +1,18 @@
+class: Coupon
+table: coupons
+fields:
+  code: String
+  discountType: String, default='percentage'
+  discountValue: double
+  maxUses: int?
+  usedCount: int, default=0
+  validFrom: DateTime?
+  validUntil: DateTime?
+  isActive: bool, default=true
+  applicablePlans: String?
+  applicableCourses: String?
+  createdAt: DateTime
+indexes:
+  coupon_code_idx:
+    fields: code
+    unique: true

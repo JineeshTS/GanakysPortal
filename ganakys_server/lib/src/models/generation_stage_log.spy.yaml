@@ -1,0 +1,13 @@
+class: GenerationStageLog
+table: generation_stage_logs
+fields:
+  jobId: int, relation(parent=generation_jobs)
+  stage: String
+  status: String, default='pending'
+  message: String?
+  startedAt: DateTime?
+  completedAt: DateTime?
+  durationMs: int?
+indexes:
+  stage_job_idx:
+    fields: jobId

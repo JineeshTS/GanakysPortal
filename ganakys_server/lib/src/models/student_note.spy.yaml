@@ -1,0 +1,13 @@
+class: StudentNote
+table: student_notes
+fields:
+  userId: int, relation(parent=users)
+  lectureId: int, relation(parent=lectures)
+  courseId: int, relation(parent=courses)
+  content: String
+  timestampSeconds: int?
+  createdAt: DateTime
+  updatedAt: DateTime
+indexes:
+  note_user_lecture_idx:
+    fields: userId, lectureId

@@ -1,0 +1,55 @@
+# Secrets - NEVER commit
+secrets/
+*.pem
+*.key
+
+# Storage volumes
+storage/videos/
+storage/audio/
+storage/thumbnails/
+storage/certificates/
+storage/receipts/
+storage/backups/
+
+# SSL certificates
+nginx/ssl/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# Docker volumes
+postgres_data/
+redis_data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flutter build outputs
+ganakys_flutter/build/
+ganakys_flutter/.dart_tool/
+ganakys_flutter/.flutter-plugins
+ganakys_flutter/.flutter-plugins-dependencies
+ganakys_flutter/.packages
+
+# Dart
+ganakys_server/.dart_tool/
+ganakys_client/.dart_tool/
+.dart_tool/
+.packages
+pubspec.lock
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Temp
+/tmp/

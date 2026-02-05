@@ -1,0 +1,15 @@
+class: Category
+table: categories
+fields:
+  name: String
+  slug: String
+  description: String?
+  icon: String?
+  parentId: int?
+  sortOrder: int, default=0
+  courseCount: int, default=0
+  createdAt: DateTime
+indexes:
+  category_slug_idx:
+    fields: slug
+    unique: true

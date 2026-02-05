@@ -1,0 +1,12 @@
+class: QuizAttempt
+table: quiz_attempts
+fields:
+  userId: int, relation(parent=users)
+  quizId: int, relation(parent=quizzes)
+  score: double
+  answers: String
+  passed: bool
+  attemptedAt: DateTime
+indexes:
+  attempt_user_quiz_idx:
+    fields: userId, quizId

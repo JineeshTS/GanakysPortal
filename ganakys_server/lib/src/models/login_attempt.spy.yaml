@@ -1,0 +1,15 @@
+class: LoginAttempt
+table: login_attempts
+fields:
+  email: String
+  ipAddress: String
+  success: bool
+  failureReason: String?
+  userAgent: String?
+  countryCode: String?
+  createdAt: DateTime
+indexes:
+  login_email_idx:
+    fields: email
+  login_ip_idx:
+    fields: ipAddress

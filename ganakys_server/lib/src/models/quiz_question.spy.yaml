@@ -1,0 +1,11 @@
+class: QuizQuestion
+table: quiz_questions
+fields:
+  quizId: int, relation(parent=quizzes)
+  question: String
+  options: String
+  explanation: String?
+  sortOrder: int, default=0
+indexes:
+  question_quiz_idx:
+    fields: quizId

@@ -1,0 +1,115 @@
+admin:
+  - getDashboardStats:
+  - adminListCourses:
+  - adminGetCourse:
+  - adminCreateCourse:
+  - adminUpdateCourse:
+  - adminDeleteCourse:
+  - adminDuplicateCourse:
+  - adminCreateSection:
+  - adminUpdateSection:
+  - adminDeleteSection:
+  - adminCreateLecture:
+  - adminUpdateLecture:
+  - adminDeleteLecture:
+  - adminReorderSections:
+  - adminReorderLectures:
+  - adminListUsers:
+  - adminGetUser:
+  - adminUpdateUserRole:
+  - adminBanUser:
+  - adminForcePasswordReset:
+  - adminListCategories:
+  - adminCreateCategory:
+  - adminUpdateCategory:
+  - adminDeleteCategory:
+  - adminGetSettings:
+  - adminUpdateSetting:
+  - adminToggleMaintenanceMode:
+  - adminGetAuditLog:
+auth:
+  - register:
+  - login:
+  - verify2fa:
+  - refreshToken:
+  - verifyEmail:
+  - forgotPassword:
+  - resetPassword:
+  - logout:
+  - getSessions:
+  - revokeSession:
+bookmark:
+  - getBookmarks:
+  - createBookmark:
+  - deleteBookmark:
+certificate:
+  - generateCertificate:
+  - getCertificates:
+  - verifyCertificate:
+course:
+  - listCourses:
+  - getCourseBySlug:
+  - getCourse:
+  - getCategories:
+  - getFeaturedCourses:
+  - getCourseCurriculum:
+discussion:
+  - getDiscussions:
+  - createDiscussion:
+  - getDiscussionReplies:
+  - createReply:
+  - resolveDiscussion:
+enrollment:
+  - enroll:
+  - getMyEnrollments:
+  - updateProgress:
+  - getContinueLearning:
+generation:
+  - listJobs:
+  - getJob:
+  - startGeneration:
+  - startStepByStep:
+  - generateOutline:
+  - saveOutline:
+  - importPipelineOutput:
+  - retryJob:
+health:
+  - check:
+note:
+  - getNotes:
+  - getCourseNotes:
+  - createNote:
+  - updateNote:
+  - deleteNote:
+page:
+  - getPage:
+  - getPages:
+  - getActiveAnnouncements:
+  - getPublicSettings:
+payment:
+  - getPlans:
+  - createCheckout:
+  - confirmPayment:
+  - getBillingHistory:
+  - getSubscription:
+  - cancelSubscription:
+  - validateCoupon:
+profile:
+  - getProfile:
+  - updateProfile:
+  - changePassword:
+  - exportData:
+  - requestDeletion:
+  - cancelDeletion:
+  - getWishlist:
+  - toggleWishlist:
+  - getNotifications:
+  - markNotificationRead:
+quiz:
+  - getQuizzesForCourse:
+  - getQuiz:
+  - submitQuizAttempt:
+  - getQuizAttempts:
+review:
+  - getCourseReviews:
+  - submitReview:

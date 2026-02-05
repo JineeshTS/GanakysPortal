@@ -1,0 +1,15 @@
+class: ContentPage
+table: pages
+fields:
+  slug: String
+  title: String
+  content: String
+  isPublished: bool, default=true
+  metaTitle: String?
+  metaDescription: String?
+  version: int, default=1
+  updatedAt: DateTime
+indexes:
+  page_slug_idx:
+    fields: slug
+    unique: true

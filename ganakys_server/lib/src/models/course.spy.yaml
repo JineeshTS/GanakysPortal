@@ -1,0 +1,41 @@
+class: Course
+table: courses
+fields:
+  title: String
+  slug: String
+  description: String?
+  shortDescription: String?
+  categoryId: int?
+  difficulty: String, default='beginner'
+  durationMinutes: int, default=0
+  thumbnailUrl: String?
+  promoVideoUrl: String?
+  isPublished: bool, default=false
+  isFeatured: bool, default=false
+  price: double, default=0
+  totalLectures: int, default=0
+  totalSections: int, default=0
+  generationStatus: String?
+  generationJobId: int?
+  qualityScore: double?
+  instructorId: int?
+  language: String, default='en'
+  avgRating: double, default=0
+  reviewCount: int, default=0
+  enrollmentCount: int, default=0
+  metaTitle: String?
+  metaDescription: String?
+  ogImageUrl: String?
+  version: int, default=1
+  createdAt: DateTime
+  updatedAt: DateTime
+indexes:
+  course_slug_idx:
+    fields: slug
+    unique: true
+  course_category_idx:
+    fields: categoryId
+  course_published_idx:
+    fields: isPublished
+  course_instructor_idx:
+    fields: instructorId

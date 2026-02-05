@@ -1,0 +1,20 @@
+class: AuditLog
+table: audit_logs
+fields:
+  userId: int?
+  action: String
+  entityType: String
+  entityId: String?
+  oldValue: String?
+  newValue: String?
+  ipAddress: String?
+  createdAt: DateTime
+indexes:
+  audit_user_idx:
+    fields: userId
+  audit_action_idx:
+    fields: action
+  audit_entity_idx:
+    fields: entityType, entityId
+  audit_date_idx:
+    fields: createdAt

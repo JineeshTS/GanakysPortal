@@ -1,0 +1,24 @@
+class: GenerationJob
+table: generation_jobs
+fields:
+  courseId: int?
+  topic: String
+  status: String, default='queued'
+  currentStage: String?
+  progressPercent: int, default=0
+  contentJson: String?
+  qualityScore: double?
+  qualityReport: String?
+  errorMessage: String?
+  pipelineLog: String?
+  outputDir: String?
+  config: String?
+  startedAt: DateTime?
+  completedAt: DateTime?
+  createdBy: int?
+  createdAt: DateTime
+indexes:
+  job_status_idx:
+    fields: status
+  job_course_idx:
+    fields: courseId

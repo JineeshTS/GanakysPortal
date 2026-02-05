@@ -1,0 +1,21 @@
+class: Lecture
+table: lectures
+fields:
+  sectionId: int, relation(parent=course_sections)
+  courseId: int, relation(parent=courses)
+  title: String
+  type: String, default='video'
+  durationMinutes: int, default=0
+  videoUrl: String?
+  audioUrl: String?
+  content: String?
+  scriptJson: String?
+  slidesJson: String?
+  sortOrder: int, default=0
+  isFreePreview: bool, default=false
+  version: int, default=1
+indexes:
+  lecture_section_idx:
+    fields: sectionId
+  lecture_course_idx:
+    fields: courseId

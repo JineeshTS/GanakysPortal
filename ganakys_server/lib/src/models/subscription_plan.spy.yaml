@@ -1,0 +1,18 @@
+class: SubscriptionPlan
+table: subscription_plans
+fields:
+  name: String
+  slug: String
+  priceMonthly: double
+  priceYearly: double
+  currency: String, default='INR'
+  features: String
+  isActive: bool, default=true
+  stripePriceId: String?
+  razorpayPlanId: String?
+  sortOrder: int, default=0
+  createdAt: DateTime
+indexes:
+  plan_slug_idx:
+    fields: slug
+    unique: true

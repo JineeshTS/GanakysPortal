@@ -1,0 +1,17 @@
+class: Review
+table: reviews
+fields:
+  userId: int, relation(parent=users)
+  courseId: int, relation(parent=courses)
+  rating: int
+  comment: String?
+  isApproved: bool, default=true
+  isFlagged: bool, default=false
+  createdAt: DateTime
+  updatedAt: DateTime
+indexes:
+  review_user_course_idx:
+    fields: userId, courseId
+    unique: true
+  review_course_idx:
+    fields: courseId

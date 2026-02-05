@@ -1,0 +1,21 @@
+class: Payment
+table: payments
+fields:
+  userId: int, relation(parent=users)
+  planId: int?
+  courseId: int?
+  amount: double
+  currency: String, default='INR'
+  status: String, default='pending'
+  paymentGateway: String
+  gatewayPaymentId: String?
+  gatewayOrderId: String?
+  receiptUrl: String?
+  createdAt: DateTime
+indexes:
+  payment_user_idx:
+    fields: userId
+  payment_status_idx:
+    fields: status
+  payment_gateway_id_idx:
+    fields: gatewayPaymentId

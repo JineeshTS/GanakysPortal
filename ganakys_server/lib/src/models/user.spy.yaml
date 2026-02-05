@@ -1,0 +1,35 @@
+class: User
+table: users
+fields:
+  email: String
+  name: String
+  avatarUrl: String?
+  role: String, default='student'
+  bio: String?
+  subscriptionStatus: String, default='free'
+  subscriptionExpiresAt: DateTime?
+  emailVerified: bool, default=false
+  emailVerificationToken: String?
+  passwordHash: String?
+  passwordResetToken: String?
+  passwordResetExpiresAt: DateTime?
+  locale: String, default='en'
+  passwordHistory: String?
+  totpSecret: String?
+  totpEnabled: bool, default=false
+  recoveryCodes: String?
+  failedLoginCount: int, default=0
+  lockedUntil: DateTime?
+  lastLoginAt: DateTime?
+  lastLoginIp: String?
+  loginCount: int, default=0
+  deletionRequestedAt: DateTime?
+  isActive: bool, default=true
+  createdAt: DateTime
+  updatedAt: DateTime
+indexes:
+  user_email_idx:
+    fields: email
+    unique: true
+  user_role_idx:
+    fields: role

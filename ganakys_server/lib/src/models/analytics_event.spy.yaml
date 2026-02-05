@@ -1,0 +1,17 @@
+class: AnalyticsEvent
+table: analytics_events
+fields:
+  userId: int?
+  eventType: String
+  eventData: String?
+  sessionId: String?
+  ipAddress: String?
+  userAgent: String?
+  createdAt: DateTime
+indexes:
+  event_type_idx:
+    fields: eventType
+  event_user_idx:
+    fields: userId
+  event_date_idx:
+    fields: createdAt

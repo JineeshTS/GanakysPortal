@@ -1,0 +1,12 @@
+class: DiscussionReply
+table: discussion_replies
+fields:
+  discussionId: int, relation(parent=discussions)
+  userId: int, relation(parent=users)
+  content: String
+  isInstructorReply: bool, default=false
+  createdAt: DateTime
+  updatedAt: DateTime
+indexes:
+  reply_discussion_idx:
+    fields: discussionId

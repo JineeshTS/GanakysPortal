@@ -1,0 +1,17 @@
+class: Subscription
+table: subscriptions
+fields:
+  userId: int, relation(parent=users)
+  planId: int, relation(parent=subscription_plans)
+  status: String, default='active'
+  currentPeriodStart: DateTime
+  currentPeriodEnd: DateTime
+  cancelAtPeriodEnd: bool, default=false
+  gatewaySubscriptionId: String?
+  createdAt: DateTime
+  updatedAt: DateTime
+indexes:
+  sub_user_idx:
+    fields: userId
+  sub_gateway_idx:
+    fields: gatewaySubscriptionId

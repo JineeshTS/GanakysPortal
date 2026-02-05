@@ -1,0 +1,18 @@
+class: UserSession
+table: user_sessions
+fields:
+  userId: int, relation(parent=users)
+  refreshTokenHash: String
+  deviceInfo: String?
+  ipAddress: String?
+  userAgentFingerprint: String?
+  lastActiveAt: DateTime
+  expiresAt: DateTime
+  isRevoked: bool, default=false
+  createdAt: DateTime
+indexes:
+  session_user_idx:
+    fields: userId
+  session_token_idx:
+    fields: refreshTokenHash
+    unique: true

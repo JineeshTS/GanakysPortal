@@ -1,0 +1,11 @@
+class: AuthProvider
+table: auth_providers
+fields:
+  userId: int, relation(parent=users)
+  provider: String
+  providerUid: String
+  createdAt: DateTime
+indexes:
+  auth_provider_uid_idx:
+    fields: provider, providerUid
+    unique: true

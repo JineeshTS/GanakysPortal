@@ -1,0 +1,15 @@
+class: LearningPath
+table: learning_paths
+fields:
+  title: String
+  slug: String
+  description: String?
+  thumbnailUrl: String?
+  difficulty: String, default='beginner'
+  courseIds: String
+  isPublished: bool, default=false
+  createdAt: DateTime
+indexes:
+  path_slug_idx:
+    fields: slug
+    unique: true

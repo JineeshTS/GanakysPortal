@@ -1,0 +1,44 @@
+services:
+  # Development services
+  postgres:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "8090:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: ganakys
+      POSTGRES_PASSWORD: "b_y4AKt_r6QSco3Z4xIsuRHM70COQyD_"
+    volumes:
+      - ganakys_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6.2.6
+    ports:
+      - "8091:6379"
+    command: redis-server --requirepass "o88QegksaNaVxAh2JVay4z6NlZL3A05n"
+    environment:
+      - REDIS_REPLICATION_MODE=master
+
+  # Test services
+  postgres_test:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "9090:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: ganakys_test
+      POSTGRES_PASSWORD: "FDIMukXNY2p2O_1zrsr5G_XmSFmnjviR"
+    volumes:
+      - ganakys_test_data:/var/lib/postgresql/data
+
+  redis_test:
+    image: redis:6.2.6
+    ports:
+      - "9091:6379"
+    command: redis-server --requirepass "Vk8n_-4vg2h94kXQeTaeAXsNorP86ZRW"
+    environment:
+      - REDIS_REPLICATION_MODE=master
+
+volumes:
+  ganakys_data:
+  ganakys_test_data:

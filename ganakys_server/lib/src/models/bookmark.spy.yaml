@@ -1,0 +1,12 @@
+class: Bookmark
+table: bookmarks
+fields:
+  userId: int, relation(parent=users)
+  lectureId: int, relation(parent=lectures)
+  courseId: int, relation(parent=courses)
+  timestampSeconds: int, default=0
+  label: String?
+  createdAt: DateTime
+indexes:
+  bookmark_user_idx:
+    fields: userId

@@ -1,0 +1,18 @@
+class: Announcement
+table: announcements
+fields:
+  title: String
+  message: String
+  type: String, default='banner'
+  targetAudience: String, default='all'
+  targetCourseId: int?
+  targetPlanId: int?
+  isDismissible: bool, default=true
+  startsAt: DateTime?
+  endsAt: DateTime?
+  isActive: bool, default=true
+  createdBy: int?
+  createdAt: DateTime
+indexes:
+  announcement_active_idx:
+    fields: isActive

@@ -1,0 +1,188 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: academy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ganakys
+      POSTGRES_USER: ganakys
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./ganakys_server/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./ganakys_server/config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "127.0.0.1:5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ganakys -d ganakys"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1G
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: academy-redis
+    restart: unless-stopped
+    command: >
+      sh -c 'redis-server
+      --requirepass "$$(cat /run/secrets/redis_password)"
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes'
+    secrets:
+      - redis_password
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6381:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$(cat /run/secrets/redis_password) ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - backend
+
+  server:
+    build:
+      context: .
+      dockerfile: ganakys_server/Dockerfile
+    container_name: academy-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SERVERPOD_DATABASE_HOST: postgres
+      SERVERPOD_DATABASE_PORT: "5432"
+      SERVERPOD_DATABASE_NAME: ganakys
+      SERVERPOD_DATABASE_USER: ganakys
+      SERVERPOD_REDIS_HOST: redis
+      SERVERPOD_REDIS_PORT: "6379"
+      SERVERPOD_ENV: production
+      STORAGE_PATH: /app/storage
+      PIPELINE_PATH: /home/udemycrores
+    secrets:
+      - db_password
+      - redis_password
+      - jwt_private_key
+      - jwt_public_key
+      - gemini_api_key
+      - razorpay_key_id
+      - razorpay_key_secret
+      - stripe_secret_key
+      - stripe_webhook_secret
+      - resend_api_key
+      - encryption_key
+      - video_signing_secret
+    volumes:
+      - ./storage:/app/storage
+      - /home/udemycrores:/home/udemycrores:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8081:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+
+  # nginx is handled by the system nginx (see /etc/nginx/sites-enabled/academy.ganakys.com)
+  # It serves Flutter web build directly and proxies API to serverpod on port 8080
+
+  db-backup:
+    image: alpine:3.19
+    container_name: academy-backup
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command: >
+      -c 'apk add --no-cache postgresql16-client gpg &&
+      echo "0 3 * * * /backup.sh" | crontab - && crond -f'
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGDATABASE: ganakys
+      PGUSER: ganakys
+    secrets:
+      - db_password
+    volumes:
+      - ./storage/backups:/backups
+      - ./ganakys_server/config/backup.sh:/backup.sh:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+
+secrets:
+  db_password:
+    file: ./secrets/db_password
+  redis_password:
+    file: ./secrets/redis_password
+  jwt_private_key:
+    file: ./secrets/jwt_private_key
+  jwt_public_key:
+    file: ./secrets/jwt_public_key
+  gemini_api_key:
+    file: ./secrets/gemini_api_key
+  razorpay_key_id:
+    file: ./secrets/razorpay_key_id
+  razorpay_key_secret:
+    file: ./secrets/razorpay_key_secret
+  stripe_secret_key:
+    file: ./secrets/stripe_secret_key
+  stripe_webhook_secret:
+    file: ./secrets/stripe_webhook_secret
+  resend_api_key:
+    file: ./secrets/resend_api_key
+  encryption_key:
+    file: ./secrets/encryption_key
+  video_signing_secret:
+    file: ./secrets/video_signing_secret
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  backend:
+    driver: bridge

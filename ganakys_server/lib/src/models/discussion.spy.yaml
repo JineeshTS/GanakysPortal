@@ -1,0 +1,18 @@
+class: Discussion
+table: discussions
+fields:
+  courseId: int, relation(parent=courses)
+  lectureId: int?
+  userId: int, relation(parent=users)
+  title: String
+  content: String
+  isPinned: bool, default=false
+  isResolved: bool, default=false
+  replyCount: int, default=0
+  createdAt: DateTime
+  updatedAt: DateTime
+indexes:
+  discussion_course_idx:
+    fields: courseId
+  discussion_user_idx:
+    fields: userId
